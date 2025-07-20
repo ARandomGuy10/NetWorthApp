@@ -1,28 +1,59 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
-    "slug": "bolt-expo-nativewind",
+    "name": "PocketrackrApp",
+    "slug": "PocketrackrApp",
+    "main": "expo-router/entry",
+    "scheme": "pocketrackr",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
+      "bundleIdentifier": "com.yourcompany.pocketrackr",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "supportsTablet": true
     },
-    "web": {
-      "bundler": "metro",
-      "output": "single",
-      "favicon": "./assets/images/favicon.png"
+    "android": {
+      "package": "com.yourcompany.pocketrackr",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "pocketrackr",
+              "host": "oauth"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "edgeToEdgeEnabled": true
     },
-    "plugins": [
-      "expo-router", 
-      "expo-font", 
-      "expo-web-browser"
-    ],
-    "experiments": {
-      "typedRoutes": true
-    }
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "entryPoint": "./app/_layout",
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin-allow-popups",
+        "Cross-Origin-Embedder-Policy": "require-corp"
+      }
+    },
+    "platforms": ["ios", "android", "web"],
+    "plugins": []
   }
 }

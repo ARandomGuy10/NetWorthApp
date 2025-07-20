@@ -1,10 +1,9 @@
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ClerkProvider } from '@clerk/clerk-expo';
-import { useFrameworkReady } from '@/hooks/useFrameworkReady';
+import { tokenCache } from '@clerk/clerk-expo/token-cache';
 
-const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!;
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 if (!publishableKey) {
   throw new Error(
@@ -13,18 +12,17 @@ if (!publishableKey) {
 }
 
 export default function RootLayout() {
-  useFrameworkReady();
-
   return (
-    <ClerkProvider publishableKey={publishableKey}>
+    <ClerkProvider 
+      tokenCache={tokenCache}
+      publishableKey={publishableKey}
+    >
+      <StatusBar style="auto" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="auth/login" />
-        <Stack.Screen name="auth/signup" />
+        <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
     </ClerkProvider>
   );
 }
