@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Account Service - Handles all account-related database operations
@@ -32,9 +32,10 @@ export const CURRENCIES = [
 
 /**
  * Fetch all accounts for the current user
- * @returns {Promise<Array>} Array of accounts with latest balance
+ * @param supabase - Supabase client instance
+ * @returns Promise<Array> Array of accounts with latest balance
  */
-export const getUserAccounts = async () => {
+export const getUserAccounts = async (supabase: SupabaseClient) => {
   try {
     // First get all accounts
     const { data: accounts, error: accountsError } = await supabase
@@ -72,10 +73,11 @@ export const getUserAccounts = async () => {
 
 /**
  * Create a new account
- * @param {Object} accountData - Account data
- * @returns {Promise<Object>} Created account
+ * @param supabase - Supabase client instance
+ * @param accountData - Account data
+ * @returns Promise<Object> Created account
  */
-export const createAccount = async (accountData) => {
+export const createAccount = async (supabase: SupabaseClient, accountData: any) => {
   try {
     const { data, error } = await supabase
       .from('accounts')
@@ -94,7 +96,7 @@ export const createAccount = async (accountData) => {
 
     // If initial balance is provided, create a balance entry
     if (accountData.initial_balance && accountData.initial_balance > 0) {
-      await createBalanceEntry({
+      await createBalanceEntry(supabase, {
         account_id: data.id,
         amount: accountData.initial_balance,
         date: new Date().toISOString().split('T')[0],
@@ -111,11 +113,12 @@ export const createAccount = async (accountData) => {
 
 /**
  * Update an existing account
- * @param {string} accountId - Account ID
- * @param {Object} updates - Fields to update
- * @returns {Promise<Object>} Updated account
+ * @param supabase - Supabase client instance
+ * @param accountId - Account ID
+ * @param updates - Fields to update
+ * @returns Promise<Object> Updated account
  */
-export const updateAccount = async (accountId, updates) => {
+export const updateAccount = async (supabase: SupabaseClient, accountId: string, updates: any) => {
   try {
     const { data, error } = await supabase
       .from('accounts')
@@ -134,10 +137,11 @@ export const updateAccount = async (accountId, updates) => {
 
 /**
  * Delete an account and all its balance entries
- * @param {string} accountId - Account ID
- * @returns {Promise<boolean>} Success status
+ * @param supabase - Supabase client instance
+ * @param accountId - Account ID
+ * @returns Promise<boolean> Success status
  */
-export const deleteAccount = async (accountId) => {
+export const deleteAccount = async (supabase: SupabaseClient, accountId: string) => {
   try {
     // Delete balance entries first (due to foreign key constraint)
     await supabase
@@ -161,10 +165,11 @@ export const deleteAccount = async (accountId) => {
 
 /**
  * Get account by ID
- * @param {string} accountId - Account ID
- * @returns {Promise<Object>} Account data
+ * @param supabase - Supabase client instance
+ * @param accountId - Account ID
+ * @returns Promise<Object> Account data
  */
-export const getAccountById = async (accountId) => {
+export const getAccountById = async (supabase: SupabaseClient, accountId: string) => {
   try {
     const { data, error } = await supabase
       .from('accounts')
@@ -182,10 +187,11 @@ export const getAccountById = async (accountId) => {
 
 /**
  * Create a balance entry
- * @param {Object} balanceData - Balance entry data
- * @returns {Promise<Object>} Created balance entry
+ * @param supabase - Supabase client instance
+ * @param balanceData - Balance entry data
+ * @returns Promise<Object> Created balance entry
  */
-export const createBalanceEntry = async (balanceData) => {
+export const createBalanceEntry = async (supabase: SupabaseClient, balanceData: any) => {
   try {
     const { data, error } = await supabase
       .from('balance_entries')
@@ -203,10 +209,11 @@ export const createBalanceEntry = async (balanceData) => {
 
 /**
  * Get balance entries for an account
- * @param {string} accountId - Account ID
- * @returns {Promise<Array>} Array of balance entries
+ * @param supabase - Supabase client instance
+ * @param accountId - Account ID
+ * @returns Promise<Array> Array of balance entries
  */
-export const getAccountBalances = async (accountId) => {
+export const getAccountBalances = async (supabase: SupabaseClient, accountId: string) => {
   try {
     const { data, error } = await supabase
       .from('balance_entries')
@@ -224,11 +231,12 @@ export const getAccountBalances = async (accountId) => {
 
 /**
  * Update a balance entry
- * @param {string} entryId - Balance entry ID
- * @param {Object} updates - Fields to update
- * @returns {Promise<Object>} Updated balance entry
+ * @param supabase - Supabase client instance
+ * @param entryId - Balance entry ID
+ * @param updates - Fields to update
+ * @returns Promise<Object> Updated balance entry
  */
-export const updateBalanceEntry = async (entryId, updates) => {
+export const updateBalanceEntry = async (supabase: SupabaseClient, entryId: string, updates: any) => {
   try {
     const { data, error } = await supabase
       .from('balance_entries')
@@ -247,10 +255,11 @@ export const updateBalanceEntry = async (entryId, updates) => {
 
 /**
  * Delete a balance entry
- * @param {string} entryId - Balance entry ID
- * @returns {Promise<boolean>} Success status
+ * @param supabase - Supabase client instance
+ * @param entryId - Balance entry ID
+ * @returns Promise<boolean> Success status
  */
-export const deleteBalanceEntry = async (entryId) => {
+export const deleteBalanceEntry = async (supabase: SupabaseClient, entryId: string) => {
   try {
     const { error } = await supabase
       .from('balance_entries')

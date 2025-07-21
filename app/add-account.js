@@ -16,10 +16,12 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { createAccount, ACCOUNT_CATEGORIES, CURRENCIES } from '../src/services/accountService';
+import { useSupabase } from '../hooks/useSupabase';
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { supabase } = useSupabase();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +36,11 @@ export default function AddAccountScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
+    if (!supabase) {
+      Alert.alert('Error', 'Database connection not available');
+      return;
+    }
+    
     if (!formData.name.trim()) {
       Alert.alert('Error', 'Please enter an account name');
       return;
@@ -54,7 +61,7 @@ export default function AddAccountScreen() {
         initial_balance: parseFloat(formData.initial_balance) || 0
       };
 
-      await createAccount(accountData);
+      await createAccount(supabase, accountData);
       
       Alert.alert('Success', 'Account created successfully', [
         { text: 'OK', onPress: () => router.back() }
@@ -68,6 +75,15 @@ export default function AddAccountScreen() {
   };
 
   const availableCategories = ACCOUNT_CATEGORIES[formData.type] || [];
+
+  if (!supabase) {
+    return (
+      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
+        <ActivityIndicator size="large" color="#4ECDC4" />
+        <Text style={styles.loadingText}>Connecting...</Text>
+      </View>
+    );
+  }
 
   return (
     <KeyboardAvoidingView 
@@ -243,6 +259,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#121212',
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#8E8E93',
   },
   header: {
     flexDirection: 'row',

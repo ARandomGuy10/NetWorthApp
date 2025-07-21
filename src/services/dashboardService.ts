@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase';
+import { SupabaseClient } from '@supabase/supabase-js';
 import { getUserAccounts } from './accountService';
 
 /**
@@ -7,17 +7,18 @@ import { getUserAccounts } from './accountService';
 
 /**
  * Get current net worth in user's preferred currency
- * @param {string} preferredCurrency - User's preferred currency (default: EUR)
- * @returns {Promise<Object>} Net worth data
+ * @param supabase - Supabase client instance
+ * @param preferredCurrency - User's preferred currency (default: EUR)
+ * @returns Promise<Object> Net worth data
  */
-export const getNetWorthData = async (preferredCurrency = 'EUR') => {
+export const getNetWorthData = async (supabase: SupabaseClient, preferredCurrency: string = 'EUR') => {
   try {
-    const accounts = await getUserAccounts();
+    const accounts = await getUserAccounts(supabase);
     
     let totalAssets = 0;
     let totalLiabilities = 0;
-    const assetAccounts = [];
-    const liabilityAccounts = [];
+    const assetAccounts: any[] = [];
+    const liabilityAccounts: any[] = [];
 
     // Group accounts and calculate totals
     for (const account of accounts) {
@@ -59,13 +60,14 @@ export const getNetWorthData = async (preferredCurrency = 'EUR') => {
 
 /**
  * Get net worth history for chart (last 12 months)
- * @param {string} preferredCurrency - User's preferred currency
- * @returns {Promise<Array>} Array of monthly net worth data
+ * @param supabase - Supabase client instance
+ * @param preferredCurrency - User's preferred currency
+ * @returns Promise<Array> Array of monthly net worth data
  */
-export const getNetWorthHistory = async (preferredCurrency = 'EUR') => {
+export const getNetWorthHistory = async (supabase: SupabaseClient, preferredCurrency: string = 'EUR') => {
   try {
     // Get all accounts
-    const accounts = await getUserAccounts();
+    const accounts = await getUserAccounts(supabase);
     
     // Generate last 12 months
     const months = [];
@@ -124,18 +126,19 @@ export const getNetWorthHistory = async (preferredCurrency = 'EUR') => {
 
 /**
  * Get daily change in net worth
- * @param {string} preferredCurrency - User's preferred currency
- * @returns {Promise<Object>} Daily change data
+ * @param supabase - Supabase client instance
+ * @param preferredCurrency - User's preferred currency
+ * @returns Promise<Object> Daily change data
  */
-export const getDailyNetWorthChange = async (preferredCurrency = 'EUR') => {
+export const getDailyNetWorthChange = async (supabase: SupabaseClient, preferredCurrency: string = 'EUR') => {
   try {
     const today = new Date().toISOString().split('T')[0];
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Get net worth for today and yesterday
     const [todayNetWorth, yesterdayNetWorth] = await Promise.all([
-      getNetWorthForDate(today, preferredCurrency),
-      getNetWorthForDate(yesterday, preferredCurrency)
+      getNetWorthForDate(supabase, today, preferredCurrency),
+      getNetWorthForDate(supabase, yesterday, preferredCurrency)
     ]);
 
     const change = todayNetWorth - yesterdayNetWorth;
@@ -154,13 +157,14 @@ export const getDailyNetWorthChange = async (preferredCurrency = 'EUR') => {
 
 /**
  * Get net worth for a specific date
- * @param {string} date - Date in YYYY-MM-DD format
- * @param {string} preferredCurrency - User's preferred currency
- * @returns {Promise<number>} Net worth for the date
+ * @param supabase - Supabase client instance
+ * @param date - Date in YYYY-MM-DD format
+ * @param preferredCurrency - User's preferred currency
+ * @returns Promise<number> Net worth for the date
  */
-const getNetWorthForDate = async (date, preferredCurrency = 'EUR') => {
+const getNetWorthForDate = async (supabase: SupabaseClient, date: string, preferredCurrency: string = 'EUR') => {
   try {
-    const accounts = await getUserAccounts();
+    const accounts = await getUserAccounts(supabase);
     let netWorth = 0;
 
     for (const account of accounts) {
@@ -190,12 +194,12 @@ const getNetWorthForDate = async (date, preferredCurrency = 'EUR') => {
 
 /**
  * Format currency amount
- * @param {number} amount - Amount to format
- * @param {string} currency - Currency code
- * @returns {string} Formatted currency string
+ * @param amount - Amount to format
+ * @param currency - Currency code
+ * @returns string Formatted currency string
  */
-export const formatCurrency = (amount, currency = 'EUR') => {
-  const currencySymbols = {
+export const formatCurrency = (amount: number, currency: string = 'EUR'): string => {
+  const currencySymbols: { [key: string]: string } = {
     EUR: '€',
     USD: '$',
     GBP: '£',

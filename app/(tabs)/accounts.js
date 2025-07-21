@@ -14,17 +14,21 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { getUserAccounts, deleteAccount, ACCOUNT_CATEGORIES } from '../../src/services/accountService';
 import { formatCurrency } from '../../src/services/dashboardService';
+import { useSupabase } from '../../hooks/useSupabase';
 
 export default function AccountsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { supabase } = useSupabase();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadAccounts = useCallback(async () => {
+    if (!supabase) return;
+    
     try {
-      const accountsData = await getUserAccounts();
+      const accountsData = await getUserAccounts(supabase);
       setAccounts(accountsData);
     } catch (error) {
       console.error('Error loading accounts:', error);
@@ -33,7 +37,7 @@ export default function AccountsScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [supabase]);
 
   useEffect(() => {
     loadAccounts();
@@ -55,7 +59,7 @@ export default function AccountsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteAccount(account.id);
+              await deleteAccount(supabase, account.id);
               loadAccounts();
             } catch (error) {
               Alert.alert('Error', 'Failed to delete account');
@@ -98,11 +102,11 @@ export default function AccountsScreen() {
     return iconMap[category] || 'ellipse-outline';
   };
 
-  if (loading) {
+  if (loading || !supabase) {
     return (
       <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
         <ActivityIndicator size="large" color="#4ECDC4" />
-        <Text style={styles.loadingText}>Loading accounts...</Text>
+        <Text style={styles.loadingText}>{!supabase ? 'Connecting...' : 'Loading accounts...'}</Text>
       </View>
     );
   }
