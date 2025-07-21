@@ -285,6 +285,9 @@ export default function AddAccountScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
     </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
