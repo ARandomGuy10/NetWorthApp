@@ -19,7 +19,7 @@ import { useSupabase } from '../../hooks/useSupabase';
 export default function AccountsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { supabase } = useSupabase();
+  const supabase = useSupabase();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
