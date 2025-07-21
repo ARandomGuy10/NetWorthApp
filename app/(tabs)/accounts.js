@@ -7,7 +7,8 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  ActivityIndicator
+  ActivityIndicator,
+  Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -15,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { getUserAccounts, deleteAccount, ACCOUNT_CATEGORIES } from '../../src/services/accountService';
 import { formatCurrency } from '../../src/services/dashboardService';
 import { useSupabase } from '../../hooks/useSupabase';
+import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
 
 export default function AccountsScreen() {
   const insets = useSafeAreaInsets();
@@ -23,6 +25,15 @@ export default function AccountsScreen() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const fadeAnim = new Animated.Value(0);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const loadAccounts = useCallback(async () => {
     if (!supabase) return;
@@ -104,23 +115,28 @@ export default function AccountsScreen() {
 
   if (loading || !supabase) {
     return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#4ECDC4" />
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>{!supabase ? 'Connecting...' : 'Loading accounts...'}</Text>
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <Animated.View style={[styles.container, { paddingTop: insets.top, opacity: fadeAnim }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Accounts</Text>
+        <View>
+          <Text style={styles.headerTitle}>My Accounts</Text>
+          <Text style={styles.headerSubtitle}>
+            {accounts.length} account{accounts.length !== 1 ? 's' : ''}
+          </Text>
+        </View>
         <TouchableOpacity
           style={styles.addButton}
           onPress={() => router.push('/add-account')}
         >
-          <Ionicons name="add" size={24} color="#FFFFFF" />
+          <Ionicons name="add" size={20} color={colors.text.inverse} />
         </TouchableOpacity>
       </View>
 
@@ -131,186 +147,228 @@ export default function AccountsScreen() {
         }
       >
         {/* Assets Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Assets</Text>
-            <Text style={styles.sectionTotal}>
-              {formatCurrency(totalAssets, 'EUR')}
-            </Text>
-          </View>
-
-          {assetAccounts.map((account) => (
-            <TouchableOpacity
-              key={account.id}
-              style={styles.accountCard}
-              onPress={() => router.push(`/account/${account.id}`)}
-            >
-              <View style={styles.accountInfo}>
-                <View style={styles.accountIcon}>
-                  <Ionicons
-                    name={getAccountIcon(account.category)}
-                    size={24}
-                    color="#4ECDC4"
-                  />
-                </View>
-                <View style={styles.accountDetails}>
-                  <Text style={styles.accountName}>{account.name}</Text>
-                  <Text style={styles.accountInstitution}>{account.institution}</Text>
-                </View>
+        {assetAccounts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <View style={[styles.sectionIndicator, { backgroundColor: colors.asset }]} />
+                <Text style={styles.sectionTitle}>Assets</Text>
               </View>
-              <View style={styles.accountBalance}>
-                <Text style={styles.balanceAmount}>
-                  {formatCurrency(account.current_balance, account.currency)}
-                </Text>
-                <TouchableOpacity
-                  style={styles.moreButton}
-                  onPress={() => handleDeleteAccount(account)}
-                >
-                  <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
-
-          {assetAccounts.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No asset accounts yet</Text>
+              <Text style={[styles.sectionTotal, { color: colors.asset }]}>
+                {formatCurrency(totalAssets, 'EUR')}
+              </Text>
             </View>
-          )}
-        </View>
+
+            {assetAccounts.map((account, index) => (
+              <TouchableOpacity
+                key={account.id}
+                style={[styles.accountCard, index === 0 && styles.firstCard]}
+                onPress={() => router.push(`/account/${account.id}`)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.accountInfo}>
+                  <View style={[styles.accountIcon, { backgroundColor: colors.interactive.hover }]}>
+                    <Ionicons
+                      name={getAccountIcon(account.category)}
+                      size={20}
+                      color={colors.asset}
+                    />
+                  </View>
+                  <View style={styles.accountDetails}>
+                    <Text style={styles.accountName}>{account.name}</Text>
+                    <View style={styles.accountMeta}>
+                      <Text style={styles.accountInstitution}>{account.institution || account.category}</Text>
+                      <Text style={styles.accountCurrency}>{account.currency}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.accountBalance}>
+                  <Text style={[styles.balanceAmount, { color: colors.asset }]}>
+                    {formatCurrency(account.current_balance, account.currency)}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.moreButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAccount(account);
+                    }}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={16} color={colors.text.tertiary} />
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         {/* Liabilities Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Liabilities</Text>
-            <Text style={[styles.sectionTotal, styles.liabilityTotal]}>
-              -{formatCurrency(totalLiabilities, 'EUR')}
-            </Text>
-          </View>
-
-          {liabilityAccounts.map((account) => (
-            <TouchableOpacity
-              key={account.id}
-              style={styles.accountCard}
-              onPress={() => router.push(`/account/${account.id}`)}
-            >
-              <View style={styles.accountInfo}>
-                <View style={styles.accountIcon}>
-                  <Ionicons
-                    name={getAccountIcon(account.category)}
-                    size={24}
-                    color="#FF6B6B"
-                  />
-                </View>
-                <View style={styles.accountDetails}>
-                  <Text style={styles.accountName}>{account.name}</Text>
-                  <Text style={styles.accountInstitution}>{account.institution}</Text>
-                </View>
+        {liabilityAccounts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionTitleContainer}>
+                <View style={[styles.sectionIndicator, { backgroundColor: colors.liability }]} />
+                <Text style={styles.sectionTitle}>Liabilities</Text>
               </View>
-              <View style={styles.accountBalance}>
-                <Text style={[styles.balanceAmount, styles.liabilityAmount]}>
-                  -{formatCurrency(account.current_balance, account.currency)}
-                </Text>
-                <TouchableOpacity
-                  style={styles.moreButton}
-                  onPress={() => handleDeleteAccount(account)}
-                >
-                  <Ionicons name="ellipsis-horizontal" size={20} color="#8E8E93" />
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          ))}
-
-          {liabilityAccounts.length === 0 && (
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>No liability accounts yet</Text>
+              <Text style={[styles.sectionTotal, { color: colors.liability }]}>
+                -{formatCurrency(totalLiabilities, 'EUR')}
+              </Text>
             </View>
-          )}
-        </View>
+
+            {liabilityAccounts.map((account, index) => (
+              <TouchableOpacity
+                key={account.id}
+                style={[styles.accountCard, index === 0 && styles.firstCard]}
+                onPress={() => router.push(`/account/${account.id}`)}
+                activeOpacity={0.7}
+              >
+                <View style={styles.accountInfo}>
+                  <View style={[styles.accountIcon, { backgroundColor: colors.interactive.hover }]}>
+                    <Ionicons
+                      name={getAccountIcon(account.category)}
+                      size={20}
+                      color={colors.liability}
+                    />
+                  </View>
+                  <View style={styles.accountDetails}>
+                    <Text style={styles.accountName}>{account.name}</Text>
+                    <View style={styles.accountMeta}>
+                      <Text style={styles.accountInstitution}>{account.institution || account.category}</Text>
+                      <Text style={styles.accountCurrency}>{account.currency}</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={styles.accountBalance}>
+                  <Text style={[styles.balanceAmount, { color: colors.liability }]}>
+                    -{formatCurrency(account.current_balance, account.currency)}
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.moreButton}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDeleteAccount(account);
+                    }}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={16} color={colors.text.tertiary} />
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Empty State */}
+        {accounts.length === 0 && (
+          <View style={styles.emptyState}>
+            <View style={styles.emptyIcon}>
+              <Ionicons name="wallet-outline" size={48} color={colors.text.tertiary} />
+            </View>
+            <Text style={styles.emptyTitle}>No accounts yet</Text>
+            <Text style={styles.emptyText}>Add your first account to start tracking your net worth</Text>
+          </View>
+        )}
 
         {/* Add Account Button */}
         <TouchableOpacity
           style={styles.addAccountButton}
           onPress={() => router.push('/add-account')}
+          activeOpacity={0.8}
         >
-          <Ionicons name="add" size={24} color="#FFFFFF" />
+          <Ionicons name="add" size={20} color={colors.text.inverse} />
           <Text style={styles.addAccountText}>Add New Account</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: colors.background.primary,
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: spacing.lg,
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.text.secondary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.border.primary,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.primary,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    marginTop: 2,
   },
   addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#4ECDC4',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    ...shadows.sm,
   },
   scrollView: {
     flex: 1,
   },
   section: {
-    marginTop: 24,
-    paddingHorizontal: 20,
+    marginTop: spacing.xxl,
+    paddingHorizontal: spacing.xl,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.lg,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionIndicator: {
+    width: 4,
+    height: 16,
+    borderRadius: 2,
+    marginRight: spacing.sm,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
   sectionTotal: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#4ECDC4',
-  },
-  liabilityTotal: {
-    color: '#FF6B6B',
   },
   accountCard: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    marginBottom: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border.primary,
+    ...shadows.sm,
+  },
+  firstCard: {
+    marginTop: spacing.sm,
   },
   accountInfo: {
     flexDirection: 'row',
@@ -318,26 +376,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   accountIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#2C2C2E',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.md,
   },
   accountDetails: {
     flex: 1,
   },
   accountName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
+    color: colors.text.primary,
+    marginBottom: spacing.xs,
+  },
+  accountMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   accountInstitution: {
-    fontSize: 14,
-    color: '#8E8E93',
+    fontSize: 13,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  accountCurrency: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    backgroundColor: colors.background.elevated,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   accountBalance: {
     alignItems: 'flex-end',
@@ -345,40 +416,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   balanceAmount: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#4ECDC4',
-    marginRight: 8,
-  },
-  liabilityAmount: {
-    color: '#FF6B6B',
+    marginRight: spacing.sm,
   },
   moreButton: {
-    padding: 4,
+    padding: spacing.sm,
+    borderRadius: 6,
   },
   emptyState: {
-    padding: 32,
+    padding: spacing.xxxl,
     alignItems: 'center',
+    marginTop: spacing.xxxl,
+  },
+  emptyIcon: {
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    fontStyle: 'italic',
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   addAccountButton: {
-    backgroundColor: '#4ECDC4',
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-    borderRadius: 12,
-    margin: 20,
-    marginTop: 32,
+    padding: spacing.lg,
+    borderRadius: borderRadius.md,
+    margin: spacing.xl,
+    marginTop: spacing.xxxl,
+    ...shadows.md,
   },
   addAccountText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFFFFF',
-    marginLeft: 8,
+    color: colors.text.inverse,
+    marginLeft: spacing.sm,
   },
 });

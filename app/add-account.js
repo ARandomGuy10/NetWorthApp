@@ -9,14 +9,17 @@ import {
   Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Picker } from '@react-native-picker/picker';
 import { createAccount, ACCOUNT_CATEGORIES, CURRENCIES } from '../src/services/accountService';
 import { useSupabase } from '../hooks/useSupabase';
+import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
+import CustomPicker from '../components/ui/CustomPicker';
+import Switch from '../components/ui/Switch';
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -30,10 +33,19 @@ export default function AddAccountScreen() {
     currency: 'EUR',
     institution: '',
     initial_balance: '',
-    include_in_net_worth: true
+    include_in_net_worth: true,
   });
   
   const [loading, setLoading] = useState(false);
+  const fadeAnim = new Animated.Value(0);
+
+  React.useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, []);
 
   const handleSave = async () => {
     if (!supabase) {
@@ -74,306 +86,356 @@ export default function AddAccountScreen() {
     }
   };
 
-  const availableCategories = ACCOUNT_CATEGORIES[formData.type] || [];
+  const availableCategories = (ACCOUNT_CATEGORIES[formData.type] || []).map(cat => ({
+    label: cat,
+    value: cat
+  }));
+
+  const currencyOptions = CURRENCIES.map(currency => ({
+    label: currency,
+    value: currency
+  }));
 
   if (!supabase) {
     return (
-      <View style={[styles.container, styles.centered, { paddingTop: insets.top }]}>
-        <ActivityIndicator size="large" color="#4ECDC4" />
+      <View style={[styles.container, styles.centered]}>
+        <ActivityIndicator size="large" color={colors.primary} />
         <Text style={styles.loadingText}>Connecting...</Text>
       </View>
     );
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={[styles.container, { paddingTop: insets.top }]}
+    <Animated.View style={[styles.container, { paddingTop: insets.top, opacity: fadeAnim }]}>
+      <KeyboardAvoidingView 
+        style={styles.keyboardView}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add New Account</Text>
-        <TouchableOpacity style={styles.settingsButton}>
-          <Ionicons name="settings-outline" size={24} color="#8E8E93" />
-        </TouchableOpacity>
-      </View>
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Account Name */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Account Name</Text>
-          <TextInput
-            style={styles.textInput}
-            value={formData.name}
-            onChangeText={(text) => setFormData({ ...formData, name: text })}
-            placeholder="e.g., Chase Checking, Vanguard IRA"
-            placeholderTextColor="#8E8E93"
-            editable={!loading}
-          />
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.back()}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Add Account</Text>
+          <View style={styles.placeholder} />
         </View>
 
-        {/* Account Type */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Account Type</Text>
-          <View style={styles.typeSelector}>
-            <TouchableOpacity
-              style={[
-                styles.typeButton,
-                formData.type === 'asset' && styles.typeButtonActive
-              ]}
-              onPress={() => setFormData({ ...formData, type: 'asset', category: '' })}
-              disabled={loading}
-            >
-              <Text style={[
-                styles.typeButtonText,
-                formData.type === 'asset' && styles.typeButtonTextActive
-              ]}>
-                Asset
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.typeButton,
-                formData.type === 'liability' && styles.typeButtonActive
-              ]}
-              onPress={() => setFormData({ ...formData, type: 'liability', category: '' })}
-              disabled={loading}
-            >
-              <Text style={[
-                styles.typeButtonText,
-                formData.type === 'liability' && styles.typeButtonTextActive
-              ]}>
-                Liability
-              </Text>
-            </TouchableOpacity>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Account Name */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Account Name</Text>
+            <TextInput
+              style={styles.textInput}
+              value={formData.name}
+              onChangeText={(text) => setFormData({ ...formData, name: text })}
+              placeholder="e.g., Chase Checking, Vanguard IRA"
+              placeholderTextColor={colors.text.secondary}
+              editable={!loading}
+            />
           </View>
-        </View>
 
-        {/* Category */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Category</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
+          {/* Account Type */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Account Type</Text>
+            <View style={styles.typeSelector}>
+              <TouchableOpacity
+                style={[
+                  styles.typeButton,
+                  formData.type === 'asset' && styles.typeButtonActive
+                ]}
+                onPress={() => setFormData({ ...formData, type: 'asset', category: '' })}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Ionicons 
+                  name="trending-up" 
+                  size={16} 
+                  color={formData.type === 'asset' ? colors.text.inverse : colors.text.secondary} 
+                  style={styles.typeIcon}
+                />
+                <Text style={[
+                  styles.typeButtonText,
+                  formData.type === 'asset' && styles.typeButtonTextActive
+                ]}>
+                  Asset
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.typeButton,
+                  formData.type === 'liability' && styles.typeButtonActive
+                ]}
+                onPress={() => setFormData({ ...formData, type: 'liability', category: '' })}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                <Ionicons 
+                  name="trending-down" 
+                  size={16} 
+                  color={formData.type === 'liability' ? colors.text.inverse : colors.text.secondary} 
+                  style={styles.typeIcon}
+                />
+                <Text style={[
+                  styles.typeButtonText,
+                  formData.type === 'liability' && styles.typeButtonTextActive
+                ]}>
+                  Liability
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Category */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Category</Text>
+            <CustomPicker
               selectedValue={formData.category}
               onValueChange={(value) => setFormData({ ...formData, category: value })}
-              style={styles.picker}
-              dropdownIconColor="#8E8E93"
-              enabled={!loading}
-            >
-              <Picker.Item label="Select a category" value="" color="#8E8E93" />
-              {availableCategories.map((category) => (
-                <Picker.Item
-                  key={category}
-                  label={category}
-                  value={category}
-                  color="#FFFFFF"
-                />
-              ))}
-            </Picker>
+              items={availableCategories}
+              placeholder="Select a category"
+              disabled={loading}
+            />
           </View>
-        </View>
 
-        {/* Currency */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Currency</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={formData.currency}
-              onValueChange={(value) => setFormData({ ...formData, currency: value })}
-              style={styles.picker}
-              dropdownIconColor="#8E8E93"
-              enabled={!loading}
-            >
-              {CURRENCIES.map((currency) => (
-                <Picker.Item
-                  key={currency}
-                  label={currency}
-                  value={currency}
-                  color="#FFFFFF"
-                />
-              ))}
-            </Picker>
+          {/* Currency & Initial Balance Row */}
+          <View style={styles.rowContainer}>
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Currency</Text>
+              <CustomPicker
+                selectedValue={formData.currency}
+                onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                items={currencyOptions}
+                disabled={loading}
+              />
+            </View>
+            
+            <View style={[styles.inputGroup, styles.halfWidth]}>
+              <Text style={styles.label}>Initial Balance</Text>
+              <TextInput
+                style={styles.textInput}
+                value={formData.initial_balance}
+                onChangeText={(text) => setFormData({ ...formData, initial_balance: text })}
+                placeholder="0.00"
+                placeholderTextColor={colors.text.secondary}
+                keyboardType="decimal-pad"
+                editable={!loading}
+              />
+            </View>
           </View>
-        </View>
 
-        {/* Initial Balance */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Initial Balance</Text>
-          <TextInput
-            style={styles.textInput}
-            value={formData.initial_balance}
-            onChangeText={(text) => setFormData({ ...formData, initial_balance: text })}
-            placeholder="0.00"
-            placeholderTextColor="#8E8E93"
-            keyboardType="decimal-pad"
-            editable={!loading}
-          />
-        </View>
+          {/* Bank/Institution */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Bank/Institution</Text>
+            <TextInput
+              style={styles.textInput}
+              value={formData.institution}
+              onChangeText={(text) => setFormData({ ...formData, institution: text })}
+              placeholder="Optional"
+              placeholderTextColor={colors.text.secondary}
+              editable={!loading}
+            />
+          </View>
 
-        {/* Bank/Institution */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Bank/Institution</Text>
-          <TextInput
-            style={styles.textInput}
-            value={formData.institution}
-            onChangeText={(text) => setFormData({ ...formData, institution: text })}
-            placeholder="Optional"
-            placeholderTextColor="#8E8E93"
-            editable={!loading}
-          />
-        </View>
+          {/* Include in Net Worth */}
+          <View style={styles.inputGroup}>
+            <View style={styles.switchContainer}>
+              <View style={styles.switchLabel}>
+                <Text style={styles.label}>Include in Net Worth</Text>
+                <Text style={styles.switchDescription}>
+                  Include this account when calculating your total net worth
+                </Text>
+              </View>
+              <Switch
+                value={formData.include_in_net_worth}
+                onValueChange={(value) => setFormData({ ...formData, include_in_net_worth: value })}
+                disabled={loading}
+              />
+            </View>
+          </View>
 
-        {/* Save Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#FFFFFF" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Account</Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Cancel Button */}
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => router.back()}
-          disabled={loading}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {/* Save Button */}
+          <TouchableOpacity
+            style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={loading}
+            activeOpacity={0.8}
+          >
+            {loading ? (
+              <ActivityIndicator color={colors.text.inverse} />
+            ) : (
+              <Text style={styles.saveButtonText}>Save Account</Text>
+            )}
+          </TouchableOpacity>
   );
 }
 
+          {/* Cancel Button */}
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={() => router.back()}
+            disabled={loading}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </Animated.View>
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#121212',
+    backgroundColor: colors.background.primary,
+  },
+  keyboardView: {
+    flex: 1,
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
+    marginTop: spacing.lg,
     fontSize: 16,
-    color: '#8E8E93',
+    color: colors.text.secondary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#2C2C2E',
+    borderBottomColor: colors.border.primary,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 18,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: colors.text.primary,
   },
-  settingsButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+  placeholder: {
+    width: 36,
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: spacing.xl,
   },
   inputGroup: {
-    marginTop: 24,
+    marginTop: spacing.xxl,
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  halfWidth: {
+    flex: 1,
+    marginTop: spacing.xxl,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
   },
   textInput: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: colors.text.primary,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.border.primary,
+    minHeight: 52,
   },
   typeSelector: {
     flexDirection: 'row',
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
-    padding: 4,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: borderRadius.md,
+    padding: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
   },
   typeButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    flexDirection: 'row',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   typeButtonActive: {
-    backgroundColor: '#4ECDC4',
+    backgroundColor: colors.primary,
+    ...shadows.sm,
+  },
+  typeIcon: {
+    marginRight: spacing.sm,
   },
   typeButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#8E8E93',
+    color: colors.text.secondary,
   },
   typeButtonTextActive: {
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
-  pickerContainer: {
-    backgroundColor: '#1C1C1E',
-    borderRadius: 12,
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.background.tertiary,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: '#2C2C2E',
+    borderColor: colors.border.primary,
   },
-  picker: {
-    color: '#FFFFFF',
-    backgroundColor: 'transparent',
+  switchLabel: {
+    flex: 1,
+    marginRight: spacing.lg,
+  },
+  switchDescription: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+    lineHeight: 18,
   },
   saveButton: {
-    backgroundColor: '#4ECDC4',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     alignItems: 'center',
-    marginTop: 32,
-    marginBottom: 16,
+    marginTop: spacing.xxxl,
+    marginBottom: spacing.lg,
+    minHeight: 52,
+    justifyContent: 'center',
+    ...shadows.md,
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: colors.text.inverse,
   },
   cancelButton: {
-    padding: 16,
+    padding: spacing.lg,
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: spacing.xxxl,
   },
   cancelButtonText: {
-    fontSize: 16,
-    color: '#8E8E93',
+    fontSize: 15,
+    color: colors.text.secondary,
   },
 });
