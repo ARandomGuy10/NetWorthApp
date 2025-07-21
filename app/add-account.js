@@ -21,7 +21,7 @@ import { useSupabase } from '../hooks/useSupabase';
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { supabase } = useSupabase();
+  const supabase = useSupabase();
   
   const [formData, setFormData] = useState({
     name: '',
