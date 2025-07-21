@@ -54,25 +54,25 @@ export default function TabsLayout() {
       <Tabs.Screen 
         name="home" 
         options={{
-          title: 'Home',
+          title: 'Dashboard',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen 
-        name="transactions" 
+        name="accounts" 
         options={{
-          title: 'Transactions',
+          title: 'Accounts',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="swap-horizontal-outline" size={size} color={color} />
+            <Ionicons name="wallet-outline" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen 
-        name="reports" 
+        name="analytics" 
         options={{
-          title: 'Reports',
+          title: 'Analytics',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="pie-chart-outline" size={size} color={color} />
           ),
