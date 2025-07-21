@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import {
+import React, { useState, useEffect, useRef } from 'react'; // Added useEffect, useRef
+import { // Added Animated
   View,
   Text,
   StyleSheet,
@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Animated
+  Animated // Import Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -37,9 +37,9 @@ export default function AddAccountScreen() {
   });
   
   const [loading, setLoading] = useState(false);
-  const fadeAnim = new Animated.Value(0);
+  const fadeAnim = useRef(new Animated.Value(0)).current; // Use useRef for Animated.Value
 
-  React.useEffect(() => {
+  useEffect(() => { // Changed from React.useEffect to useEffect
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 300,
@@ -105,11 +105,11 @@ export default function AddAccountScreen() {
     );
   }
 
-  return (
+  return ( // Corrected: Main return statement for the component
     <Animated.View style={[styles.container, { paddingTop: insets.top, opacity: fadeAnim }]}>
       <KeyboardAvoidingView 
         style={styles.keyboardView}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -270,9 +270,6 @@ export default function AddAccountScreen() {
               <Text style={styles.saveButtonText}>Save Account</Text>
             )}
           </TouchableOpacity>
-  );
-}
-
           {/* Cancel Button */}
           <TouchableOpacity
             style={styles.cancelButton}

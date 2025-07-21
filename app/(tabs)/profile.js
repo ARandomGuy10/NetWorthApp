@@ -14,6 +14,8 @@ export default function ProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  console.log('Inside ProfileScreen');
+
   useEffect(() => {
     if (!isUserLoaded) return;
 

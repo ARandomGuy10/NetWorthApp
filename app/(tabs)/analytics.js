@@ -3,7 +3,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
-  
+
+  console.log('Inside AnalyticsScreen');
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>

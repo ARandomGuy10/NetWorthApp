@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react'; // Import memo
 import {
   View,
   Text,
@@ -18,14 +18,16 @@ import { formatCurrency } from '../../src/services/dashboardService';
 import { useSupabase } from '../../hooks/useSupabase';
 import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
 
-export default function AccountsScreen() {
+
+function AccountsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const supabase = useSupabase();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const fadeAnim = new Animated.Value(0);
+  
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -36,7 +38,11 @@ export default function AccountsScreen() {
   }, []);
 
   const loadAccounts = useCallback(async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     
     try {
       const accountsData = await getUserAccounts(supabase);
@@ -51,11 +57,15 @@ export default function AccountsScreen() {
   }, [supabase]);
 
   useEffect(() => {
-    loadAccounts();
-  }, [loadAccounts]);
+    if (supabase) {
+      setLoading(true);
+      loadAccounts();
+    }
+  }, [supabase, loadAccounts]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
+    setLoading(true);
     loadAccounts();
   }, [loadAccounts]);
 
@@ -73,6 +83,7 @@ export default function AccountsScreen() {
               await deleteAccount(supabase, account.id);
               loadAccounts();
             } catch (error) {
+              console.error('Error deleting account:', error);
               Alert.alert('Error', 'Failed to delete account');
             }
           }
@@ -117,14 +128,14 @@ export default function AccountsScreen() {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{!supabase ? 'Connecting...' : 'Loading accounts...'}</Text>
+        <Text style={styles.loadingText}>{!supabase ? 'Connecting to database...' : 'Loading accounts...'}</Text>
       </View>
     );
   }
 
   return (
     <Animated.View style={[styles.container, { paddingTop: insets.top, opacity: fadeAnim }]}>
-      {/* Header */}
+      {/* Header Section */}
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>My Accounts</Text>
@@ -238,6 +249,7 @@ export default function AccountsScreen() {
                   </View>
                 </View>
                 <View style={styles.accountBalance}>
+                  {/* Corrected: Use account.current_balance for individual liability */}
                   <Text style={[styles.balanceAmount, { color: colors.liability }]}>
                     -{formatCurrency(account.current_balance, account.currency)}
                   </Text>
@@ -281,6 +293,7 @@ export default function AccountsScreen() {
   );
 }
 
+// Moved styles definition above the component function
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -462,3 +475,6 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
   },
 });
+
+// Wrap AccountsScreen with React.memo to prevent unnecessary re-renders
+export default memo(AccountsScreen);

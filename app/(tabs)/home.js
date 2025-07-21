@@ -1,6 +1,9 @@
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 
 export default function HomeScreen() {
+
+  console.log('Inside HomeScreen');
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.content}>
