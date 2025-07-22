@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef, memo } from 'react'; // Import memo
+import React, { useState, useEffect, useCallback, useRef, memo } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { formatCurrency } from '../../src/services/dashboardService';
 import { useSupabase } from '../../hooks/useSupabase';
 import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
 import ActionMenu from '../../components/ui/ActionMenu';
+import { useFocusEffect } from '@react-navigation/native';
 
 
 function AccountsScreen() {
@@ -33,6 +34,16 @@ function AccountsScreen() {
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
+  // Use focus effect to refresh data when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      if (supabase) {
+        setLoading(true);
+        loadAccounts();
+      }
+    }, [supabase, loadAccounts])
+  );
+
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -41,9 +52,9 @@ function AccountsScreen() {
     }).start();
   }, []);
 
-  const loadAccounts = useCallback(async () => {
+  const loadAccounts = useCallback(async (showLoading = false) => {
     if (!supabase) {
-      setLoading(false);
+      if (showLoading) setLoading(false);
       setRefreshing(false);
       return;
     }
@@ -55,22 +66,14 @@ function AccountsScreen() {
       console.error('Error loading accounts:', error);
       Alert.alert('Error', 'Failed to load accounts');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
       setRefreshing(false);
     }
   }, [supabase]);
 
-  useEffect(() => {
-    if (supabase) {
-      setLoading(true);
-      loadAccounts();
-    }
-  }, [supabase, loadAccounts]);
-
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setLoading(true);
-    loadAccounts();
+    loadAccounts(false);
   }, [loadAccounts]);
 
   const handleAccountMenu = (account, event) => {
@@ -103,7 +106,9 @@ function AccountsScreen() {
           onPress: async () => {
             try {
               await deleteAccount(supabase, selectedAccount.id);
-              loadAccounts();
+              // Immediately update state and reload
+              setAccounts(prev => prev.filter(acc => acc.id !== selectedAccount.id));
+              loadAccounts(false);
             } catch (error) {
               console.error('Error deleting account:', error);
               Alert.alert('Error', 'Failed to delete account');
@@ -141,7 +146,25 @@ function AccountsScreen() {
     {
       title: 'Edit Account',
       icon: 'create-outline',
-      onPress: handleEditAccount,
+      onPress: () => {
+        if (selectedAccount) {
+          router.push({
+            pathname: '/add-account',
+            params: { 
+              accountId: selectedAccount.id, 
+              mode: 'edit',
+              accountData: JSON.stringify({
+                name: selectedAccount.name,
+                type: selectedAccount.type,
+                category: selectedAccount.category,
+                currency: selectedAccount.currency,
+                institution: selectedAccount.institution,
+                include_in_net_worth: selectedAccount.include_in_net_worth
+              })
+            }
+          });
+        }
+      },
     },
     {
       title: 'Delete Account',

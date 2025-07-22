@@ -25,6 +25,8 @@ import {
 import { formatCurrency } from '../src/services/dashboardService';
 import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
 import CustomPicker from '../components/ui/CustomPicker';
+import DatePicker from '../components/ui/DatePicker';
+import Toast from '../components/ui/Toast';
 
 export default function AddBalanceScreen() {
   const insets = useSafeAreaInsets();
@@ -43,6 +45,7 @@ export default function AddBalanceScreen() {
   
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   const isEditMode = mode === 'edit' && balanceId;
@@ -127,16 +130,27 @@ export default function AddBalanceScreen() {
         ]);
       } else {
         await createBalanceEntry(supabase, balanceData);
-        Alert.alert('Success', 'Balance entry created successfully', [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
+        setToast({
+          visible: true,
+          message: 'Balance entry created successfully!',
+          type: 'success'
+        });
+        setTimeout(() => router.back(), 1500);
       }
     } catch (error) {
       console.error('Error saving balance entry:', error);
       if (error.message?.includes('duplicate key')) {
-        Alert.alert('Error', 'A balance entry already exists for this account on this date. Please choose a different date or edit the existing entry.');
+        setToast({
+          visible: true,
+          message: 'A balance entry already exists for this date. Please choose a different date.',
+          type: 'error'
+        });
       } else {
-        Alert.alert('Error', 'Failed to save balance entry. Please try again.');
+        setToast({
+          visible: true,
+          message: 'Failed to save balance entry. Please try again.',
+          type: 'error'
+        });
       }
     } finally {
       setLoading(false);
@@ -235,12 +249,11 @@ export default function AddBalanceScreen() {
           {/* Date */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Date</Text>
-            <TouchableOpacity style={styles.dateInput} disabled={loading}>
-              <Text style={styles.dateText}>
-                {formatDateForDisplay(formData.date)}
-              </Text>
-              <Ionicons name="calendar-outline" size={20} color={colors.text.secondary} />
-            </TouchableOpacity>
+            <DatePicker
+              value={formData.date}
+              onDateChange={(date) => setFormData({ ...formData, date })}
+              disabled={loading}
+            />
             <Text style={styles.helperText}>
               Note: Only one balance entry per date is allowed per account
             </Text>
@@ -311,6 +324,13 @@ export default function AddBalanceScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onDismiss={() => setToast({ ...toast, visible: false })}
+      />
     </Animated.View>
   );
 }
@@ -406,21 +426,6 @@ const styles = StyleSheet.create({
   currentBalance: {
     fontSize: 13,
     color: colors.text.tertiary,
-  },
-  dateInput: {
-    backgroundColor: colors.background.tertiary,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border.primary,
-    minHeight: 52,
-  },
-  dateText: {
-    fontSize: 16,
-    color: colors.text.primary,
   },
   amountContainer: {
     flexDirection: 'row',

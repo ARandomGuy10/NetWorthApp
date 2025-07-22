@@ -113,6 +113,8 @@ export default function AccountDetailScreen() {
           onPress: async () => {
             try {
               await deleteBalanceEntry(supabase, selectedBalance.id);
+              // Update state immediately and reload
+              setBalances(prev => prev.filter(b => b.id !== selectedBalance.id));
               loadAccountData();
             } catch (error) {
               console.error('Error deleting balance:', error);
@@ -206,8 +208,19 @@ export default function AccountDetailScreen() {
         <TouchableOpacity
           style={styles.headerButton}
           onPress={() => router.push({
-            pathname: '/add-account',
-            params: { accountId: id, mode: 'edit' }
+            pathname: '/add-account', 
+            params: { 
+              accountId: id, 
+              mode: 'edit',
+              accountData: JSON.stringify({
+                name: account.name,
+                type: account.type,
+                category: account.category,
+                currency: account.currency,
+                institution: account.institution,
+                include_in_net_worth: account.include_in_net_worth
+              })
+            }
           })}
           activeOpacity={0.7}
         >

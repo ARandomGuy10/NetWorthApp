@@ -13,20 +13,24 @@ import { // Added Animated
   Animated // Import Animated
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { createAccount, ACCOUNT_CATEGORIES, CURRENCIES } from '../src/services/accountService';
+import { createAccount, updateAccount, ACCOUNT_CATEGORIES, CURRENCIES } from '../src/services/accountService';
 import { useSupabase } from '../hooks/useSupabase';
 import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
 import CustomPicker from '../components/ui/CustomPicker';
 import Switch from '../components/ui/Switch';
+import Toast from '../components/ui/Toast';
 import { useCurrentUserId } from '../hooks/useCurrentUserId';
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { accountId, mode, accountData } = useLocalSearchParams();
   const supabase = useSupabase();
   const userId = useCurrentUserId();
+  
+  const isEditMode = mode === 'edit' && accountId;
   
   const [formData, setFormData] = useState({
     name: '',
@@ -39,6 +43,8 @@ export default function AddAccountScreen() {
   });
   
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(isEditMode);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
   const fadeAnim = useRef(new Animated.Value(0)).current; // Use useRef for Animated.Value
 
   useEffect(() => { // Changed from React.useEffect to useEffect
@@ -48,6 +54,28 @@ export default function AddAccountScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  // Load existing account data for edit mode
+  useEffect(() => {
+    if (isEditMode && accountData) {
+      try {
+        const parsedData = JSON.parse(accountData);
+        setFormData({
+          name: parsedData.name || '',
+          type: parsedData.type || 'asset',
+          category: parsedData.category || '',
+          currency: parsedData.currency || 'EUR',
+          institution: parsedData.institution || '',
+          initial_balance: '', // Don't pre-fill balance for edit
+          include_in_net_worth: parsedData.include_in_net_worth !== false,
+        });
+      } catch (error) {
+        console.error('Error parsing account data:', error);
+      } finally {
+        setInitialLoading(false);
+      }
+    }
+  }, [isEditMode, accountData]);
 
   const handleSave = async () => {
     if (!supabase) {
@@ -68,22 +96,44 @@ export default function AddAccountScreen() {
     try {
       setLoading(true);
       
-      const accountData = {
+      const saveData = {
         ...formData,
         name: formData.name.trim(),
         institution: formData.institution.trim(),
-        initial_balance: parseFloat(formData.initial_balance) || 0,
-        user_id: userId
+        user_id: userId,
+        initial_balance: isEditMode ? 0 : (parseFloat(formData.initial_balance) || 0)
       };
 
-      await createAccount(supabase, accountData);
+      if (isEditMode) {
+        // Update existing account
+        const { initial_balance, user_id, ...updateData } = saveData;
+        await updateAccount(supabase, accountId, updateData);
+        
+        setToast({
+          visible: true,
+          message: 'Account updated successfully!',
+          type: 'success'
+        });
+        setTimeout(() => router.back(), 1500);
+      } else {
+        // Create new account
+        await createAccount(supabase, saveData);
+        
+        setToast({
+          visible: true,
+          message: 'Account created successfully!',
+          type: 'success'
+        });
+        setTimeout(() => router.back(), 1500);
+      }
       
-      Alert.alert('Success', 'Account created successfully', [
-        { text: 'OK', onPress: () => router.back() }
-      ]);
     } catch (error) {
-      console.error('Error creating account:', error);
-      Alert.alert('Error', 'Failed to create account. Please try again.');
+      console.error('Error saving account:', error);
+      setToast({
+        visible: true,
+        message: `Failed to ${isEditMode ? 'update' : 'create'} account. Please try again.`,
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -99,11 +149,13 @@ export default function AddAccountScreen() {
     value: currency
   }));
 
-  if (!supabase) {
+  if (!supabase || initialLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Connecting...</Text>
+        <Text style={styles.loadingText}>
+          {!supabase ? 'Connecting...' : 'Loading account...'}
+        </Text>
       </View>
     );
   }
@@ -123,7 +175,9 @@ export default function AddAccountScreen() {
           >
             <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Account</Text>
+          <Text style={styles.headerTitle}>
+            {isEditMode ? 'Edit Account' : 'Add Account'}
+          </Text>
           <View style={styles.placeholder} />
         </View>
 
@@ -270,7 +324,9 @@ export default function AddAccountScreen() {
             {loading ? (
               <ActivityIndicator color={colors.text.inverse} />
             ) : (
-              <Text style={styles.saveButtonText}>Save Account</Text>
+              <Text style={styles.saveButtonText}>
+                {isEditMode ? 'Update Account' : 'Save Account'}
+              </Text>
             )}
           </TouchableOpacity>
           {/* Cancel Button */}
@@ -284,6 +340,13 @@ export default function AddAccountScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+      
+      <Toast
+        visible={toast.visible}
+        message={toast.message}
+        type={toast.type}
+        onDismiss={() => setToast({ ...toast, visible: false })}
+      />
     </Animated.View>
   );
 }

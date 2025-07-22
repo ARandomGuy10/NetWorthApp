@@ -137,6 +137,30 @@ export const updateAccount = async (supabase: SupabaseClient, accountId: string,
 };
 
 /**
+ * Update an existing account
+ * @param supabase - Supabase client instance
+ * @param accountId - Account ID
+ * @param updates - Fields to update
+ * @returns Promise<Object> Updated account
+ */
+export const updateAccount = async (supabase: SupabaseClient, accountId: string, updates: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('accounts')
+      .update(updates)
+      .eq('id', accountId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating account:', error);
+    throw error;
+  }
+};
+
+/**
  * Delete an account and all its balance entries
  * @param supabase - Supabase client instance
  * @param accountId - Account ID
