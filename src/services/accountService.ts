@@ -87,7 +87,8 @@ export const createAccount = async (supabase: SupabaseClient, accountData: any) 
         currency: accountData.currency || 'EUR',
         category: accountData.category,
         institution: accountData.institution || '',
-        include_in_net_worth: accountData.include_in_net_worth !== false
+        include_in_net_worth: accountData.include_in_net_worth !== false,
+        user_id: accountData.user_id
       }])
       .select()
       .single();

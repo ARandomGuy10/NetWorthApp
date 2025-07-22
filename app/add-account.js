@@ -20,11 +20,13 @@ import { useSupabase } from '../hooks/useSupabase';
 import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
 import CustomPicker from '../components/ui/CustomPicker';
 import Switch from '../components/ui/Switch';
+import { useCurrentUserId } from '../hooks/useCurrentUserId';
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const supabase = useSupabase();
+  const userId = useCurrentUserId();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -70,7 +72,8 @@ export default function AddAccountScreen() {
         ...formData,
         name: formData.name.trim(),
         institution: formData.institution.trim(),
-        initial_balance: parseFloat(formData.initial_balance) || 0
+        initial_balance: parseFloat(formData.initial_balance) || 0,
+        user_id: userId
       };
 
       await createAccount(supabase, accountData);
