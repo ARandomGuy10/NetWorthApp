@@ -18,7 +18,6 @@ import { formatCurrency } from '../../src/services/dashboardService';
 import { useSupabase } from '../../hooks/useSupabase';
 import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
 import ActionMenu from '../../components/ui/ActionMenu';
-import { useFocusEffect } from '@react-navigation/native';
 
 
 function AccountsScreen() {
@@ -34,15 +33,15 @@ function AccountsScreen() {
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // Use focus effect to refresh data when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      if (supabase) {
-        setLoading(true);
-        loadAccounts();
-      }
-    }, [supabase, loadAccounts])
-  );
+  // Load accounts when component mounts or supabase becomes available
+  useEffect(() => {
+    if (supabase) {
+      console.log('Supabase available, loading accounts...');
+      loadAccounts();
+    } else {
+      console.log('Supabase not available yet...');
+    }
+  }, [supabase]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -52,29 +51,36 @@ function AccountsScreen() {
     }).start();
   }, []);
 
-  const loadAccounts = useCallback(async (showLoading = false) => {
+  const loadAccounts = async (showRefreshing = false) => {
     if (!supabase) {
-      if (showLoading) setLoading(false);
-      setRefreshing(false);
+      console.log('No supabase client available');
+      setLoading(false);
       return;
     }
     
     try {
+      console.log('Loading accounts...');
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      
       const accountsData = await getUserAccounts(supabase);
+      console.log('Accounts loaded:', accountsData.length);
       setAccounts(accountsData);
     } catch (error) {
       console.error('Error loading accounts:', error);
       Alert.alert('Error', 'Failed to load accounts');
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
       setRefreshing(false);
     }
-  }, [supabase]);
+  };
 
   const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    loadAccounts(false);
-  }, [loadAccounts]);
+    loadAccounts(true);
+  }, [supabase]);
 
   const handleAccountMenu = (account, event) => {
     const { pageY } = event.nativeEvent;
@@ -108,7 +114,8 @@ function AccountsScreen() {
               await deleteAccount(supabase, selectedAccount.id);
               // Immediately update state and reload
               setAccounts(prev => prev.filter(acc => acc.id !== selectedAccount.id));
-              loadAccounts(false);
+              // Optionally reload to ensure consistency
+              setTimeout(() => loadAccounts(), 100);
             } catch (error) {
               console.error('Error deleting account:', error);
               Alert.alert('Error', 'Failed to delete account');
@@ -196,7 +203,9 @@ function AccountsScreen() {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>{!supabase ? 'Connecting to database...' : 'Loading accounts...'}</Text>
+        <Text style={styles.loadingText}>
+          {!supabase ? 'Connecting to database...' : 'Loading accounts...'}
+        </Text>
       </View>
     );
   }
