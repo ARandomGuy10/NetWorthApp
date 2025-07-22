@@ -17,6 +17,7 @@ import { getUserAccounts, deleteAccount, ACCOUNT_CATEGORIES } from '../../src/se
 import { formatCurrency } from '../../src/services/dashboardService';
 import { useSupabase } from '../../hooks/useSupabase';
 import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
+import ActionMenu from '../../components/ui/ActionMenu';
 
 
 function AccountsScreen() {
@@ -26,6 +27,9 @@ function AccountsScreen() {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState(null);
+  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -69,10 +73,28 @@ function AccountsScreen() {
     loadAccounts();
   }, [loadAccounts]);
 
-  const handleDeleteAccount = (account) => {
+  const handleAccountMenu = (account, event) => {
+    const { pageY } = event.nativeEvent;
+    setSelectedAccount(account);
+    setMenuPosition({ x: 0, y: pageY - 100 });
+    setMenuVisible(true);
+  };
+
+  const handleEditAccount = () => {
+    if (selectedAccount) {
+      router.push({
+        pathname: '/add-account',
+        params: { accountId: selectedAccount.id, mode: 'edit' }
+      });
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    if (!selectedAccount) return;
+
     Alert.alert(
       'Delete Account',
-      `Are you sure you want to delete "${account.name}"? This will also delete all balance entries for this account.`,
+      `Are you sure you want to delete "${selectedAccount.name}"? This will also delete all balance entries for this account.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -80,7 +102,7 @@ function AccountsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteAccount(supabase, account.id);
+              await deleteAccount(supabase, selectedAccount.id);
               loadAccounts();
             } catch (error) {
               console.error('Error deleting account:', error);
@@ -105,6 +127,29 @@ function AccountsScreen() {
 
   const totalAssets = assetAccounts.reduce((sum, account) => sum + account.current_balance, 0);
   const totalLiabilities = liabilityAccounts.reduce((sum, account) => sum + account.current_balance, 0);
+
+  const accountMenuActions = [
+    {
+      title: 'View Details',
+      icon: 'eye-outline',
+      onPress: () => {
+        if (selectedAccount) {
+          router.push(`/account/${selectedAccount.id}`);
+        }
+      },
+    },
+    {
+      title: 'Edit Account',
+      icon: 'create-outline',
+      onPress: handleEditAccount,
+    },
+    {
+      title: 'Delete Account',
+      icon: 'trash-outline',
+      destructive: true,
+      onPress: handleDeleteAccount,
+    },
+  ];
 
   const getAccountIcon = (category) => {
     const iconMap = {
@@ -201,7 +246,7 @@ function AccountsScreen() {
                     style={styles.moreButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleDeleteAccount(account);
+                      handleAccountMenu(account, e);
                     }}
                   >
                     <Ionicons name="ellipsis-horizontal" size={16} color={colors.text.tertiary} />
@@ -257,7 +302,7 @@ function AccountsScreen() {
                     style={styles.moreButton}
                     onPress={(e) => {
                       e.stopPropagation();
-                      handleDeleteAccount(account);
+                      handleAccountMenu(account, e);
                     }}
                   >
                     <Ionicons name="ellipsis-horizontal" size={16} color={colors.text.tertiary} />
@@ -289,6 +334,13 @@ function AccountsScreen() {
           <Text style={styles.addAccountText}>Add New Account</Text>
         </TouchableOpacity>
       </ScrollView>
+
+      <ActionMenu
+        visible={menuVisible}
+        onClose={() => setMenuVisible(false)}
+        actions={accountMenuActions}
+        anchorPosition={menuPosition}
+      />
     </Animated.View>
   );
 }
