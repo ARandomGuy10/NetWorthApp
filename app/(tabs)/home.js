@@ -10,11 +10,11 @@ import {
   Dimensions,
   Animated,
   PanResponder,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { VictoryChart, VictoryLine, VictoryArea, VictoryAxis, VictoryTooltip, VictoryScatter } from 'victory-native';
 import { useSupabase } from '../../hooks/useSupabase';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { getCurrentUserProfile } from '../../src/services/profileService';
@@ -25,6 +25,18 @@ import {
   formatCurrency 
 } from '../../src/services/dashboardService';
 import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
+
+// Conditionally import Victory components only for non-web platforms
+let VictoryChart, VictoryLine, VictoryArea, VictoryAxis, VictoryTooltip, VictoryScatter;
+if (Platform.OS !== 'web') {
+  const Victory = require('victory-native');
+  VictoryChart = Victory.VictoryChart;
+  VictoryLine = Victory.VictoryLine;
+  VictoryArea = Victory.VictoryArea;
+  VictoryAxis = Victory.VictoryAxis;
+  VictoryTooltip = Victory.VictoryTooltip;
+  VictoryScatter = Victory.VictoryScatter;
+}
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -307,7 +319,8 @@ export default function HomeScreen() {
           </View>
 
           {chartData && chartData.length > 0 ? (
-            <View style={styles.chartContainer}>
+            Platform.OS !== 'web' ? (
+              <View style={styles.chartContainer}>
               <VictoryChart
                 width={screenWidth - (spacing.xl * 2)}
                 height={280}
@@ -431,7 +444,28 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               )}
-            </View>
+              </View>
+            ) : (
+              <View style={styles.webChartFallback}>
+                <View style={styles.webChartIcon}>
+                  <Ionicons name="analytics-outline" size={48} color={colors.text.tertiary} />
+                </View>
+                <Text style={styles.webChartTitle}>Chart not available on web</Text>
+                <Text style={styles.webChartText}>
+                  Interactive charts are available on mobile devices
+                </Text>
+                <View style={styles.webChartData}>
+                  {chartData.map((item, index) => (
+                    <View key={index} style={styles.webChartDataItem}>
+                      <Text style={styles.webChartDataLabel}>{item.label}</Text>
+                      <Text style={styles.webChartDataValue}>
+                        {formatCurrency(item.value, netWorthData?.currency || 'EUR')}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )
           ) : (
             <View style={styles.emptyChart}>
               <View style={styles.emptyChartIcon}>
@@ -860,5 +894,46 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'transparent',
+  },
+  webChartFallback: {
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  webChartIcon: {
+    marginBottom: spacing.lg,
+    opacity: 0.6,
+  },
+  webChartTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginBottom: spacing.sm,
+  },
+  webChartText: {
+    fontSize: 14,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+  },
+  webChartData: {
+    width: '100%',
+    maxHeight: 200,
+  },
+  webChartDataItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.primary,
+  },
+  webChartDataLabel: {
+    fontSize: 14,
+    color: colors.text.secondary,
+  },
+  webChartDataValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
 });
