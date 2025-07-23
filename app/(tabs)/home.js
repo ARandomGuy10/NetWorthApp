@@ -36,6 +36,15 @@ if (Platform.OS !== 'web') {
   VictoryAxis = Victory.VictoryAxis;
   VictoryTooltip = Victory.VictoryTooltip;
   VictoryScatter = Victory.VictoryScatter;
+} else {
+  // Provide dummy components for web to prevent undefined errors
+  const DummyComponent = () => null;
+  VictoryChart = DummyComponent;
+  VictoryLine = DummyComponent;
+  VictoryArea = DummyComponent;
+  VictoryAxis = DummyComponent;
+  VictoryTooltip = DummyComponent;
+  VictoryScatter = DummyComponent;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
