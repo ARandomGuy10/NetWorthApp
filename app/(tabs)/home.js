@@ -158,7 +158,7 @@ export default function HomeScreen() {
   };
 
   const closeFab = () => {
-    if (fabVisible) {
+        if (fabVisible) {
       Animated.parallel([
         Animated.timing(fabRotation, {
           toValue: 0,
@@ -177,13 +177,12 @@ export default function HomeScreen() {
   };
 
   const handleFabAction = (action) => {
-    closeFab();
-
-    if (action === 'account') {
-      router.push('/add-account');
-    } else if (action === 'balance') {
-      router.push('/add-balance');
-    }
+      if (action === 'account') {
+        router.push('/add-account');
+      } else if (action === 'balance') {
+        router.push('/add-balance');
+      }
+      closeFab();
   };
 
   // Create PanResponder to handle touches outside FAB
@@ -530,6 +529,15 @@ export default function HomeScreen() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
+       {/* Overlay for FAB */}
+       {fabVisible && (
+        <TouchableOpacity
+          style={styles.fabOverlay}
+          activeOpacity={1}
+          onPress={closeFab}
+        />
+      )}
+
       {/* Enhanced Floating Action Button */}
       <View style={styles.fabContainer}>
         {/* FAB Options */}
@@ -583,14 +591,6 @@ export default function HomeScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Overlay for FAB */}
-      {fabVisible && (
-        <TouchableOpacity
-          style={styles.fabOverlay}
-          activeOpacity={1}
-          onPress={closeFab}
-        />
-      )}
     </Animated.View>
   );
 }
