@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
 
 /**
  * Initial route component that handles the app's initial routing
- * based on authentication state.
+ * based on authentication state and platform.
  */
 export default function Index() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -15,12 +15,20 @@ export default function Index() {
     
     // Use setTimeout to ensure navigation happens after initial render
     const timer = setTimeout(() => {
-      if (isSignedIn) {
-        console.log('User is signed in, redirecting to /(tabs)/home');
-        router.replace('/(tabs)/home');
+      if (Platform.OS === 'web') {
+        // On web, redirect to landing page
+        if (!window.location.pathname.startsWith('/landing')) {
+          router.replace('/landing');
+        }
       } else {
-        console.log('User is not signed in, redirecting to /(auth)/welcome');
-        router.replace('/(auth)/welcome');
+        // On mobile, use the existing auth flow
+        if (isSignedIn) {
+          console.log('User is signed in, redirecting to /(tabs)/home');
+          router.replace('/(tabs)/home');
+        } else {
+          console.log('User is not signed in, redirecting to /(auth)/welcome');
+          router.replace('/(auth)/welcome');
+        }
       }
     }, 0);
     

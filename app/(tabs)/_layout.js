@@ -2,8 +2,8 @@ import { Tabs } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import { View, ActivityIndicator, Text } from 'react-native';
+import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar'; // Import the new CustomBottomTabBar
 
 /**
  * Tabs layout component that shows the main app navigation.
@@ -33,58 +33,35 @@ export default function TabsLayout() {
 
   // Render the tab navigator for authenticated users
   return (
-    <Tabs screenOptions={{
-      headerShown: false,
-      tabBarActiveTintColor: '#007AFF',
-      tabBarInactiveTintColor: '#8E8E93',
-      tabBarStyle: {
-        borderTopWidth: 1,
-        borderTopColor: '#E5E5EA',
-        backgroundColor: '#FFFFFF',
-        height: 60,
-        paddingBottom: 8,
-        paddingTop: 8,
-      },
-      tabBarLabelStyle: {
-        fontSize: 12,
-        fontWeight: '500',
-        marginTop: 4,
-      },
-    }}>
+    <Tabs 
+      tabBar={(props) => <CustomBottomTabBar {...props} />} // Use the custom CustomBottomTabBar
+      screenOptions={{
+        headerShown: false,
+        tabBarShowLabel: false, // Explicitly hide all tab bar labels
+      }}
+    >
       <Tabs.Screen 
         name="home" 
         options={{
-          title: 'Dashboard',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
+          title: undefined,
         }}
       />
       <Tabs.Screen 
         name="accounts" 
         options={{
-          title: 'Accounts',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="wallet-outline" size={size} color={color} />
-          ),
+          title: undefined,
         }}
       />
       <Tabs.Screen 
         name="analytics" 
         options={{
-          title: 'Analytics',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="pie-chart-outline" size={size} color={color} />
-          ),
+          title: undefined,
         }}
       />
       <Tabs.Screen 
         name="profile" 
         options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
+          title: undefined,
         }}
       />
     </Tabs>

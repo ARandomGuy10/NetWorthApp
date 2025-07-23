@@ -16,6 +16,7 @@ export const colors = {
     tertiary: '#1C1C1E',
     card: '#1E1E20',
     elevated: '#252527',
+    navBarBackground: '#1E1E20', // New color for navigation bar background
   },
   
   // Text Colors

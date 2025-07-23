@@ -539,7 +539,7 @@ export default function HomeScreen() {
       )}
 
       {/* Enhanced Floating Action Button */}
-      <View style={styles.fabContainer}>
+      <View style={[styles.fabContainer, { bottom: 70 + insets.bottom + spacing.xl }]}>
         {/* FAB Options */}
         {fabVisible && (
           <Animated.View 
@@ -852,9 +852,9 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: 'absolute',
-    bottom: spacing.xl + 20,
     right: spacing.xl,
     alignItems: 'flex-end',
+    zIndex: 10, // Ensure it's on top
   },
   fabOptions: {
     marginBottom: spacing.md,
