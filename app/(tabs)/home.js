@@ -9,12 +9,12 @@ import {
   ActivityIndicator,
   Dimensions,
   Animated,
+  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LineChart } from 'react-native-chart-kit';
-import Modal from 'react-native-modal';
+import { VictoryChart, VictoryLine, VictoryArea, VictoryAxis, VictoryTooltip, VictoryScatter } from 'victory-native';
 import { useSupabase } from '../../hooks/useSupabase';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { getCurrentUserProfile } from '../../src/services/profileService';
@@ -40,16 +40,17 @@ export default function HomeScreen() {
   const [dailyChange, setDailyChange] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [chartViewMode, setChartViewMode] = useState('absolute'); // 'absolute' or 'percentage'
   const [fabVisible, setFabVisible] = useState(false);
+  const [selectedDataPoint, setSelectedDataPoint] = useState(null);
   
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const fabRotation = useRef(new Animated.Value(0)).current;
+  const fabScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 300,
+      duration: 500,
       useNativeDriver: true,
     }).start();
   }, []);
@@ -81,7 +82,7 @@ export default function HomeScreen() {
       
       // Process chart data
       if (history && history.length > 0) {
-        const processedData = processChartData(history, chartViewMode);
+        const processedData = processChartData(history);
         setChartData(processedData);
       }
 
@@ -91,7 +92,7 @@ export default function HomeScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [supabase, userId, chartViewMode]);
+  }, [supabase, userId]);
 
   useEffect(() => {
     if (supabase && userId) {
@@ -99,45 +100,21 @@ export default function HomeScreen() {
     }
   }, [supabase, userId, loadDashboardData]);
 
-  const processChartData = (history, viewMode) => {
+  const processChartData = (history) => {
     if (!history || history.length === 0) return null;
 
-    const labels = history.map(item => item.month);
-    let datasets;
-
-    if (viewMode === 'percentage') {
-      const firstValue = history[0].value;
-      const percentageData = history.map(item => 
-        firstValue !== 0 ? ((item.value - firstValue) / Math.abs(firstValue)) * 100 : 0
-      );
-      
-      datasets = [{
-        data: percentageData,
-        color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-        strokeWidth: 3,
-      }];
-    } else {
-      datasets = [{
-        data: history.map(item => item.value),
-        color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-        strokeWidth: 3,
-      }];
-    }
-
-    return {
-      labels,
-      datasets,
-    };
+    return history.map((item, index) => ({
+      x: index + 1,
+      y: item.value,
+      label: item.month,
+      date: item.date,
+      value: item.value
+    }));
   };
 
   const onRefresh = useCallback(() => {
     loadDashboardData(true);
   }, [loadDashboardData]);
-
-  const toggleChartView = () => {
-    const newMode = chartViewMode === 'absolute' ? 'percentage' : 'absolute';
-    setChartViewMode(newMode);
-  };
 
   const toggleFab = () => {
     const toValue = fabVisible ? 0 : 1;
@@ -145,7 +122,13 @@ export default function HomeScreen() {
     Animated.parallel([
       Animated.timing(fabRotation, {
         toValue,
-        duration: 200,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(fabScale, {
+        toValue: fabVisible ? 1 : 0.9,
+        tension: 100,
+        friction: 8,
         useNativeDriver: true,
       }),
     ]).start();
@@ -153,13 +136,27 @@ export default function HomeScreen() {
     setFabVisible(!fabVisible);
   };
 
+  const closeFab = () => {
+    if (fabVisible) {
+      Animated.parallel([
+        Animated.timing(fabRotation, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(fabScale, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      setFabVisible(false);
+    }
+  };
+
   const handleFabAction = (action) => {
-    setFabVisible(false);
-    Animated.timing(fabRotation, {
-      toValue: 0,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
+    closeFab();
 
     if (action === 'account') {
       router.push('/add-account');
@@ -167,6 +164,32 @@ export default function HomeScreen() {
       router.push('/add-balance');
     }
   };
+
+  // Create PanResponder to handle touches outside FAB
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => fabVisible,
+    onMoveShouldSetPanResponder: () => false,
+    onPanResponderGrant: () => {
+      closeFab();
+    },
+  });
+
+  const getNetWorthTrend = () => {
+    if (!chartData || chartData.length < 2) return null;
+    
+    const current = chartData[chartData.length - 1].y;
+    const previous = chartData[chartData.length - 2].y;
+    const change = current - previous;
+    const percentChange = previous !== 0 ? (change / Math.abs(previous)) * 100 : 0;
+    
+    return {
+      change,
+      percentChange,
+      isPositive: change >= 0
+    };
+  };
+
+  const trend = getNetWorthTrend();
 
   if (loading || !supabase) {
     return (
@@ -177,45 +200,23 @@ export default function HomeScreen() {
     );
   }
 
-  const chartConfig = {
-    backgroundColor: colors.background.card,
-    backgroundGradientFrom: colors.background.card,
-    backgroundGradientTo: colors.background.card,
-    decimalPlaces: chartViewMode === 'percentage' ? 1 : 0,
-    color: (opacity = 1) => `rgba(78, 205, 196, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-    style: {
-      borderRadius: borderRadius.md,
-    },
-    propsForDots: {
-      r: "4",
-      strokeWidth: "2",
-      stroke: colors.primary
-    },
-    propsForBackgroundLines: {
-      strokeDasharray: "",
-      stroke: colors.border.primary,
-      strokeWidth: 1
-    },
-    formatYLabel: (value) => {
-      if (chartViewMode === 'percentage') {
-        return `${parseFloat(value).toFixed(1)}%`;
-      }
-      return formatCurrency(parseFloat(value), profile?.preferred_currency || 'EUR');
-    }
-  };
-
   const fabRotationStyle = {
-    transform: [{
-      rotate: fabRotation.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['0deg', '45deg']
-      })
-    }]
+    transform: [
+      {
+        rotate: fabRotation.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '45deg']
+        })
+      },
+      { scale: fabScale }
+    ]
   };
 
   return (
-    <Animated.View style={[styles.container, { paddingTop: insets.top, opacity: fadeAnim }]}>
+    <Animated.View 
+      style={[styles.container, { paddingTop: insets.top, opacity: fadeAnim }]}
+      {...panResponder.panHandlers}
+    >
       {/* Header */}
       <View style={styles.header}>
         <View>
@@ -250,19 +251,24 @@ export default function HomeScreen() {
             </Text>
           </View>
           
-          {dailyChange && (
+          {trend && (
             <View style={styles.changeContainer}>
-              <Ionicons
-                name={dailyChange.isPositive ? 'trending-up' : 'trending-down'}
-                size={16}
-                color={dailyChange.isPositive ? colors.success : colors.error}
-              />
+              <View style={[
+                styles.changeIndicator,
+                { backgroundColor: trend.isPositive ? colors.success : colors.error }
+              ]}>
+                <Ionicons
+                  name={trend.isPositive ? 'trending-up' : 'trending-down'}
+                  size={16}
+                  color={colors.text.inverse}
+                />
+              </View>
               <Text style={[
                 styles.changeText,
-                { color: dailyChange.isPositive ? colors.success : colors.error }
+                { color: trend.isPositive ? colors.success : colors.error }
               ]}>
-                {dailyChange.isPositive ? '+' : ''}{formatCurrency(dailyChange.change, netWorthData?.currency || 'EUR')} 
-                ({dailyChange.percentageChange.toFixed(2)}%) today
+                {trend.isPositive ? '+' : ''}{formatCurrency(trend.change, netWorthData?.currency || 'EUR')} 
+                ({trend.percentChange.toFixed(1)}%) from last month
               </Text>
             </View>
           )}
@@ -270,58 +276,177 @@ export default function HomeScreen() {
           {netWorthData && (
             <View style={styles.breakdownContainer}>
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>Assets</Text>
+                <View style={styles.breakdownHeader}>
+                  <View style={[styles.breakdownDot, { backgroundColor: colors.asset }]} />
+                  <Text style={styles.breakdownLabel}>Assets</Text>
+                </View>
                 <Text style={[styles.breakdownValue, { color: colors.asset }]}>
                   {formatCurrency(netWorthData.totalAssets, netWorthData.currency)}
                 </Text>
               </View>
               <View style={styles.breakdownItem}>
-                <Text style={styles.breakdownLabel}>Liabilities</Text>
+                <View style={styles.breakdownHeader}>
+                  <View style={[styles.breakdownDot, { backgroundColor: colors.liability }]} />
+                  <Text style={styles.breakdownLabel}>Liabilities</Text>
+                </View>
                 <Text style={[styles.breakdownValue, { color: colors.liability }]}>
-                  -{formatCurrency(netWorthData.totalLiabilities, netWorthData.currency)}
+                  {formatCurrency(netWorthData.totalLiabilities, netWorthData.currency)}
                 </Text>
               </View>
             </View>
           )}
         </View>
 
-        {/* Chart Section */}
+        {/* Interactive Chart Section */}
         <View style={styles.chartSection}>
           <View style={styles.chartHeader}>
             <Text style={styles.chartTitle}>Net Worth Progression</Text>
-            <TouchableOpacity
-              style={styles.chartToggle}
-              onPress={toggleChartView}
-            >
-              <Text style={styles.chartToggleText}>
-                {chartViewMode === 'absolute' ? 'Show %' : 'Show €'}
-              </Text>
-            </TouchableOpacity>
+            <View style={styles.chartPeriod}>
+              <Text style={styles.chartPeriodText}>Last 12 months</Text>
+            </View>
           </View>
 
-          {chartData && chartData.datasets[0].data.length > 0 ? (
+          {chartData && chartData.length > 0 ? (
             <View style={styles.chartContainer}>
-              <LineChart
-                data={chartData}
+              <VictoryChart
                 width={screenWidth - (spacing.xl * 2)}
-                height={220}
-                chartConfig={chartConfig}
-                bezier
-                style={styles.chart}
-                withInnerLines={true}
-                withOuterLines={false}
-                withVerticalLines={false}
-                withHorizontalLines={true}
-                fromZero={chartViewMode === 'percentage'}
-              />
+                height={280}
+                padding={{ left: 60, top: 20, right: 40, bottom: 60 }}
+                theme={{
+                  axis: {
+                    style: {
+                      axis: { stroke: colors.border.primary },
+                      tickLabels: { 
+                        fill: colors.text.secondary, 
+                        fontSize: 12,
+                        fontFamily: 'System'
+                      },
+                      grid: { stroke: colors.border.primary, strokeWidth: 0.5 }
+                    }
+                  }
+                }}
+              >
+                {/* Gradient Area */}
+                <VictoryArea
+                  data={chartData}
+                  style={{
+                    data: {
+                      fill: `url(#gradient)`,
+                      fillOpacity: 0.1,
+                      stroke: colors.primary,
+                      strokeWidth: 0
+                    }
+                  }}
+                  animate={{
+                    duration: 1000,
+                    onLoad: { duration: 500 }
+                  }}
+                />
+                
+                {/* Main Line */}
+                <VictoryLine
+                  data={chartData}
+                  style={{
+                    data: { 
+                      stroke: colors.primary, 
+                      strokeWidth: 3,
+                      strokeLinecap: "round"
+                    }
+                  }}
+                  animate={{
+                    duration: 1000,
+                    onLoad: { duration: 500 }
+                  }}
+                />
+                
+                {/* Interactive Points */}
+                <VictoryScatter
+                  data={chartData}
+                  size={4}
+                  style={{
+                    data: { 
+                      fill: colors.primary,
+                      stroke: colors.background.card,
+                      strokeWidth: 2
+                    }
+                  }}
+                  labelComponent={
+                    <VictoryTooltip
+                      flyoutStyle={{
+                        fill: colors.background.elevated,
+                        stroke: colors.border.primary,
+                        strokeWidth: 1
+                      }}
+                      style={{
+                        fill: colors.text.primary,
+                        fontSize: 12,
+                        fontFamily: 'System'
+                      }}
+                    />
+                  }
+                  events={[{
+                    target: "data",
+                    eventHandlers: {
+                      onPressIn: (evt, targetProps) => {
+                        const { datum } = targetProps;
+                        setSelectedDataPoint(datum);
+                        return [
+                          {
+                            target: "data",
+                            mutation: () => ({ style: { fill: colors.primaryDark, r: 6 } })
+                          },
+                          {
+                            target: "labels",
+                            mutation: () => ({ 
+                              text: `${datum.label}\n${formatCurrency(datum.value, netWorthData?.currency || 'EUR')}` 
+                            })
+                          }
+                        ];
+                      }
+                    }
+                  }]}
+                />
+                
+                <VictoryAxis
+                  dependentAxis
+                  tickFormat={(value) => formatCurrency(value, netWorthData?.currency || 'EUR')}
+                  style={{
+                    tickLabels: { fontSize: 11, fill: colors.text.secondary }
+                  }}
+                />
+                
+                <VictoryAxis
+                  tickFormat={(x) => chartData[x - 1]?.label || ''}
+                  style={{
+                    tickLabels: { fontSize: 11, fill: colors.text.secondary, angle: -45 }
+                  }}
+                />
+              </VictoryChart>
+              
+              {selectedDataPoint && (
+                <View style={styles.chartTooltip}>
+                  <Text style={styles.tooltipDate}>{selectedDataPoint.label}</Text>
+                  <Text style={styles.tooltipValue}>
+                    {formatCurrency(selectedDataPoint.value, netWorthData?.currency || 'EUR')}
+                  </Text>
+                </View>
+              )}
             </View>
           ) : (
             <View style={styles.emptyChart}>
-              <Ionicons name="analytics-outline" size={48} color={colors.text.tertiary} />
+              <View style={styles.emptyChartIcon}>
+                <Ionicons name="analytics-outline" size={48} color={colors.text.tertiary} />
+              </View>
               <Text style={styles.emptyChartTitle}>No data yet</Text>
               <Text style={styles.emptyChartText}>
                 Add some accounts and balance entries to see your net worth progression
               </Text>
+              <TouchableOpacity
+                style={styles.emptyChartButton}
+                onPress={() => router.push('/add-account')}
+              >
+                <Text style={styles.emptyChartButtonText}>Get Started</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -333,6 +458,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={styles.actionCard}
               onPress={() => router.push('/(tabs)/accounts')}
+              activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.interactive.hover }]}>
                 <Ionicons name="wallet-outline" size={24} color={colors.primary} />
@@ -346,6 +472,7 @@ export default function HomeScreen() {
             <TouchableOpacity
               style={styles.actionCard}
               onPress={() => router.push('/(tabs)/analytics')}
+              activeOpacity={0.8}
             >
               <View style={[styles.actionIcon, { backgroundColor: colors.interactive.hover }]}>
                 <Ionicons name="pie-chart-outline" size={24} color={colors.primary} />
@@ -360,38 +487,47 @@ export default function HomeScreen() {
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-      {/* Floating Action Button */}
+      {/* Enhanced Floating Action Button */}
       <View style={styles.fabContainer}>
-        <Modal
-          isVisible={fabVisible}
-          onBackdropPress={toggleFab}
-          backdropOpacity={0}
-          animationIn="fadeIn"
-          animationOut="fadeOut"
-          style={styles.fabModal}
-        >
-          <View style={styles.fabOptions}>
-            <TouchableOpacity
-              style={styles.fabOption}
-              onPress={() => handleFabAction('account')}
-            >
-              <View style={styles.fabOptionIcon}>
-                <Ionicons name="wallet-outline" size={20} color={colors.text.inverse} />
-              </View>
-              <Text style={styles.fabOptionText}>Add Account</Text>
-            </TouchableOpacity>
-            
+        {/* FAB Options */}
+        {fabVisible && (
+          <Animated.View 
+            style={[
+              styles.fabOptions,
+              {
+                opacity: fabRotation,
+                transform: [{
+                  translateY: fabRotation.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0]
+                  })
+                }]
+              }
+            ]}
+          >
             <TouchableOpacity
               style={styles.fabOption}
               onPress={() => handleFabAction('balance')}
+              activeOpacity={0.8}
             >
               <View style={styles.fabOptionIcon}>
                 <Ionicons name="add-circle-outline" size={20} color={colors.text.inverse} />
               </View>
               <Text style={styles.fabOptionText}>Add Balance</Text>
             </TouchableOpacity>
-          </View>
-        </Modal>
+            
+            <TouchableOpacity
+              style={styles.fabOption}
+              onPress={() => handleFabAction('account')}
+              activeOpacity={0.8}
+            >
+              <View style={styles.fabOptionIcon}>
+                <Ionicons name="wallet-outline" size={20} color={colors.text.inverse} />
+              </View>
+              <Text style={styles.fabOptionText}>Add Account</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         <TouchableOpacity
           style={styles.fab}
@@ -403,6 +539,15 @@ export default function HomeScreen() {
           </Animated.View>
         </TouchableOpacity>
       </View>
+
+      {/* Overlay for FAB */}
+      {fabVisible && (
+        <TouchableOpacity
+          style={styles.fabOverlay}
+          activeOpacity={1}
+          onPress={closeFab}
+        />
+      )}
     </Animated.View>
   );
 }
@@ -442,6 +587,8 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     padding: spacing.sm,
+    borderRadius: 20,
+    backgroundColor: colors.interactive.hover,
   },
   scrollView: {
     flex: 1,
@@ -453,7 +600,7 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     borderWidth: 1,
     borderColor: colors.border.primary,
-    ...shadows.md,
+    ...shadows.lg,
   },
   summaryHeader: {
     alignItems: 'center',
@@ -463,22 +610,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.secondary,
     marginBottom: spacing.sm,
+    fontWeight: '500',
   },
   summaryAmount: {
     fontSize: 36,
     fontWeight: 'bold',
     color: colors.text.primary,
+    letterSpacing: -1,
   },
   changeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
+    backgroundColor: colors.background.tertiary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  changeIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
   },
   changeText: {
     fontSize: 14,
-    fontWeight: '500',
-    marginLeft: spacing.xs,
+    fontWeight: '600',
   },
   breakdownContainer: {
     flexDirection: 'row',
@@ -489,11 +649,23 @@ const styles = StyleSheet.create({
   },
   breakdownItem: {
     alignItems: 'center',
+    flex: 1,
+  },
+  breakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  breakdownDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: spacing.xs,
   },
   breakdownLabel: {
     fontSize: 13,
     color: colors.text.secondary,
-    marginBottom: spacing.xs,
+    fontWeight: '500',
   },
   breakdownValue: {
     fontSize: 16,
@@ -507,7 +679,7 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     borderWidth: 1,
     borderColor: colors.border.primary,
-    ...shadows.md,
+    ...shadows.lg,
   },
   chartHeader: {
     flexDirection: 'row',
@@ -520,33 +692,54 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
-  chartToggle: {
+  chartPeriod: {
     backgroundColor: colors.interactive.hover,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: borderRadius.sm,
   },
-  chartToggleText: {
-    fontSize: 13,
+  chartPeriodText: {
+    fontSize: 12,
     color: colors.primary,
     fontWeight: '500',
   },
   chartContainer: {
     alignItems: 'center',
+    position: 'relative',
   },
-  chart: {
-    marginVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+  chartTooltip: {
+    position: 'absolute',
+    top: 20,
+    right: 20,
+    backgroundColor: colors.background.elevated,
+    padding: spacing.md,
+    borderRadius: borderRadius.sm,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
+    ...shadows.md,
+  },
+  tooltipDate: {
+    fontSize: 12,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  tooltipValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: colors.text.primary,
   },
   emptyChart: {
     alignItems: 'center',
     padding: spacing.xxxl,
   },
+  emptyChartIcon: {
+    marginBottom: spacing.lg,
+    opacity: 0.6,
+  },
   emptyChartTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: colors.text.primary,
-    marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
   emptyChartText: {
@@ -554,6 +747,19 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
+    marginBottom: spacing.lg,
+  },
+  emptyChartButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    ...shadows.sm,
+  },
+  emptyChartButtonText: {
+    color: colors.text.inverse,
+    fontWeight: '600',
+    fontSize: 14,
   },
   quickActions: {
     paddingHorizontal: spacing.xl,
@@ -577,7 +783,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border.primary,
-    ...shadows.sm,
+    ...shadows.md,
   },
   actionIcon: {
     width: 48,
@@ -605,27 +811,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: spacing.xl + 20,
     right: spacing.xl,
-  },
-  fabModal: {
-    margin: 0,
-    justifyContent: 'flex-end',
     alignItems: 'flex-end',
   },
   fabOptions: {
-    marginBottom: 80,
-    marginRight: spacing.xl,
+    marginBottom: spacing.md,
   },
   fabOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.card,
+    backgroundColor: colors.background.elevated,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.md,
     marginBottom: spacing.sm,
     borderWidth: 1,
     borderColor: colors.border.primary,
-    ...shadows.md,
+    ...shadows.lg,
+    minWidth: 140,
   },
   fabOptionIcon: {
     width: 32,
@@ -649,5 +851,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...shadows.lg,
+    elevation: 8,
+  },
+  fabOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'transparent',
   },
 });
