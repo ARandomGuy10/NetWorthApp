@@ -45,6 +45,29 @@ export const getAccountBalances = async (supabase: SupabaseClient, accountId: st
 };
 
 /**
+ * Get a single balance entry by its ID
+ * @param supabase - Supabase client instance
+ * @param entryId - Balance entry ID
+ * @returns Promise<Object> Balance entry data
+ */
+export const getBalanceEntryById = async (supabase: SupabaseClient, entryId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('balance_entries')
+      .select('*')
+      .eq('id', entryId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error fetching balance entry:', error);
+    throw error;
+  }
+};
+
+
+/**
  * Update a balance entry
  * @param supabase - Supabase client instance
  * @param entryId - Balance entry ID

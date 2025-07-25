@@ -18,7 +18,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSupabase } from '../hooks/useSupabase';
 import { 
   createBalanceEntry, 
-  updateBalanceEntry} from '../src/services/balanceService';
+  updateBalanceEntry,
+  getBalanceEntryById,
+} from '../src/services/balanceService';
 import { getUserAccounts } from '../src/services/accountService';
 import { formatCurrency } from '../src/services/dashboardService';
 import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
@@ -60,7 +62,7 @@ export default function AddBalanceScreen() {
     if (supabase) {
       loadInitialData();
     }
-  }, [supabase]);
+  }, [supabase, isEditMode, balanceId]);
 
   const loadInitialData = async () => {
     try {
@@ -79,8 +81,17 @@ export default function AddBalanceScreen() {
 
       // If editing, load the balance entry data
       if (isEditMode) {
-        // In a real app, you'd have a getBalanceEntryById function
-        // For now, we'll just use the current form structure
+        const balanceEntry = await getBalanceEntryById(supabase, balanceId);
+        if (balanceEntry) {
+          setFormData({
+            account_id: balanceEntry.account_id,
+            amount: balanceEntry.amount.toString(),
+            date: balanceEntry.date,
+            notes: balanceEntry.notes || '',
+          });
+          const account = accountsData.find(acc => acc.id === balanceEntry.account_id);
+          setSelectedAccount(account);
+        }
       }
     } catch (error) {
       console.error('Error loading initial data:', error);
@@ -164,8 +175,8 @@ export default function AddBalanceScreen() {
   const formatDateForDisplay = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       weekday: 'short',
-      year: 'numeric',
-      month: 'short',
+      year: 'numeric', 
+      month: 'short', 
       day: 'numeric'
     });
   };
@@ -253,7 +264,7 @@ export default function AddBalanceScreen() {
               disabled={loading}
             />
             <Text style={styles.helperText}>
-              Note: Only one balance entry per date is allowed per account
+              Note: Only one balance entry per date is allowed per account.
             </Text>
           </View>
 
@@ -275,7 +286,7 @@ export default function AddBalanceScreen() {
               />
             </View>
             <Text style={styles.helperText}>
-              Enter the total balance amount (always positive)
+              Enter the total balance amount (always positive).
             </Text>
           </View>
 
@@ -488,7 +499,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxxl,
   },
   cancelButtonText: {
-    fontSize: 15,
     color: colors.text.secondary,
   },
 });
