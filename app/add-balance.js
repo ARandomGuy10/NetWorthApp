@@ -18,10 +18,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSupabase } from '../hooks/useSupabase';
 import { 
   createBalanceEntry, 
-  updateBalanceEntry, 
-  getUserAccounts,
-  getAccountById 
-} from '../src/services/accountService';
+  updateBalanceEntry} from '../src/services/balanceService';
+import { getUserAccounts } from '../src/services/accountService';
 import { formatCurrency } from '../src/services/dashboardService';
 import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
 import CustomPicker from '../components/ui/CustomPicker';
