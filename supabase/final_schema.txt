@@ -7,6 +7,16 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";  -- Enables gen_random_uuid()
 
 -- 1. Custom Types
+CREATE TYPE public.theme AS ENUM (
+  'LIGHT', 
+  'DARK', 
+  'SYSTEM', 
+  'MODERN_FINANCE', 
+  'WARM_LUXURY', 
+  'NEO_BANKING', 
+  'DARK_MODE_FOCUSED', 
+  'EARTHY_CALM'
+);
 CREATE TYPE public.account_type AS ENUM ('asset', 'liability');
 CREATE TYPE public.currency_code AS ENUM ('USD', 'EUR', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF');
 
@@ -27,7 +37,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   date_format VARCHAR(20) DEFAULT 'YYYY-MM-DD',
   last_sign_in_at timestamptz,
   created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+  updated_at timestamptz DEFAULT now(),
+  theme public.theme NOT NULL DEFAULT 'DARK'
 );
 
 -- 4. Accounts Table
