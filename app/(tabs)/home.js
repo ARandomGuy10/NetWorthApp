@@ -1,24 +1,15 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   ScrollView,
   RefreshControl,
   ActivityIndicator,
-  Animated,
-  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
 import { useSupabase } from '../../hooks/useSupabase';
 import { useCurrentUserId } from '../../hooks/useCurrentUserId';
 import { getCurrentUserProfile } from '../../src/services/profileService';
-import NetWorthSummaryCard from '../../components/home/NetWorthSummaryCard';
-import NetWorthChart from '../../components/home/NetWorthChart';
-import QuickActions from '../../components/home/QuickActions';
-import HomeFAB from '../../components/home/HomeFAB';
-import HomeHeader from '../../components/home/HomeHeader';
 import { 
   getNetWorthData, 
   getNetWorthHistory, 
@@ -26,32 +17,24 @@ import {
 } from '../../src/services/dashboardService';
 import { colors, spacing } from '../../src/styles/colors';
 
+// Import new modern components
+import ModernHomeHeader from '../../components/home/ModernHomeHeader';
+import ModernNetWorthChart from '../../components/home/ModernNetWorthChart';
+import AssetsLiabilitiesSection from '../../components/home/AssetsLiabilitiesSection';
+import AccountsList from '../../components/home/AccountsList';
+import ModernFAB from '../../components/home/ModernFAB';
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const router = useRouter();
   const supabase = useSupabase();
   const userId = useCurrentUserId();
   
   const [profile, setProfile] = useState(null);
   const [netWorthData, setNetWorthData] = useState(null);
   const [chartData, setChartData] = useState(null);
-  const [dailyChange, setDailyChange] = useState(null);
+  const [trend, setTrend] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [fabVisible, setFabVisible] = useState(false);
-  const [selectedDataPoint, setSelectedDataPoint] = useState(null);
-  
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const fabRotation = useRef(new Animated.Value(0)).current;
-  const fabScale = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
-  }, []);
 
   const loadDashboardData = useCallback(async (showRefreshing = false) => {
     if (!supabase || !userId) {
@@ -76,7 +59,7 @@ export default function HomeScreen() {
 
       setProfile(userProfile);
       setNetWorthData(netWorth);
-      setDailyChange(change);
+      setTrend(change);
       
       // Process chart data
       if (history && history.length > 0) {
@@ -114,128 +97,48 @@ export default function HomeScreen() {
     loadDashboardData(true);
   }, [loadDashboardData]);
 
-  const toggleFab = () => {
-    const toValue = fabVisible ? 0 : 1;
-    
-    Animated.parallel([
-      Animated.timing(fabRotation, {
-        toValue,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.spring(fabScale, {
-        toValue: fabVisible ? 1 : 0.9,
-        tension: 100,
-        friction: 8,
-        useNativeDriver: true,
-      }),
-    ]).start();
-    
-    setFabVisible(!fabVisible);
-  };
-
-  const closeFab = () => {
-        if (fabVisible) {
-      Animated.parallel([
-        Animated.timing(fabRotation, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(fabScale, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }),
-      ]).start();
-      setFabVisible(false);
-    }
-  };
-
-  const handleFabAction = (action) => {
-      if (action === 'account') {
-        router.push('/add-account');
-      } else if (action === 'balance') {
-        router.push('/add-balance');
-      }
-      closeFab();
-  };
-
-  // Create PanResponder to handle touches outside FAB
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => fabVisible,
-    onMoveShouldSetPanResponder: () => false,
-    onPanResponderGrant: () => {
-      closeFab();
-    },
-  });
-
-  const getNetWorthTrend = () => {
-    if (!chartData || chartData.length < 2) return null;
-    
-    const current = chartData[chartData.length - 1].y;
-    const previous = chartData[chartData.length - 2].y;
-    const change = current - previous;
-    const percentChange = previous !== 0 ? (change / Math.abs(previous)) * 100 : 0;
-    
-    return {
-      change,
-      percentChange,
-      isPositive: change >= 0
-    };
-  };
-
-  const trend = getNetWorthTrend();
-
   if (loading || !supabase) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading dashboard...</Text>
       </View>
     );
   }
 
   return (
-    <Animated.View 
-      style={[styles.container, { paddingTop: insets.top, opacity: fadeAnim }]}
-      {...panResponder.panHandlers}
-    >
-      <HomeHeader profile={profile} />
-
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
         showsVerticalScrollIndicator={false}
       >
-        <NetWorthSummaryCard netWorthData={netWorthData} trend={trend} />
-
-        <NetWorthChart 
-          chartData={chartData} 
+        <ModernHomeHeader 
+          profile={profile} 
           netWorthData={netWorthData} 
-          setSelectedDataPoint={setSelectedDataPoint} 
-          router={router} 
+          trend={trend} 
         />
 
-        <QuickActions netWorthData={netWorthData} />
+        <ModernNetWorthChart 
+          chartData={chartData} 
+          netWorthData={netWorthData} 
+        />
+
+        <AssetsLiabilitiesSection netWorthData={netWorthData} />
+
+        <AccountsList netWorthData={netWorthData} />
 
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
 
-       <HomeFAB 
-        fabVisible={fabVisible}
-        toggleFab={toggleFab}
-        closeFab={closeFab}
-        handleFabAction={handleFabAction}
-        fabRotation={fabRotation}
-        fabScale={fabScale}
-      />
-
-    </Animated.View>
+      <ModernFAB />
+    </View>
   );
 }
 
@@ -248,15 +151,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    marginTop: spacing.lg,
-    fontSize: 16,
-    color: colors.text.secondary,
-  },
   scrollView: {
     flex: 1,
   },
   bottomSpacing: {
-    height: 100,
+    height: 120,
   },
 });

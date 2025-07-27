@@ -5,25 +5,25 @@
 
 export const colors = {
   // Primary Brand Colors
-  primary: '#4ECDC4',
-  primaryDark: '#3BA99F',
-  primaryLight: '#6FD9D1',
+  primary: '#20E3B2',
+  primaryDark: '#1BC49A',
+  primaryLight: '#4AE8C2',
   
   // Background Colors
   background: {
-    primary: '#0A0A0A',
-    secondary: '#121212',
-    tertiary: '#1C1C1E',
-    card: '#1E1E20',
-    elevated: '#252527',
-    navBarBackground: '#1E1E20', // New color for navigation bar background
+    primary: '#0B0F2B',
+    secondary: '#0F1435',
+    tertiary: '#1A1F3F',
+    card: '#151A3A',
+    elevated: '#1F2449',
+    navBarBackground: '#0B0F2B',
   },
   
   // Text Colors
   text: {
-    primary: '#FFFFFF',
-    secondary: '#A9A9A9',
-    tertiary: '#8E8E93',
+    primary: '#FDFDFD',
+    secondary: '#E5E7EB',
+    tertiary: '#9CA3AF',
     disabled: '#636366',
     inverse: '#000000',
   },
@@ -31,24 +31,24 @@ export const colors = {
   // Semantic Colors
   success: '#34C759',
   warning: '#FF9500',
-  error: '#FF3B30',
-  info: '#007AFF',
+  error: '#FF6F61',
+  info: '#747FFD',
   
   // Asset/Liability Colors
-  asset: '#4ECDC4',
-  liability: '#FF6B6B',
+  asset: '#20E3B2',
+  liability: '#747FFD',
   
   // Border Colors
   border: {
-    primary: '#2C2C2E',
-    secondary: '#38383A',
-    focus: '#4ECDC4',
+    primary: '#1F2449',
+    secondary: '#2A3052',
+    focus: '#20E3B2',
   },
   
   // Interactive States
   interactive: {
-    hover: 'rgba(78, 205, 196, 0.1)',
-    pressed: 'rgba(78, 205, 196, 0.2)',
+    hover: 'rgba(32, 227, 178, 0.1)',
+    pressed: 'rgba(32, 227, 178, 0.2)',
     disabled: 'rgba(255, 255, 255, 0.1)',
   }
 };
