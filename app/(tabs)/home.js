@@ -61,6 +61,8 @@ export default function HomeScreen() {
       setNetWorthData(netWorth);
       setTrend(change);
       
+      console.log('Trend:', trend);
+      
       // Process chart data
       if (history && history.length > 0) {
         const processedData = processChartData(history);
