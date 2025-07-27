@@ -1,59 +1,146 @@
-import { Platform, StyleSheet, View, Text, Image, TouchableOpacity, Linking, Dimensions } from 'react-native';
+import React from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Dimensions,
+  Image,
+  Platform 
+} from 'react-native';
 import { Link, router } from 'expo-router';
-import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
 import { Ionicons } from '@expo/vector-icons';
+import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 export default function LandingPage() {
-  const handleDownload = () => {
-    const appStoreLink = Platform.select({
-      ios: 'https://apps.apple.com/app/your-app-id',
-      android: 'https://play.google.com/store/apps/details?id=your.package.name',
-      default: 'https://your-website.com/download'
-    });
-    Linking.openURL(appStoreLink);
+  const handleGetStarted = () => {
+    router.push('/(auth)/sign-up');
+  };
+
+  const handleLogin = () => {
+    router.push('/(auth)/sign-in');
   };
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Header Navigation */}
       <View style={styles.header}>
-        <Text style={styles.logo}>NetWorth</Text>
-        <Link href="/(auth)/sign-in" style={styles.signInButton}>
-          <Text style={styles.signInText}>Sign In</Text>
-        </Link>
+        <View style={styles.logo}>
+          <View style={styles.logoIcon}>
+            <Ionicons name="trending-up" size={24} color={colors.primary} />
+          </View>
+          <Text style={styles.logoText}>pocketrackr</Text>
+        </View>
+        
+        <View style={styles.nav}>
+          <TouchableOpacity style={styles.navItem}>
+            <Text style={styles.navText}>Features</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Text style={styles.navText}>Pricing</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <Text style={styles.navText}>About</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem} onPress={handleLogin}>
+            <Text style={styles.navText}>Login</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.getStartedButton} onPress={handleGetStarted}>
+            <Text style={styles.getStartedText}>Get Started</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Hero Section */}
-      <View style={styles.hero}>
-        <Text style={styles.heroTitle}>Track Your Net Worth</Text>
-        <Text style={styles.heroSubtitle}>Monitor your financial health with our powerful net worth tracker</Text>
-        
-        <TouchableOpacity style={styles.downloadButton} onPress={handleDownload}>
-          <Ionicons name="download-outline" size={20} color="white" style={styles.downloadIcon} />
-          <Text style={styles.downloadText}>Download the App</Text>
-        </TouchableOpacity>
-        
+      <View style={styles.heroSection}>
+        <View style={styles.heroContent}>
+          <Text style={styles.heroTitle}>
+            Track Your Wealth,{'\n'}
+            Visualize Your Growth
+          </Text>
+          
+          <Text style={styles.heroSubtitle}>
+            The smart way for young professionals to{'\n'}
+            monitor their net worth and achieve financial goals
+          </Text>
+          
+          <TouchableOpacity style={styles.downloadButton} onPress={handleGetStarted}>
+            <Text style={styles.downloadButtonText}>Download Now</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* App Preview Mockup */}
         <View style={styles.appPreview}>
           {/* Placeholder for app screenshot */}
           <View style={styles.phoneMockup}>
-            <View style={styles.phoneScreen}>
-              {/* App preview content */}
-              <View style={styles.chartPlaceholder} />
-              <View style={styles.statsContainer}>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>$0</Text>
-                  <Text style={styles.statLabel}>Net Worth</Text>
+            <View style={styles.phoneHeader}>
+              <View style={styles.logoIconSmall}>
+                <Ionicons name="trending-up" size={16} color={colors.primary} />
+              </View>
+              <Text style={styles.phoneLogoText}>pocketrackr</Text>
+            </View>
+            
+            <View style={styles.phoneButtons}>
+              <View style={styles.phoneButton}>
+                <Text style={styles.phoneButtonText}>Add Asset</Text>
+              </View>
+              <View style={styles.phoneButton}>
+                <Text style={styles.phoneButtonText}>Add Liability</Text>
+              </View>
+              <View style={styles.phoneButton}>
+                <Text style={styles.phoneButtonText}>Set Goal</Text>
+              </View>
+            </View>
+
+            <Text style={styles.phoneNetWorth}>$127,842</Text>
+            
+            {/* Chart placeholder */}
+            <View style={styles.phoneChart}>
+              <View style={styles.chartLine} />
+              <Text style={styles.chartPlaceholder}>
+                [PLACEHOLDER: Net Worth Chart Image]
+              </Text>
+            </View>
+
+            <View style={styles.phoneBreakdown}>
+              <Text style={styles.breakdownTitle}>Assets Breakdown</Text>
+              <View style={styles.breakdownItem}>
+                <Text style={styles.breakdownLabel}>Investments</Text>
+                <Text style={styles.breakdownValue}>$78,900</Text>
+              </View>
+              <View style={styles.breakdownItem}>
+                <Text style={styles.breakdownLabel}>Property</Text>
+                <Text style={styles.breakdownValue}>$28,900</Text>
+              </View>
+              <View style={styles.breakdownItem}>
+                <Text style={styles.breakdownLabel}>Cash</Text>
+                <Text style={styles.breakdownValue}>$12,700</Text>
+              </View>
+
+              <Text style={[styles.breakdownTitle, { marginTop: spacing.lg }]}>Liabilities Breakdown</Text>
+              <View style={styles.breakdownItem}>
+                <Text style={styles.breakdownLabel}>Mortgage</Text>
+                <Text style={styles.breakdownValue}>$88,000</Text>
+              </View>
+              <View style={styles.breakdownItem}>
+                <Text style={styles.breakdownLabel}>Loans</Text>
+                <Text style={styles.breakdownValue}>$14,500</Text>
+              </View>
+              <View style={styles.breakdownItem}>
+                <Text style={styles.breakdownLabel}>Credit Cards</Text>
+                <Text style={styles.breakdownValue}>$3,300</Text>
+              </View>
+
+              <View style={styles.goalSection}>
+                <Text style={styles.breakdownTitle}>Goal Tracking</Text>
+                <Text style={styles.goalLabel}>House Down Payment</Text>
+                <View style={styles.progressBar}>
+                  <View style={[styles.progressFill, { width: '68%' }]} />
                 </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>$0</Text>
-                  <Text style={styles.statLabel}>Assets</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>$0</Text>
-                  <Text style={styles.statLabel}>Liabilities</Text>
-                </View>
+                <Text style={styles.progressText}>68%</Text>
               </View>
             </View>
           </View>
@@ -61,247 +148,330 @@ export default function LandingPage() {
       </View>
 
       {/* Features Section */}
-      <View style={styles.features}>
-        <Text style={styles.sectionTitle}>Why Choose NetWorth?</Text>
-        
-        <View style={styles.featureGrid}>
-          {[
-            { icon: 'trending-up', title: 'Track Progress', desc: 'Monitor your net worth over time' },
-            { icon: 'shield-checkmark', title: 'Secure', desc: 'Your data is always private and encrypted' },
-            { icon: 'sync', title: 'Sync Across Devices', desc: 'Access your data anywhere, anytime' },
-            { icon: 'bar-chart', title: 'Detailed Insights', desc: 'Understand your financial health' },
-          ].map((feature, index) => (
-            <View key={index} style={styles.featureCard}>
-              <View style={styles.featureIcon}>
-                <Ionicons name={feature.icon} size={24} color={colors.primary} />
-              </View>
-              <Text style={styles.featureTitle}>{feature.title}</Text>
-              <Text style={styles.featureDesc}>{feature.desc}</Text>
-            </View>
-          ))}
+      <View style={styles.featuresSection}>
+        <View style={styles.featureItem}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="trending-up" size={32} color={colors.primary} />
+          </View>
+          <Text style={styles.featureTitle}>Real-time{'\n'}Net Worth{'\n'}Tracking</Text>
+        </View>
+
+        <View style={styles.featureItem}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="bar-chart" size={32} color={colors.primary} />
+          </View>
+          <Text style={styles.featureTitle}>Comprehensive{'\n'}Asset/Liability{'\n'}Breakdown</Text>
+        </View>
+
+        <View style={styles.featureItem}>
+          <View style={styles.featureIcon}>
+            <Ionicons name="target" size={32} color={colors.primary} />
+          </View>
+          <Text style={styles.featureTitle}>Goal Tracking{'\n'}& Progress</Text>
         </View>
       </View>
 
       {/* CTA Section */}
       <View style={styles.ctaSection}>
-        <Text style={styles.ctaTitle}>Ready to take control of your finances?</Text>
-        <TouchableOpacity style={styles.ctaButton} onPress={() => router.push('/(auth)/sign-up')}>
-          <Text style={styles.ctaButtonText}>Get Started for Free</Text>
+        <Text style={styles.ctaTitle}>Ready to take control of your financial future?</Text>
+        <TouchableOpacity style={styles.ctaButton} onPress={handleGetStarted}>
+          <Text style={styles.ctaButtonText}>Start Tracking Today</Text>
         </TouchableOpacity>
       </View>
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© {new Date().getFullYear()} NetWorth App. All rights reserved.</Text>
-        <View style={styles.footerLinks}>
-          <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
-          <Text style={styles.footerDivider}>•</Text>
-          <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
-        </View>
+        <Text style={styles.footerText}>© 2024 PocketRackr. All rights reserved.</Text>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: colors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    paddingTop: Platform.OS === 'web' ? spacing.xl : spacing.lg,
   },
   logo: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: colors.primary,
-  },
-  signInButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    backgroundColor: colors.primary,
-  },
-  signInText: {
-    color: '#ffffff',
-    fontWeight: '600',
-  },
-  hero: {
-    padding: spacing.xl,
+    flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
+  },
+  logoIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: `${colors.primary}20`,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  logoText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: colors.text.primary,
+  },
+  nav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+  },
+  navItem: {
+    paddingVertical: spacing.sm,
+  },
+  navText: {
+    fontSize: 16,
+    color: colors.text.secondary,
+    fontWeight: '500',
+  },
+  getStartedButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+  },
+  getStartedText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.background.primary,
+  },
+  heroSection: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
+    alignItems: 'center',
+    gap: spacing.xxxl,
+  },
+  heroContent: {
+    flex: Platform.OS === 'web' ? 1 : 0,
+    alignItems: Platform.OS === 'web' ? 'flex-start' : 'center',
   },
   heroTitle: {
-    fontSize: 36,
+    fontSize: Platform.OS === 'web' ? 48 : 36,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: spacing.md,
     color: colors.text.primary,
+    textAlign: Platform.OS === 'web' ? 'left' : 'center',
+    marginBottom: spacing.xl,
+    lineHeight: Platform.OS === 'web' ? 56 : 44,
   },
   heroSubtitle: {
     fontSize: 18,
-    textAlign: 'center',
     color: colors.text.secondary,
-    marginBottom: spacing.xl,
-    maxWidth: 500,
+    textAlign: Platform.OS === 'web' ? 'left' : 'center',
+    marginBottom: spacing.xxxl,
+    lineHeight: 26,
   },
   downloadButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.xxxl,
+    paddingVertical: spacing.lg,
     borderRadius: borderRadius.md,
-    marginBottom: spacing.xxl,
-    ...shadows.sm,
+    ...shadows.md,
   },
-  downloadIcon: {
-    marginRight: spacing.sm,
-  },
-  downloadText: {
-    color: '#ffffff',
+  downloadButtonText: {
+    fontSize: 18,
     fontWeight: '600',
-    fontSize: 16,
+    color: colors.background.primary,
   },
   appPreview: {
-    width: '100%',
+    flex: Platform.OS === 'web' ? 1 : 0,
     alignItems: 'center',
-    marginVertical: spacing.xl,
+    justifyContent: 'center',
   },
   phoneMockup: {
-    width: 300,
-    height: 600,
-    backgroundColor: '#ffffff',
-    borderRadius: 40,
-    padding: 10,
+    width: Platform.OS === 'web' ? 350 : width * 0.8,
+    height: Platform.OS === 'web' ? 700 : 600,
+    backgroundColor: colors.background.secondary,
+    borderRadius: 24,
+    padding: spacing.lg,
+    borderWidth: 2,
+    borderColor: colors.border.primary,
     ...shadows.lg,
   },
-  phoneScreen: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-    borderRadius: 30,
-    padding: spacing.lg,
-    overflow: 'hidden',
-  },
-  chartPlaceholder: {
-    height: 200,
-    backgroundColor: '#f0f0f0',
-    borderRadius: borderRadius.md,
+  phoneHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: spacing.lg,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statItem: {
+  logoIconSmall: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    backgroundColor: `${colors.primary}20`,
+    justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
+    marginRight: spacing.sm,
   },
-  statValue: {
-    fontSize: 18,
+  phoneLogoText: {
+    fontSize: 16,
     fontWeight: 'bold',
     color: colors.text.primary,
-    marginBottom: spacing.xs,
   },
-  statLabel: {
+  phoneButtons: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+  phoneButton: {
+    flex: 1,
+    backgroundColor: colors.background.tertiary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.sm,
+    alignItems: 'center',
+  },
+  phoneButtonText: {
     fontSize: 12,
     color: colors.text.secondary,
+    fontWeight: '500',
   },
-  features: {
-    padding: spacing.xxl,
-    backgroundColor: '#ffffff',
-  },
-  sectionTitle: {
-    fontSize: 28,
+  phoneNetWorth: {
+    fontSize: 32,
     fontWeight: 'bold',
+    color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
+  },
+  phoneChart: {
+    height: 80,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  chartLine: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    height: 2,
+    backgroundColor: colors.primary,
+    borderRadius: 1,
+  },
+  chartPlaceholder: {
+    fontSize: 12,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+  },
+  phoneBreakdown: {
+    flex: 1,
+  },
+  breakdownTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    marginBottom: spacing.sm,
+  },
+  breakdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  breakdownLabel: {
+    fontSize: 13,
+    color: colors.text.secondary,
+  },
+  breakdownValue: {
+    fontSize: 13,
+    fontWeight: '600',
     color: colors.text.primary,
   },
-  featureGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: spacing.lg,
+  goalSection: {
+    marginTop: spacing.lg,
   },
-  featureCard: {
-    width: (width - spacing.xxl * 2 - spacing.lg) / 2,
-    backgroundColor: colors.background.primary,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+  goalLabel: {
+    fontSize: 13,
+    color: colors.text.secondary,
+    marginBottom: spacing.xs,
+  },
+  progressBar: {
+    height: 6,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: 3,
+    marginBottom: spacing.xs,
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: 3,
+  },
+  progressText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
+    textAlign: 'right',
+  },
+  featuresSection: {
+    flexDirection: Platform.OS === 'web' ? 'row' : 'column',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
+    gap: spacing.xxxl,
+    justifyContent: 'center',
+  },
+  featureItem: {
     alignItems: 'center',
-    ...shadows.sm,
+    flex: Platform.OS === 'web' ? 1 : 0,
   },
   featureIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(0, 150, 136, 0.1)',
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: `${colors.primary}20`,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.lg,
   },
   featureTitle: {
     fontSize: 18,
     fontWeight: '600',
-    marginBottom: spacing.xs,
     color: colors.text.primary,
-  },
-  featureDesc: {
-    fontSize: 14,
-    color: colors.text.secondary,
     textAlign: 'center',
+    lineHeight: 24,
   },
   ctaSection: {
-    padding: spacing.xxl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xxxl,
     alignItems: 'center',
-    backgroundColor: colors.primary,
   },
   ctaTitle: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: colors.text.primary,
     textAlign: 'center',
     marginBottom: spacing.xl,
     maxWidth: 600,
   },
   ctaButton: {
-    backgroundColor: '#ffffff',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xxl,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.xxxl,
+    paddingVertical: spacing.lg,
     borderRadius: borderRadius.md,
+    ...shadows.md,
   },
   ctaButtonText: {
-    color: colors.primary,
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
+    color: colors.background.primary,
   },
   footer: {
-    padding: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
     borderTopWidth: 1,
     borderTopColor: colors.border.primary,
   },
   footerText: {
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
-  },
-  footerLinks: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  footerLink: {
-    color: colors.primary,
-    marginHorizontal: spacing.sm,
-  },
-  footerDivider: {
-    color: colors.text.secondary,
+    fontSize: 14,
+    color: colors.text.tertiary,
   },
 });
