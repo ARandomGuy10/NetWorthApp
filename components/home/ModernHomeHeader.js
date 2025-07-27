@@ -49,7 +49,7 @@ const ModernHomeHeader = ({ profile, netWorthData, trend }) => {
       </Text>
 
       {/* Trend Indicator */}
-      {trend && (
+      {trend?.percentChange != null && (
         <View style={styles.trendContainer}>
           <Ionicons
             name={getTrendIcon()}
