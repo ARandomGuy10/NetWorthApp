@@ -58,6 +58,7 @@ export default function HomeScreen() {
       ]);
 
       setProfile(userProfile);
+      console.log('Profile:', userProfile);
       setNetWorthData(netWorth);
       setTrend(change);
       

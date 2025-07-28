@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,7 +31,7 @@ const ModernFAB = () => {
   };
 
   const handleAction = (action) => {
-    setIsOpen(false);
+    toggleFAB();
     Animated.spring(animation, {
       toValue: 0,
       friction: 6,
@@ -52,14 +51,17 @@ const ModernFAB = () => {
     outputRange: ['0deg', '45deg'],
   });
 
+  // Animation values for translating the account and balance buttons
+  // They are hidden (at Y=0) when the FAB is closed, and translated up
+  // when the FAB is open.
   const accountTranslateY = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -70],
+    outputRange: [0, -60], // move up by 60px
   });
 
   const balanceTranslateY = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -130],
+    outputRange: [0, -130], // move up by 130px
   });
 
   const opacity = animation.interpolate({
@@ -69,23 +71,16 @@ const ModernFAB = () => {
 
   return (
     <>
-      {/* Overlay */}
-      {isOpen && (
-        <Modal
-          transparent
-          visible={isOpen}
-          onRequestClose={() => handleAction(null)}
-          animationType="none"
-        >
-          <TouchableOpacity
-            style={styles.overlay}
-            activeOpacity={1}
-            onPress={() => handleAction(null)}
+      <View style={[styles.container, { bottom: 90 + insets.bottom }]}>
+        {/* Overlay for closing FAB when tapping outside */}
+        {isOpen && (
+          <TouchableOpacity 
+            style={styles.overlay} 
+            activeOpacity={1} 
+            onPress={toggleFAB} 
           />
-        </Modal>
-      )}
-
-      <View style={[styles.container, { bottom: 80 + insets.bottom }]}>
+        )}
+        
         {/* Add Balance Option */}
         <Animated.View
           style={[
@@ -99,8 +94,11 @@ const ModernFAB = () => {
           <TouchableOpacity
             style={styles.actionButtonInner}
             onPress={() => handleAction('balance')}
+            activeOpacity={0.8}
           >
-            <Ionicons name="add-circle-outline" size={24} color={colors.text.primary} />
+            <View style={styles.actionIcon}>
+              <Ionicons name="add-circle-outline" size={20} color={colors.text.inverse} />
+            </View>
             <Text style={styles.actionText}>Add Balance</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -118,8 +116,11 @@ const ModernFAB = () => {
           <TouchableOpacity
             style={styles.actionButtonInner}
             onPress={() => handleAction('account')}
+            activeOpacity={0.8}
           >
-            <Ionicons name="wallet-outline" size={24} color={colors.text.primary} />
+            <View style={styles.actionIcon}>
+              <Ionicons name="wallet-outline" size={20} color={colors.text.inverse} />
+            </View>
             <Text style={styles.actionText}>Add Account</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -138,13 +139,17 @@ const ModernFAB = () => {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    right: spacing.lg,
+    right: spacing.xl,
     alignItems: 'center',
     zIndex: 1000,
   },
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    position: 'absolute',
+    top: -1000,
+    left: -1000,
+    right: -1000,
+    bottom: -1000,
+    backgroundColor: 'rgba(0,0,0,0.01)',
   },
   fab: {
     width: 56,
@@ -159,22 +164,35 @@ const styles = StyleSheet.create({
   actionButton: {
     position: 'absolute',
     bottom: 0,
+    right: 0,
+    alignItems: 'flex-end',
   },
   actionButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
     ...shadows.md,
-    minWidth: 150,
+    minWidth: 160,
+  },
+  actionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
   },
   actionText: {
     fontSize: 16,
     fontWeight: '500',
     color: colors.text.primary,
-    marginLeft: spacing.md,
+    flex: 1,
   },
 });
 
