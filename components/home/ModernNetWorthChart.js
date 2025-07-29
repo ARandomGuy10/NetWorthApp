@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { colors, spacing, borderRadius } from '../../src/styles/colors';
+// Import the formatter
+import { formatCurrency } from '../../src/services/dashboardService';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -24,6 +26,9 @@ const ModernNetWorthChart = ({ chartData, netWorthData }) => {
   const [selectedRange, setSelectedRange] = useState('6M');
   const [tooltipVisible, setTooltipVisible] = useState(false);
   const [tooltipData, setTooltipData] = useState(null);
+
+  // Get the currency from the data, with a fallback
+  const currency = netWorthData?.currency || 'EUR';
 
   const chartConfig = {
     backgroundColor: 'transparent',
@@ -89,11 +94,11 @@ const ModernNetWorthChart = ({ chartData, netWorthData }) => {
       <View style={styles.header}>
         <Text style={styles.title}>Net Worth</Text>
         <View style={styles.currentValue}>
+          {/* Use the formatCurrency function */}
           <Text style={styles.valueText}>
-            {netWorthData ? `$${netWorthData.netWorth.toLocaleString()}` : '$0'}
+            {netWorthData ? formatCurrency(netWorthData.netWorth, currency) : formatCurrency(0, currency)}
           </Text>
-          <Text style={styles.assetsText}>Assets {netWorthData?.assetAccounts?.length || 0}</Text>
-          <Text style={styles.liabilitiesText}>Liabilities {netWorthData?.liabilityAccounts?.length || 0}</Text>
+          {/* The asset and liability counts have been removed */}
         </View>
       </View>
 
@@ -161,15 +166,16 @@ const ModernNetWorthChart = ({ chartData, netWorthData }) => {
         >
           <View style={styles.tooltip}>
             <Text style={styles.tooltipTitle}>{tooltipData?.label}</Text>
+            {/* Use the formatCurrency function in the tooltip */}
             <Text style={styles.tooltipValue}>
-              ${tooltipData?.value?.toLocaleString()}
+              {formatCurrency(tooltipData?.value || 0, currency)}
             </Text>
             <View style={styles.tooltipBreakdown}>
               <Text style={styles.tooltipAssets}>
-                Assets: ${tooltipData?.assets?.toLocaleString()}
+                Assets: {formatCurrency(tooltipData?.assets || 0, currency)}
               </Text>
               <Text style={styles.tooltipLiabilities}>
-                Liabilities: ${tooltipData?.liabilities?.toLocaleString()}
+                Liabilities: {formatCurrency(tooltipData?.liabilities || 0, currency)}
               </Text>
             </View>
           </View>

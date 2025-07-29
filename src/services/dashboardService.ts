@@ -32,7 +32,7 @@ export const getAccountsAndNetWorth = async (supabase: SupabaseClient, toCurrenc
     }
 
     
-
+    console.log('Function returned data', data)
     // The edge function returns the exact structure we need.
     return data;
 

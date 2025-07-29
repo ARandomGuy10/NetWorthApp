@@ -1,5 +1,17 @@
 import { createClient } from 'jsr:@supabase/supabase-js@^2';
-// Enhanced error handling with detailed logging
+
+interface AccountData {
+  account_id: string;
+  account_name: string;
+  account_type: 'asset' | 'liability';
+  category: string;
+  institution: string;
+  currency: string;
+  latest_balance: number | null;
+  latest_balance_date: string;
+}
+
+// Enhanced error handling
 class ApiError extends Error {
   status;
   constructor(status, message){
@@ -18,7 +30,34 @@ function jsonResponse(data, status = 200) {
     }
   });
 }
-// Main handler with comprehensive error logging
+// Currency conversion via Frankfurter API
+async function getLiveRates(fromCurrencies, toCurrency, retries = 2) {
+  const fromSymbols = fromCurrencies.filter((c)=>c !== toCurrency);
+  if (fromSymbols.length === 0) return {};
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(()=>controller.abort(), 5000);
+    const apiUrl = `https://api.frankfurter.app/latest?from=${toCurrency}&to=${fromSymbols.join(',')}`;
+    const response = await fetch(apiUrl, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    if (!response.ok) throw new Error('Failed to fetch exchange rates');
+    const data = await response.json();
+    const invertedRates = {};
+    for (const [currency, rate] of Object.entries(data.rates)){
+      invertedRates[currency] = 1 / rate;
+    }
+    return invertedRates;
+  } catch (error) {
+    if (retries > 0) {
+      console.warn(`Rate fetch failed, retrying. Attempts left: ${retries}`);
+      return getLiveRates(fromCurrencies, toCurrency, retries - 1);
+    }
+    throw new ApiError(500, 'Could not fetch exchange rates');
+  }
+}
+// Main handler with enhanced error handling
 Deno.serve(async (req)=>{
   try {
     // Strict method and content-type validation
@@ -31,27 +70,14 @@ Deno.serve(async (req)=>{
         }
       }
     });
+
     // Parse request body
-    let body;
-    try {
-      body = await req.json();
-    } catch (parseError) {
-      console.error('JSON Parsing Error:', parseError);
-      throw new ApiError(400, 'Invalid JSON in request body');
-    }
-    // Fetch account data
+    const { toCurrency } = await req.json();
+
+
     const { data: accounts, error } = await supabaseClient.rpc('get_accounts_with_balances');
-    // Comprehensive error handling
-    if (error) {
-      console.error('Supabase RPC Error:', JSON.stringify({
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        message: error.message
-      }));
-      throw new ApiError(500, `Supabase RPC error: ${error.message}`);
-    }
-    // If no accounts, return empty response
+
+    if (error) throw new ApiError(500, `Supabase RPC error: ${error.message}`);
     if (!accounts || accounts.length === 0) {
       return jsonResponse({
         accounts: [],
@@ -60,32 +86,45 @@ Deno.serve(async (req)=>{
         totalLiabilities: 0
       });
     }
-    // Process account data
+    const uniqueCurrencies = [
+      ...new Set(accounts.map((a)=>a.currency).filter((c)=>c && c !== toCurrency))
+    ];
+    const rates = await getLiveRates(uniqueCurrencies, toCurrency);
     let totalNetWorth = 0;
     let totalAssets = 0;
     let totalLiabilities = 0;
-    const processedAccounts = accounts.map((account)=>{
-      const balance = account.latest_balance ?? 0;
+
+    const accountsWithConvertedBalance = accounts.map((account)=>{
+      if (account.latest_balance === null) {
+        return {
+          ...account,
+          converted_balance: 0
+        };
+      }
+      const rate = account.currency === toCurrency ? 1 : rates[account.currency] || 1;
+      const converted_balance = account.latest_balance * rate;
+
       if (account.account_type === 'asset') {
-        totalAssets += balance;
-        totalNetWorth += balance;
+        totalNetWorth += converted_balance;
+        totalAssets += converted_balance;
       } else {
-        totalLiabilities += balance;
-        totalNetWorth -= balance;
+        totalNetWorth -= converted_balance;
+        totalLiabilities += converted_balance;
       }
       return {
         ...account,
-        latest_balance: balance
+        converted_balance
       };
     });
+
     return jsonResponse({
-      accounts: processedAccounts,
+      accounts: accountsWithConvertedBalance,
       totalNetWorth,
       totalAssets,
       totalLiabilities
     });
   } catch (error) {
-    // Centralized error handling with extensive logging
+   // Centralized error handling with extensive logging
     console.error('[Edge Function Error]', JSON.stringify({
       name: error.name,
       message: error.message,
