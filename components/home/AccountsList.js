@@ -11,7 +11,8 @@ import { useRouter } from 'expo-router';
 import { formatCurrency } from '../../src/services/dashboardService';
 import { colors, spacing, borderRadius } from '../../src/styles/colors';
 
-const AccountsList = ({ netWorthData }) => {
+// The component now accepts the 'accounts' array directly.
+const AccountsList = ({ accounts }) => {
   const router = useRouter();
 
   const getAccountIcon = (category) => {
@@ -37,12 +38,8 @@ const AccountsList = ({ netWorthData }) => {
     return type === 'asset' ? colors.asset : colors.liability;
   };
 
-  const allAccounts = [
-    ...(netWorthData?.assetAccounts || []),
-    ...(netWorthData?.liabilityAccounts || []),
-  ];
-
-  if (!allAccounts.length) {
+  // No need to combine arrays anymore. We use the 'accounts' prop directly.
+  if (!accounts || accounts.length === 0) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Accounts</Text>
@@ -61,32 +58,34 @@ const AccountsList = ({ netWorthData }) => {
       
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={styles.accountsContainer}>
-          {allAccounts.map((account, index) => (
+          {/* We now map over the 'accounts' prop directly. */}
+          {accounts.map((account) => (
             <TouchableOpacity
-              key={account.id}
+              key={account.account_id} // Use the correct key from the edge function response
               style={styles.accountCard}
-              onPress={() => router.push(`/account/${account.id}`)}
+              onPress={() => router.push(`/account/${account.account_id}`)}
               activeOpacity={0.8}
             >
               <View style={styles.accountHeader}>
                 <View style={[
                   styles.accountIcon,
-                  { backgroundColor: `${getAccountIconColor(account.type)}20` }
+                  { backgroundColor: `${getAccountIconColor(account.account_type)}20` }
                 ]}>
                   <Ionicons
                     name={getAccountIcon(account.category)}
                     size={24}
-                    color={getAccountIconColor(account.type)}
+                    color={getAccountIconColor(account.account_type)}
                   />
                 </View>
               </View>
               
               <View style={styles.accountInfo}>
                 <Text style={styles.accountName} numberOfLines={1}>
-                  {account.name}
+                  {account.account_name}
                 </Text>
                 <Text style={styles.accountBalance}>
-                  {formatCurrency(account.current_balance || 0, account.currency)}
+                  {/* Use latest_balance and currency from the edge function response */}
+                  {formatCurrency(account.latest_balance || 0, account.currency)}
                 </Text>
               </View>
             </TouchableOpacity>

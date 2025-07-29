@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -7,100 +7,49 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useSupabase } from '../../hooks/useSupabase';
-import { useCurrentUserId } from '../../hooks/useCurrentUserId';
-import { getCurrentUserProfile } from '../../src/services/profileService';
-import { 
-  getNetWorthData, 
-  getNetWorthHistory, 
-  getDailyNetWorthChange
-} from '../../src/services/dashboardService';
-import { colors, spacing } from '../../src/styles/colors';
+import { useFocusEffect } from '@react-navigation/native';
 
-// Import new modern components
+// Import the custom hook from our Financial Data Context
+import { useFinancialData } from '../../hooks/context/FinancialDataContext';
+
+// Import modern components
 import ModernHomeHeader from '../../components/home/ModernHomeHeader';
 import ModernNetWorthChart from '../../components/home/ModernNetWorthChart';
 import AssetsLiabilitiesSection from '../../components/home/AssetsLiabilitiesSection';
 import AccountsList from '../../components/home/AccountsList';
 import ModernFAB from '../../components/home/ModernFAB';
+import { colors } from '../../src/styles/colors';
 
 export default function HomeScreen() {
+  console.log('Inside HomeScreen');
   const insets = useSafeAreaInsets();
-  const supabase = useSupabase();
-  const userId = useCurrentUserId();
-  
-  const [profile, setProfile] = useState(null);
-  const [netWorthData, setNetWorthData] = useState(null);
-  const [chartData, setChartData] = useState(null);
-  const [trend, setTrend] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
 
-  const loadDashboardData = useCallback(async (showRefreshing = false) => {
-    if (!supabase || !userId) {
-      setLoading(false);
-      return;
-    }
+  // Consume data and functions from the FinancialDataContext
+  const {
+    profile,
+    netWorthData,
+    chartData,
+    trend,
+    accounts,
+    loading,
+    refreshing,
+    dataDirty,
+    loadAllFinancialData,
+  } = useFinancialData();
 
-    try {
-      if (showRefreshing) {
-        setRefreshing(true);
-      } else {
-        setLoading(true);
+  useFocusEffect(
+    useCallback(() => {
+      if (dataDirty) {
+        loadAllFinancialData(true);
       }
-
-      // Load user profile and dashboard data in parallel
-      const [userProfile, netWorth, history, change] = await Promise.all([
-        getCurrentUserProfile(supabase, userId),
-        getNetWorthData(supabase, 'EUR'),
-        getNetWorthHistory(supabase, 'EUR'),
-        getDailyNetWorthChange(supabase, 'EUR')
-      ]);
-
-      setProfile(userProfile);
-      console.log('Profile:', userProfile);
-      setNetWorthData(netWorth);
-      setTrend(change);
-      
-      console.log('Trend:', trend);
-      
-      // Process chart data
-      if (history && history.length > 0) {
-        const processedData = processChartData(history);
-        setChartData(processedData);
-      }
-
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [supabase, userId]);
-
-  useEffect(() => {
-    if (supabase && userId) {
-      loadDashboardData();
-    }
-  }, [supabase, userId, loadDashboardData]);
-
-  const processChartData = (history) => {
-    if (!history || history.length === 0) return null;
-
-    return history.map((item, index) => ({
-      x: index + 1,
-      y: item.value,
-      label: item.month,
-      date: item.date,
-      value: item.value
-    }));
-  };
+    }, [dataDirty, loadAllFinancialData])
+  );
 
   const onRefresh = useCallback(() => {
-    loadDashboardData(true);
-  }, [loadDashboardData]);
+    loadAllFinancialData(true);
+  }, [loadAllFinancialData]);
 
-  if (loading || !supabase) {
+  if (loading && !refreshing) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -134,7 +83,7 @@ export default function HomeScreen() {
 
         <AssetsLiabilitiesSection netWorthData={netWorthData} />
 
-        <AccountsList netWorthData={netWorthData} />
+        <AccountsList accounts={accounts} />
 
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />

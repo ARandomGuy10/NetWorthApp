@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { View, ActivityIndicator, Text } from 'react-native';
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar'; // Import the new CustomBottomTabBar
+import { FinancialDataProvider } from '../../hooks/context/FinancialDataContext';
 
 /**
  * Tabs layout component that shows the main app navigation.
@@ -33,37 +34,39 @@ export default function TabsLayout() {
 
   // Render the tab navigator for authenticated users
   return (
-    <Tabs 
-      tabBar={(props) => <CustomBottomTabBar {...props} />} // Use the custom CustomBottomTabBar
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false, // Explicitly hide all tab bar labels
-      }}
-    >
-      <Tabs.Screen 
-        name="home" 
-        options={{
-          title: undefined,
+    <FinancialDataProvider>
+      <Tabs 
+        tabBar={(props) => <CustomBottomTabBar {...props} />} // Use the custom CustomBottomTabBar
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false, // Explicitly hide all tab bar labels
         }}
-      />
-      <Tabs.Screen 
-        name="accounts" 
-        options={{
-          title: undefined,
-        }}
-      />
-      <Tabs.Screen 
-        name="analytics" 
-        options={{
-          title: undefined,
-        }}
-      />
-      <Tabs.Screen 
-        name="profile" 
-        options={{
-          title: undefined,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen 
+          name="home" 
+          options={{
+            title: undefined,
+          }}
+        />
+        <Tabs.Screen 
+          name="accounts" 
+          options={{
+            title: undefined,
+          }}
+        />
+        <Tabs.Screen 
+          name="analytics" 
+          options={{
+            title: undefined,
+          }}
+        />
+        <Tabs.Screen 
+          name="profile" 
+          options={{
+            title: undefined,
+          }}
+        />
+      </Tabs>
+    </FinancialDataProvider>
   );
 }

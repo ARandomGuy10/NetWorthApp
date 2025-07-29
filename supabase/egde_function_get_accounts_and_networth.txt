@@ -1,0 +1,101 @@
+import { createClient } from 'jsr:@supabase/supabase-js@^2';
+// Enhanced error handling with detailed logging
+class ApiError extends Error {
+  status;
+  constructor(status, message){
+    super(message);
+    this.status = status;
+    this.name = 'ApiError';
+  }
+}
+// Utility functions with improved error handling
+function jsonResponse(data, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'no-store, max-age=0'
+    }
+  });
+}
+// Main handler with comprehensive error logging
+Deno.serve(async (req)=>{
+  try {
+    // Strict method and content-type validation
+    if (req.method !== 'POST') throw new ApiError(405, 'Method Not Allowed');
+    if (req.headers.get('content-type') !== 'application/json') throw new ApiError(415, 'Invalid Content-Type');
+    const supabaseClient = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
+      global: {
+        headers: {
+          Authorization: req.headers.get('Authorization') ?? ''
+        }
+      }
+    });
+    // Parse request body
+    let body;
+    try {
+      body = await req.json();
+    } catch (parseError) {
+      console.error('JSON Parsing Error:', parseError);
+      throw new ApiError(400, 'Invalid JSON in request body');
+    }
+    // Fetch account data
+    const { data: accounts, error } = await supabaseClient.rpc('get_accounts_with_balances');
+    // Comprehensive error handling
+    if (error) {
+      console.error('Supabase RPC Error:', JSON.stringify({
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        message: error.message
+      }));
+      throw new ApiError(500, `Supabase RPC error: ${error.message}`);
+    }
+    // If no accounts, return empty response
+    if (!accounts || accounts.length === 0) {
+      return jsonResponse({
+        accounts: [],
+        totalNetWorth: 0,
+        totalAssets: 0,
+        totalLiabilities: 0
+      });
+    }
+    // Process account data
+    let totalNetWorth = 0;
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+    const processedAccounts = accounts.map((account)=>{
+      const balance = account.latest_balance ?? 0;
+      if (account.account_type === 'asset') {
+        totalAssets += balance;
+        totalNetWorth += balance;
+      } else {
+        totalLiabilities += balance;
+        totalNetWorth -= balance;
+      }
+      return {
+        ...account,
+        latest_balance: balance
+      };
+    });
+    return jsonResponse({
+      accounts: processedAccounts,
+      totalNetWorth,
+      totalAssets,
+      totalLiabilities
+    });
+  } catch (error) {
+    // Centralized error handling with extensive logging
+    console.error('[Edge Function Error]', JSON.stringify({
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      status: error instanceof ApiError ? error.status : 500
+    }));
+    // Return error response
+    return jsonResponse({
+      error: error.message || 'Unexpected server error',
+      details: error instanceof Error ? error.stack : undefined
+    }, error instanceof ApiError ? error.status : 500);
+  }
+});

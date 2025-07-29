@@ -16,9 +16,7 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
  * @returns {SupabaseClient | null} The Supabase client instance, or null if configuration is missing.
  */
 export const useSupabase = (): SupabaseClient | null => {
-  // Log every time the useSupabase hook function is called
-  console.log('useSupabase Hook: Function called');
-
+  
   // Get authentication state and functions from Clerk's useAuth hook.
   // These values will be captured by the closure of the custom fetch function.
   const { getToken, isLoaded, isSignedIn } = useAuth();
@@ -57,9 +55,18 @@ export const useSupabase = (): SupabaseClient | null => {
               // Get the latest token from Clerk. `getToken` is also from the closure.
               // `skipCache: true` ensures Clerk provides the freshest token.
               const clerkToken = await getToken({ skipCache: true });
+
+              // --- TEMPORARY DEBUGGING LOG ---
+              // This will log the token specifically for our Edge Function call.
+              /*if (url.toString().includes('fetch-account-date-and-net-worth')) {
+                console.log("--- DEBUGGING: TOKEN FOR EDGE FUNCTION ---");
+                console.log("Authorization Header:", `Bearer ${clerkToken}`);
+                console.log("--- END DEBUGGING ---");
+              }*/
+              // --- END TEMPORARY DEBUGGING LOG ---
+
               if (clerkToken && clerkToken.length > 0) {
                 tokenToUse = clerkToken;
-                console.log('Supabase Fetch: Clerk token obtained. Setting Authorization header.');
               } else {
                 console.warn('Supabase Fetch: Clerk returned an empty or invalid token. Request will be unauthenticated.');
               }
