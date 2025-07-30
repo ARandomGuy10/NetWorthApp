@@ -21,20 +21,21 @@ export const useFinancialData = () => {
 
 // 3. Create the Provider Component
 export const FinancialDataProvider = ({ children }) => {
+  console.log('FinancialDataProvider rendered');
   const supabase = useSupabase();
   const userId = useCurrentUserId();
 
   // State for each distinct piece of data
-  const [profile, setProfile] = useState(null);
-  const [netWorthData, setNetWorthData] = useState(null);
-  const [accounts, setAccounts] = useState([]);
-  const [chartData, setChartData] = useState(null);
-  const [trend, setTrend] = useState(null); // Note: Edge function does not provide this yet
-
-  // General state
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [dataDirty, setDataDirty] = useState(false);
+  const [state, setState] = useState({
+    profile: null,
+    netWorthData: null,
+    accounts: [],
+    chartData: null,
+    trend: null,
+    loading: true,
+    refreshing: false,
+    dataDirty: false,
+  });
 
   const processChartData = (history) => {
     if (!history || history.length === 0) return null;
@@ -49,21 +50,21 @@ export const FinancialDataProvider = ({ children }) => {
 
   // Central function to load all data required for the dashboard and related screens
   const loadAllFinancialData = useCallback(async (showRefreshing = false) => {
+    console.log('loadAllFinancialData called');
     if (!supabase || !userId) {
-      setLoading(false);
+      setState(prev => ({ ...prev, loading: false }));
       return;
     }
 
     try {
       if (showRefreshing) {
-        setRefreshing(true);
+        setState(prev => ({ ...prev, refreshing: true }));
       } else {
-        setLoading(true);
+        setState(prev => ({ ...prev, loading: true }));
       }
 
       // --- Step 1: Fetch the user's profile first to get their preferred currency ---
       const userProfile = await getCurrentUserProfile(supabase, userId);
-      setProfile(userProfile); // Set profile state immediately
 
       // Determine the currency to use. Fallback to EUR if not set.
       const preferredCurrency = userProfile?.preferred_currency || 'EUR';
@@ -71,65 +72,51 @@ export const FinancialDataProvider = ({ children }) => {
       // --- Step 2: Fetch financial data using the user's preferred currency ---
       const [accountsAndNetWorth, history] = await Promise.all([
         getAccountsAndNetWorth(supabase, preferredCurrency),
-        getNetWorthHistory(supabase, preferredCurrency)
+        null
       ]);
 
       // --- Step 3: Set the rest of the state ---
-      setAccounts(accountsAndNetWorth.accounts);
-      
-      setNetWorthData({
-        netWorth: accountsAndNetWorth.totalNetWorth,
-        totalAssets: accountsAndNetWorth.totalAssets,
-        totalLiabilities: accountsAndNetWorth.totalLiabilities,
-        currency: preferredCurrency, // Use the dynamic currency here
-      });
 
-      // TODO: The daily trend calculation needs to be added to the Edge Function.
-      setTrend({ change: 0, percentageChange: 0, isPositive: true });
+      setState({
+        profile: userProfile,
+        accounts: accountsAndNetWorth.accounts,
+        netWorthData: {
+          netWorth: accountsAndNetWorth.totalNetWorth,
+          totalAssets: accountsAndNetWorth.totalAssets,
+          totalLiabilities: accountsAndNetWorth.totalLiabilities,
+          currency: preferredCurrency,
+        },
+        trend: { change: 0, percentageChange: 0, isPositive: true },
+        chartData: processChartData(history),
+        loading: false,
+        refreshing: false,
+        dataDirty: false,
+      });
       
-      if (history && history.length > 0) {
-        const processedData = processChartData(history);
-        setChartData(processedData);
-      }
 
     } catch (error) {
       console.error('Error loading all financial data in FinancialDataContext:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setDataDirty(false);
+      setState(prev => ({ ...prev, loading: false, refreshing: false }));
     }
   }, [supabase, userId]);
 
   // Function to allow other parts of the app to signal that data needs to be refetched
   const markDataAsDirty = useCallback(() => {
-    setDataDirty(true);
+    setState(prev => ({ ...prev, dataDirty: true }));
   }, []);
 
   // Effect to trigger the initial data load
   useEffect(() => {
-    // We no longer check for profile === null here, as it's the first thing to be fetched.
-    if (supabase && userId) {
+    console.log('useEffect called');
+    if ( supabase && userId) {
       loadAllFinancialData();
     }
-  }, [supabase, userId]); // Removed profile and loadAllFinancialData from deps to prevent re-triggering
+  }, [supabase, userId]);
 
-  // The value provided to consuming components
-  const value = {
-    profile,
-    netWorthData,
-    chartData,
-    trend,
-    accounts,
-    loading,
-    refreshing,
-    dataDirty,
-    loadAllFinancialData,
-    markDataAsDirty,
-  };
+
 
   return (
-    <FinancialDataContext.Provider value={value}>
+    <FinancialDataContext.Provider value={{ ...state, loadAllFinancialData, markDataAsDirty, supabase }}>
       {children}
     </FinancialDataContext.Provider>
   );

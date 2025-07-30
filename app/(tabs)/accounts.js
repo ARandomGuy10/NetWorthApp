@@ -27,8 +27,6 @@ function AccountsScreen() {
   console.log("Inside AccountsScreen")
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  // We only need the supabase client for the delete action, which is a reasonable exception.
-  const supabase = useSupabase();
 
   // --- Step 3: Consume all data from the central context ---
   // No more local useState for accounts, loading, or refreshing.
@@ -40,6 +38,7 @@ function AccountsScreen() {
     loadAllFinancialData,
     markDataAsDirty,
     netWorthData,
+    supabase
   } = useFinancialData();
 
   // Local UI state for the action menu remains, as it's specific to this screen.

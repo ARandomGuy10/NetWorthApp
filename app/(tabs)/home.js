@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, memo } from 'react';
 import {
   View,
   StyleSheet,
@@ -20,7 +20,7 @@ import AccountsList from '../../components/home/AccountsList';
 import ModernFAB from '../../components/home/ModernFAB';
 import { colors } from '../../src/styles/colors';
 
-export default function HomeScreen() {
+function HomeScreen() {
   console.log('Inside HomeScreen');
   const insets = useSafeAreaInsets();
 
@@ -35,6 +35,7 @@ export default function HomeScreen() {
     refreshing,
     dataDirty,
     loadAllFinancialData,
+    supabase
   } = useFinancialData();
 
   useFocusEffect(
@@ -110,3 +111,5 @@ const styles = StyleSheet.create({
     height: 120,
   },
 });
+
+export default memo(HomeScreen);

@@ -47,7 +47,7 @@ export const useSupabase = (): SupabaseClient | null => {
           let tokenToUse = null;
 
           // Log when the token is being fetched for a request
-          console.log('Supabase Fetch: Attempting to get Clerk token for request to:', url);
+          //console.log('Supabase Fetch: Attempting to get Clerk token for request to:', url);
 
           // Use the latest `isLoaded` and `isSignedIn` from the current render context.
           if (isLoaded && isSignedIn) {

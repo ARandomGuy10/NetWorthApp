@@ -4,17 +4,26 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { useSupabase } from '../../hooks/useSupabase';
 import { getCurrentUserProfile, createInitialProfile } from '../../src/services/profileService';
+import { useFinancialData } from '../../hooks/context/FinancialDataContext';
 
 export default function ProfileScreen() {
   const { user, isLoaded: isUserLoaded, isSignedIn } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
-  const supabase = useSupabase();
-  const [profile, setProfile] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   console.log('Inside ProfileScreen');
+
+  const {
+      profile,
+      loading,
+      refreshing,
+      dataDirty,
+      loadAllFinancialData,
+      markDataAsDirty,
+      netWorthData,
+      supabase
+    } = useFinancialData();
 
   useEffect(() => {
     if (!isUserLoaded) return;
@@ -30,35 +39,7 @@ export default function ProfileScreen() {
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const userProfile = await getCurrentUserProfile(supabase, user.id);
-
-        if (userProfile) {
-          console.log("Profile already exists");
-          setProfile(userProfile);
-        } else {
-          console.log("Profile does not exist, creating new profile");
-          const newProfile = await createInitialProfile(
-            supabase,
-            user.id,
-            user.emailAddresses[0].emailAddress,
-            user.firstName,
-            user.lastName
-          );
-          setProfile(newProfile);
-        }
-      } catch (err) {
-        setError(err.message || 'Failed to load profile. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
+    
   }, [isUserLoaded, supabase, isSignedIn, user]);
 
   const handleSignOut = async () => {
