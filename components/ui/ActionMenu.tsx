@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface Action {
   title: string;
@@ -38,6 +39,7 @@ export default function ActionMenu({
 }: ActionMenuProps): JSX.Element | null {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -72,28 +74,41 @@ export default function ActionMenu({
 
   if (!visible) return null;
 
-  // Smart positioning to prevent overflow
+  // Enhanced smart positioning for all device sizes
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
   const menuWidth = 200;
-  const menuHeight = actions.length * 50 + 20; // Approximate height
-  const margin = 16;
+  const menuHeight = actions.length * 56 + 16;
+  
+  // Account for safe areas and navigation elements
+  const safeMargin = 20;
+  const bottomSafeArea = insets.bottom + 20; // Extra padding for bottom safe area
+  const topSafeArea = insets.top + 20;
 
   let finalX = anchorPosition.x;
   let finalY = anchorPosition.y;
 
-  // Adjust X position if menu would overflow right edge
-  if (anchorPosition.x + menuWidth > screenWidth - margin) {
-    finalX = screenWidth - menuWidth - margin;
+  // Smart horizontal positioning
+  if (anchorPosition.x + menuWidth > screenWidth - safeMargin) {
+    finalX = anchorPosition.x - menuWidth - 10;
+  } else {
+    finalX = anchorPosition.x + 10;
   }
 
-  // Adjust Y position if menu would overflow bottom edge
-  if (anchorPosition.y + menuHeight > screenHeight - margin) {
-    finalY = anchorPosition.y - menuHeight - margin;
+  // Enhanced vertical positioning with safe area consideration
+  const availableBottomSpace = screenHeight - anchorPosition.y - bottomSafeArea;
+  const availableTopSpace = anchorPosition.y - topSafeArea;
+
+  if (menuHeight > availableBottomSpace && availableTopSpace > availableBottomSpace) {
+    // Position above if there's more space above
+    finalY = anchorPosition.y - menuHeight - 15;
+  } else if (menuHeight > availableBottomSpace) {
+    // If menu is too tall for available space, position it optimally
+    finalY = screenHeight - menuHeight - bottomSafeArea;
   }
 
-  // Ensure minimum margins
-  finalX = Math.max(margin, finalX);
-  finalY = Math.max(margin, finalY);
+  // Final bounds checking
+  finalX = Math.max(safeMargin, Math.min(finalX, screenWidth - menuWidth - safeMargin));
+  finalY = Math.max(topSafeArea, Math.min(finalY, screenHeight - menuHeight - bottomSafeArea));
 
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={onClose}>
@@ -110,6 +125,7 @@ export default function ActionMenu({
           },
         ]}
       >
+        {/* Menu items remain the same */}
         {actions.map((action, index) => {
           const isLast = index === actions.length - 1;
           return (
@@ -124,7 +140,7 @@ export default function ActionMenu({
                 onClose();
                 action.onPress();
               }}
-              activeOpacity={0.7}
+              activeOpacity={0.6}
             >
               {action.icon && (
                 <Ionicons
@@ -158,21 +174,28 @@ const styles = StyleSheet.create({
   menu: {
     position: 'absolute',
     backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
+    borderRadius: 12, // More rounded for modern look
     minWidth: 200,
     maxWidth: 250,
-    ...shadows.lg,
-    borderWidth: 1,
-    borderColor: colors.border.primary,
+    // Enhanced shadow for better depth
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
+    borderWidth: 0, // Remove border for cleaner look
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: 16, // More generous padding
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.primary,
-    minHeight: 50,
+    minHeight: 56, // Standard touch target size
   },
   lastMenuItem: {
     borderBottomWidth: 0,

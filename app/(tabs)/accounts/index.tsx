@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
 import { useDashboardData } from '../../../hooks/useDashboard';
 import { useDeleteAccount } from '../../../hooks/useAccounts';
@@ -33,18 +34,24 @@ export default function AccountsScreen() {
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<DashboardAccount | null>(null);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const onRefresh = () => refetch();
 
+  // Enhanced handleAccountMenu with haptic feedback and better positioning
   const handleAccountMenu = (account: DashboardAccount, event: any) => {
+    // Add haptic feedback for better UX
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
     const { pageY, pageX } = event.nativeEvent;
     setSelectedAccount(account);
     setMenuPosition({ x: pageX, y: pageY });
     setMenuVisible(true);
   };
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     if (!selectedAccount) return;
+
     Alert.alert(
       'Delete Account',
       `Are you sure you want to delete "${selectedAccount.account_name}"? This will also delete all balance entries.`,
@@ -54,8 +61,17 @@ export default function AccountsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            await deleteAccountMutation.mutateAsync(selectedAccount.account_id);
-            setMenuVisible(false);
+            setIsDeleting(true);
+            try {
+              await deleteAccountMutation.mutateAsync(selectedAccount.account_id);
+              setMenuVisible(false);
+              // Add haptic feedback for completion
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (error) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            } finally {
+              setIsDeleting(false);
+            }
           },
         },
       ]
@@ -151,14 +167,29 @@ export default function AccountsScreen() {
             {accounts.length} account{accounts.length !== 1 ? 's' : ''}
           </Text>
         </View>
-        <TouchableOpacity style={styles.addButton} onPress={() => router.push('accounts/add-account')}>
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('accounts/add-account');
+          }}
+          activeOpacity={0.7}
+        >
           <Ionicons name="add" size={20} color={colors.text.inverse} />
         </TouchableOpacity>
       </View>
 
       <ScrollView
         style={styles.scrollView}
-        refreshControl={<RefreshControl refreshing={isFetching} onRefresh={onRefresh} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isFetching}
+            onRefresh={onRefresh}
+            colors={[colors.primary]}
+            tintColor={colors.primary}
+          />
+        }
+        showsVerticalScrollIndicator={false}
       >
         {assetAccounts.length > 0 && (
           <View style={styles.section}>
@@ -175,17 +206,26 @@ export default function AccountsScreen() {
               <TouchableOpacity
                 key={account.account_id}
                 style={styles.accountCard}
-                onPress={() => router.push(`/accounts/${account.account_id}`)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/accounts/${account.account_id}`);
+                }}
                 activeOpacity={0.7}
               >
                 <View style={styles.accountInfo}>
                   <View style={[styles.accountIcon, { backgroundColor: colors.interactive.hover }]}>
-                    <Ionicons name={getAccountIcon(account.category)} size={20} color={colors.asset} />
+                    <Ionicons 
+                      name={getAccountIcon(account.category)} 
+                      size={20} 
+                      color={colors.asset} 
+                    />
                   </View>
                   <View style={styles.accountDetails}>
                     <Text style={styles.accountName}>{account.account_name}</Text>
                     <View style={styles.accountMeta}>
-                      <Text style={styles.accountInstitution}>{account.institution || account.category}</Text>
+                      <Text style={styles.accountInstitution}>
+                        {account.institution || account.category}
+                      </Text>
                       <Text style={styles.accountCurrency}>{account.currency}</Text>
                     </View>
                   </View>
@@ -194,8 +234,20 @@ export default function AccountsScreen() {
                   <Text style={[styles.balanceAmount, { color: colors.asset }]}>
                     {formatCurrency(account.latest_balance, account.currency)}
                   </Text>
-                  <TouchableOpacity style={styles.moreButton} onPress={(e) => { e.stopPropagation(); handleAccountMenu(account, e); }}>
-                    <Ionicons name="ellipsis-horizontal" size={16} color={colors.text.tertiary} />
+                  <TouchableOpacity 
+                    style={styles.moreButton} 
+                    onPress={(e) => { 
+                      e.stopPropagation(); 
+                      handleAccountMenu(account, e); 
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.6}
+                  >
+                    <Ionicons 
+                      name="ellipsis-horizontal" 
+                      size={18} 
+                      color={colors.text.secondary} 
+                    />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -218,17 +270,26 @@ export default function AccountsScreen() {
               <TouchableOpacity
                 key={account.account_id}
                 style={styles.accountCard}
-                onPress={() => router.push(`/accounts/${account.account_id}`)}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/accounts/${account.account_id}`);
+                }}
                 activeOpacity={0.7}
               >
                 <View style={styles.accountInfo}>
                   <View style={[styles.accountIcon, { backgroundColor: colors.interactive.hover }]}>
-                    <Ionicons name={getAccountIcon(account.category)} size={20} color={colors.liability} />
+                    <Ionicons 
+                      name={getAccountIcon(account.category)} 
+                      size={20} 
+                      color={colors.liability} 
+                    />
                   </View>
                   <View style={styles.accountDetails}>
                     <Text style={styles.accountName}>{account.account_name}</Text>
                     <View style={styles.accountMeta}>
-                      <Text style={styles.accountInstitution}>{account.institution || account.category}</Text>
+                      <Text style={styles.accountInstitution}>
+                        {account.institution || account.category}
+                      </Text>
                       <Text style={styles.accountCurrency}>{account.currency}</Text>
                     </View>
                   </View>
@@ -237,8 +298,20 @@ export default function AccountsScreen() {
                   <Text style={[styles.balanceAmount, { color: colors.liability }]}>
                     -{formatCurrency(account.latest_balance, account.currency)}
                   </Text>
-                  <TouchableOpacity style={styles.moreButton} onPress={(e) => { e.stopPropagation(); handleAccountMenu(account, e); }}>
-                    <Ionicons name="ellipsis-horizontal" size={16} color={colors.text.tertiary} />
+                  <TouchableOpacity 
+                    style={styles.moreButton} 
+                    onPress={(e) => { 
+                      e.stopPropagation(); 
+                      handleAccountMenu(account, e); 
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    activeOpacity={0.6}
+                  >
+                    <Ionicons 
+                      name="ellipsis-horizontal" 
+                      size={18} 
+                      color={colors.text.secondary} 
+                    />
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
@@ -252,13 +325,34 @@ export default function AccountsScreen() {
               <Ionicons name="wallet-outline" size={48} color={colors.text.tertiary} />
             </View>
             <Text style={styles.emptyTitle}>No accounts yet</Text>
-            <Text style={styles.emptyText}>Add your first account to start tracking your net worth</Text>
+            <Text style={styles.emptyText}>
+              Add your first account to start tracking your net worth
+            </Text>
           </View>
         )}
 
-        <TouchableOpacity style={styles.addAccountButton} onPress={() => router.push('accounts/add-account')} activeOpacity={0.8}>
-          <Ionicons name="add" size={20} color={colors.text.inverse} />
-          <Text style={styles.addAccountText}>Add New Account</Text>
+        <TouchableOpacity 
+          style={[
+            styles.addAccountButton,
+            isDeleting && styles.addAccountButtonDisabled
+          ]} 
+          onPress={() => {
+            if (!isDeleting) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              router.push('accounts/add-account');
+            }
+          }} 
+          activeOpacity={0.8}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color={colors.text.inverse} />
+          ) : (
+            <Ionicons name="add" size={20} color={colors.text.inverse} />
+          )}
+          <Text style={styles.addAccountText}>
+            {isDeleting ? 'Processing...' : 'Add New Account'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
 
@@ -273,35 +367,183 @@ export default function AccountsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background.primary },
-  centered: { justifyContent: 'center', alignItems: 'center' },
-  loadingText: { marginTop: spacing.lg, fontSize: 16, color: colors.text.secondary },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: spacing.xl, paddingVertical: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border.primary },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: colors.text.primary },
-  headerSubtitle: { fontSize: 14, color: colors.text.secondary, marginTop: 2 },
-  addButton: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.primary, justifyContent: 'center', alignItems: 'center', ...shadows.sm },
-  scrollView: { flex: 1 },
-  section: { marginTop: spacing.xxl, paddingHorizontal: spacing.xl },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
-  sectionTitleContainer: { flexDirection: 'row', alignItems: 'center' },
-  sectionIndicator: { width: 4, height: 16, borderRadius: 2, marginRight: spacing.sm },
-  sectionTitle: { fontSize: 18, fontWeight: '600', color: colors.text.primary },
-  sectionTotal: { fontSize: 16, fontWeight: 'bold' },
-  accountCard: { backgroundColor: colors.background.card, borderRadius: borderRadius.md, padding: spacing.lg, marginBottom: spacing.sm, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: colors.border.primary, ...shadows.sm },
-  accountInfo: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  accountIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center', marginRight: spacing.md },
-  accountDetails: { flex: 1 },
-  accountName: { fontSize: 15, fontWeight: '600', color: colors.text.primary, marginBottom: spacing.xs },
-  accountMeta: { flexDirection: 'row', alignItems: 'center' },
-  accountInstitution: { fontSize: 13, color: colors.text.secondary, flex: 1 },
-  accountCurrency: { fontSize: 12, color: colors.text.tertiary, backgroundColor: colors.background.elevated, paddingHorizontal: spacing.sm, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' },
-  accountBalance: { alignItems: 'flex-end', flexDirection: 'row'},
-  balanceAmount: { fontSize: 15, fontWeight: 'bold', marginRight: spacing.sm },
-  moreButton: { padding: spacing.sm, borderRadius: 6 },
-  emptyState: { padding: spacing.xxxl, alignItems: 'center', marginTop: spacing.xxxl },
-  emptyIcon: { marginBottom: spacing.lg },
-  emptyTitle: { fontSize: 18, fontWeight: '600', color: colors.text.primary, marginBottom: spacing.sm },
-  emptyText: { fontSize: 14, color: colors.text.secondary, textAlign: 'center', lineHeight: 20 },
-  addAccountButton: { backgroundColor: colors.primary, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: spacing.lg, borderRadius: borderRadius.md, margin: spacing.xl, marginTop: spacing.xxxl, ...shadows.md },
-  addAccountText: { fontSize: 15, fontWeight: 'bold', color: colors.text.inverse, marginLeft: spacing.sm },
+  container: { 
+    flex: 1, 
+    backgroundColor: colors.background.primary 
+  },
+  centered: { 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  loadingText: { 
+    marginTop: spacing.lg, 
+    fontSize: 16, 
+    color: colors.text.secondary 
+  },
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: spacing.xl, 
+    paddingVertical: spacing.lg, 
+    borderBottomWidth: 1, 
+    borderBottomColor: colors.border.primary 
+  },
+  headerTitle: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: colors.text.primary 
+  },
+  headerSubtitle: { 
+    fontSize: 14, 
+    color: colors.text.secondary, 
+    marginTop: 2 
+  },
+  addButton: { 
+    width: 36, 
+    height: 36, 
+    borderRadius: 18, 
+    backgroundColor: colors.primary, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    ...shadows.sm 
+  },
+  scrollView: { 
+    flex: 1 
+  },
+  section: { 
+    marginTop: spacing.xxl, 
+    paddingHorizontal: spacing.xl 
+  },
+  sectionHeader: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    marginBottom: spacing.lg 
+  },
+  sectionTitleContainer: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  sectionIndicator: { 
+    width: 4, 
+    height: 16, 
+    borderRadius: 2, 
+    marginRight: spacing.sm 
+  },
+  sectionTitle: { 
+    fontSize: 18, 
+    fontWeight: '600', 
+    color: colors.text.primary 
+  },
+  sectionTotal: { 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  accountCard: { 
+    backgroundColor: colors.background.card, 
+    borderRadius: borderRadius.md, 
+    padding: spacing.lg, 
+    marginBottom: spacing.sm, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    borderWidth: 1, 
+    borderColor: colors.border.primary, 
+    ...shadows.sm 
+  },
+  accountInfo: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    flex: 1 
+  },
+  accountIcon: { 
+    width: 40, 
+    height: 40, 
+    borderRadius: 20, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    marginRight: spacing.md 
+  },
+  accountDetails: { 
+    flex: 1 
+  },
+  accountName: { 
+    fontSize: 15, 
+    fontWeight: '600', 
+    color: colors.text.primary, 
+    marginBottom: spacing.xs 
+  },
+  accountMeta: { 
+    flexDirection: 'row', 
+    alignItems: 'center' 
+  },
+  accountInstitution: { 
+    fontSize: 13, 
+    color: colors.text.secondary, 
+    flex: 1 
+  },
+  accountCurrency: { 
+    fontSize: 12, 
+    color: colors.text.tertiary, 
+    backgroundColor: colors.background.elevated, 
+    paddingHorizontal: spacing.sm, 
+    paddingVertical: 2, 
+    borderRadius: 4, 
+    overflow: 'hidden' 
+  },
+  accountBalance: { 
+    alignItems: 'flex-end', 
+    flexDirection: 'row', 
+  },
+  balanceAmount: { 
+    fontSize: 15, 
+    fontWeight: 'bold', 
+    marginRight: spacing.sm 
+  },
+  moreButton: { 
+    padding: 12, // Larger touch area
+    marginLeft: 8,
+    borderRadius: 8,
+  },
+  emptyState: { 
+    padding: spacing.xxxl, 
+    alignItems: 'center', 
+    marginTop: spacing.xxxl 
+  },
+  emptyIcon: { 
+    marginBottom: spacing.lg 
+  },
+  emptyTitle: { 
+    fontSize: 18, 
+    fontWeight: '600', 
+    color: colors.text.primary, 
+    marginBottom: spacing.sm 
+  },
+  emptyText: { 
+    fontSize: 14, 
+    color: colors.text.secondary, 
+    textAlign: 'center', 
+    lineHeight: 20 
+  },
+  addAccountButton: { 
+    backgroundColor: colors.primary, 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    padding: spacing.lg, 
+    borderRadius: borderRadius.md, 
+    margin: spacing.xl, 
+    marginTop: spacing.xxxl, 
+    ...shadows.md 
+  },
+  addAccountButtonDisabled: {
+    opacity: 0.6,
+  },
+  addAccountText: { 
+    fontSize: 15, 
+    fontWeight: 'bold', 
+    color: colors.text.inverse, 
+    marginLeft: spacing.sm 
+  },
 });
