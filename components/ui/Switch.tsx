@@ -1,58 +1,124 @@
-import React, { JSX } from 'react';
+import React, { JSX, useRef, useEffect } from 'react';
 import {
-  View,
   TouchableOpacity,
   Animated,
   StyleSheet,
+  View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors, spacing } from '../../src/styles/colors';
 
 interface SwitchProps {
   value: boolean;
   onValueChange: (value: boolean) => void;
   disabled?: boolean;
+  size?: 'small' | 'medium' | 'large';
+  activeColor?: string;
+  inactiveColor?: string;
 }
 
-export default function Switch({ value, onValueChange, disabled = false }: SwitchProps) {
-  const animatedValue = React.useRef(new Animated.Value(value ? 1 : 0)).current;
+export default function Switch({ 
+  value, 
+  onValueChange, 
+  disabled = false,
+  size = 'medium',
+  activeColor = colors.primary,
+  inactiveColor = colors.border.secondary
+}: SwitchProps): JSX.Element {
+  const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-  React.useEffect(() => {
-    Animated.timing(animatedValue, {
+  const sizes = {
+    small: { width: 36, height: 20, thumbSize: 16 },
+    medium: { width: 44, height: 24, thumbSize: 20 },
+    large: { width: 52, height: 28, thumbSize: 24 },
+  };
+
+  const currentSize = sizes[size];
+
+  useEffect(() => {
+    Animated.spring(animatedValue, {
       toValue: value ? 1 : 0,
-      duration: 200,
       useNativeDriver: false,
+      tension: 100,
+      friction: 8,
     }).start();
-  }, [value]);
+  }, [value, animatedValue]);
 
   const handlePress = (): void => {
-    if (!disabled) {
-      onValueChange(!value);
-    }
+    if (disabled) return;
+
+    // Haptic feedback
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
+    // Scale animation for press feedback
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    onValueChange(!value);
   };
 
   const trackColor = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [colors.border.secondary, colors.primary],
+    outputRange: [inactiveColor, activeColor],
   });
 
   const thumbTranslateX = animatedValue.interpolate({
     inputRange: [0, 1],
-    outputRange: [2, 22],
+    outputRange: [2, currentSize.width - currentSize.thumbSize - 2],
+  });
+
+  const thumbScale = animatedValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [1, 1.1, 1],
   });
 
   return (
     <TouchableOpacity
-      style={[styles.container, disabled && styles.disabled]}
+      style={[
+        styles.container,
+        {
+          width: currentSize.width,
+          height: currentSize.height,
+        },
+        disabled && styles.disabled
+      ]}
       onPress={handlePress}
-      disabled={disabled}
       activeOpacity={0.8}
+      disabled={disabled}
     >
-      <Animated.View style={[styles.track, { backgroundColor: trackColor }]}>
-        <Animated.View 
+      <Animated.View
+        style={[
+          styles.track,
+          {
+            backgroundColor: trackColor,
+            transform: [{ scale: scaleAnim }],
+          }
+        ]}
+      >
+        <Animated.View
           style={[
-            styles.thumb, 
-            { transform: [{ translateX: thumbTranslateX }] }
-          ]} 
+            styles.thumb,
+            {
+              width: currentSize.thumbSize,
+              height: currentSize.thumbSize,
+              borderRadius: currentSize.thumbSize / 2,
+              transform: [
+                { translateX: thumbTranslateX },
+                { scale: thumbScale }
+              ],
+            }
+          ]}
         />
       </Animated.View>
     </TouchableOpacity>
@@ -61,26 +127,24 @@ export default function Switch({ value, onValueChange, disabled = false }: Switc
 
 const styles = StyleSheet.create({
   container: {
-    width: 44,
-    height: 24,
+    justifyContent: 'center',
   },
   disabled: {
     opacity: 0.5,
   },
   track: {
     flex: 1,
-    borderRadius: 12,
+    borderRadius: 100,
     justifyContent: 'center',
+    position: 'relative',
   },
   thumb: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.text.primary,
+    backgroundColor: colors.background.card,
+    position: 'absolute',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOpacity: 0.25,
+    shadowRadius: 3,
+    elevation: 4,
   },
 });

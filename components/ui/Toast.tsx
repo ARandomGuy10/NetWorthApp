@@ -5,8 +5,11 @@ import {
   StyleSheet,
   Animated,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
 import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -15,32 +18,54 @@ interface ToastProps {
   visible: boolean;
   message: string;
   type?: ToastType;
-  onDismiss?: () => void;
+  onDismiss?: () => void; // Fixed: was onHide in your usage
+  onHide?: () => void; // Added for backward compatibility
   duration?: number;
+  position?: 'top' | 'bottom';
+  showCloseButton?: boolean;
 }
 
 interface ToastStyle {
   backgroundColor: string;
   icon: keyof typeof Ionicons.glyphMap;
+  textColor: string;
 }
 
-export default function Toast({ 
-  visible, 
-  message, 
+export default function Toast({
+  visible,
+  message,
   type = 'success',
   onDismiss,
-  duration = 4000 
+  onHide, // Added for backward compatibility
+  duration = 4000,
+  position = 'top',
+  showCloseButton = true
 }: ToastProps): JSX.Element | null {
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const translateY = useRef(new Animated.Value(position === 'top' ? -100 : 100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(0.9)).current;
+  const insets = useSafeAreaInsets();
+  
+  // Use onHide if provided for backward compatibility, otherwise use onDismiss
+  const dismissHandler = onHide || onDismiss;
 
   useEffect(() => {
     if (visible) {
+      // Haptic feedback on show
+      if (type === 'error') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      } else if (type === 'success') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+
       // Show animation
       Animated.parallel([
-        Animated.timing(translateY, {
+        Animated.spring(translateY, {
           toValue: 0,
-          duration: 300,
+          tension: 100,
+          friction: 8,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
@@ -48,21 +73,29 @@ export default function Toast({
           duration: 300,
           useNativeDriver: true,
         }),
+        Animated.spring(scale, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
       ]).start();
 
       // Auto dismiss
-      const timer = setTimeout(() => {
-        hideToast();
-      }, duration);
+      if (duration > 0) {
+        const timer = setTimeout(() => {
+          hideToast();
+        }, duration);
 
-      return () => clearTimeout(timer);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [visible, duration]);
+  }, [visible, duration, type]);
 
   const hideToast = (): void => {
     Animated.parallel([
       Animated.timing(translateY, {
-        toValue: -100,
+        toValue: position === 'top' ? -100 : 100,
         duration: 250,
         useNativeDriver: true,
       }),
@@ -71,8 +104,13 @@ export default function Toast({
         duration: 250,
         useNativeDriver: true,
       }),
+      Animated.timing(scale, {
+        toValue: 0.9,
+        duration: 250,
+        useNativeDriver: true,
+      }),
     ]).start(() => {
-      onDismiss && onDismiss();
+      dismissHandler && dismissHandler();
     });
   };
 
@@ -82,26 +120,31 @@ export default function Toast({
         return {
           backgroundColor: colors.success,
           icon: 'checkmark-circle',
+          textColor: colors.text.inverse,
         };
       case 'error':
         return {
           backgroundColor: colors.error,
           icon: 'alert-circle',
+          textColor: colors.text.inverse,
         };
       case 'warning':
         return {
           backgroundColor: colors.warning,
           icon: 'warning',
+          textColor: colors.text.inverse,
         };
       case 'info':
         return {
           backgroundColor: colors.info,
           icon: 'information-circle',
+          textColor: colors.text.inverse,
         };
       default:
         return {
           backgroundColor: colors.success,
           icon: 'checkmark-circle',
+          textColor: colors.text.inverse,
         };
     }
   };
@@ -109,6 +152,7 @@ export default function Toast({
   if (!visible) return null;
 
   const toastStyle = getToastStyle();
+  const { width: screenWidth } = Dimensions.get('window');
 
   return (
     <Animated.View
@@ -116,32 +160,43 @@ export default function Toast({
         styles.container,
         {
           backgroundColor: toastStyle.backgroundColor,
-          transform: [{ translateY }],
           opacity,
-        },
+          transform: [
+            { translateY },
+            { scale }
+          ],
+          top: position === 'top' ? insets.top + 10 : undefined,
+          bottom: position === 'bottom' ? insets.bottom + 10 : undefined,
+          maxWidth: screenWidth - (spacing.lg * 2),
+        }
       ]}
     >
       <View style={styles.content}>
         <Ionicons
           name={toastStyle.icon}
-          size={20}
-          color={colors.text.inverse}
+          size={24}
+          color={toastStyle.textColor}
           style={styles.icon}
         />
-        <Text style={styles.message} numberOfLines={2}>
+        <Text
+          style={[styles.message, { color: toastStyle.textColor }]}
+          numberOfLines={3}
+        >
           {message}
         </Text>
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={hideToast}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name="close"
-            size={18}
-            color={colors.text.inverse}
-          />
-        </TouchableOpacity>
+        {showCloseButton && (
+          <TouchableOpacity
+            onPress={hideToast}
+            style={styles.closeButton}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name="close"
+              size={20}
+              color={toastStyle.textColor}
+            />
+          </TouchableOpacity>
+        )}
       </View>
     </Animated.View>
   );
@@ -150,30 +205,32 @@ export default function Toast({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 60, // Below status bar
     left: spacing.lg,
     right: spacing.lg,
-    borderRadius: borderRadius.md,
+    borderRadius: 12,
     zIndex: 9999,
-    ...shadows.lg,
+    ...shadows.xl,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: spacing.lg,
+    minHeight: 56,
   },
   icon: {
     marginRight: spacing.md,
+    flexShrink: 0,
   },
   message: {
     flex: 1,
     fontSize: 15,
     fontWeight: '500',
-    color: colors.text.inverse,
     lineHeight: 20,
   },
   closeButton: {
     marginLeft: spacing.md,
     padding: spacing.xs,
+    borderRadius: 12,
+    flexShrink: 0,
   },
 });

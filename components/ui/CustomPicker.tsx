@@ -6,9 +6,13 @@ import {
   Modal,
   FlatList,
   StyleSheet,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../../src/styles/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Haptics from 'expo-haptics';
+import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
 
 export interface PickerItem {
   label: string;
@@ -16,100 +20,181 @@ export interface PickerItem {
 }
 
 interface CustomPickerProps {
-  selectedValue?: string;
+  value?: string; // Fixed: was selectedValue
   onValueChange: (value: string) => void;
   items: PickerItem[];
   placeholder?: string;
   disabled?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
-export default function CustomPicker({ 
-  selectedValue, 
-  onValueChange, 
-  items, 
+export default function CustomPicker({
+  value, // Fixed: changed from selectedValue
+  onValueChange,
+  items,
   placeholder = "Select an option",
-  disabled = false 
+  disabled = false,
+  icon
 }: CustomPickerProps): JSX.Element {
-  const [modalVisible, setModalVisible] = useState<boolean>(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [slideAnim] = useState(new Animated.Value(50));
+  const insets = useSafeAreaInsets();
+  
+  const selectedItem = items.find(item => item.value === value);
 
-  const selectedItem = items.find(item => item.value === selectedValue);
-
-  const handleSelect = (value: string): void => {
-    onValueChange(value);
-    setModalVisible(false);
+  const showModal = () => {
+    if (disabled) return;
+    
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setModalVisible(true);
+    
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        tension: 100,
+        friction: 8,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
+
+  const hideModal = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 50,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => setModalVisible(false));
+  };
+
+  const handleSelect = (selectedValue: string): void => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onValueChange(selectedValue);
+    hideModal();
+  };
+
+  const { height: screenHeight } = Dimensions.get('window');
+  const maxModalHeight = screenHeight * 0.6;
 
   return (
     <>
       <TouchableOpacity
         style={[
           styles.pickerButton,
-          disabled && styles.pickerButtonDisabled
+          disabled && styles.pickerButtonDisabled,
+          selectedItem && styles.pickerButtonSelected
         ]}
-        onPress={() => !disabled && setModalVisible(true)}
+        onPress={showModal}
         disabled={disabled}
+        activeOpacity={0.7}
       >
-        <Text style={[
-          styles.pickerText,
-          !selectedValue && styles.placeholderText,
-          disabled && styles.disabledText
-        ]}>
+        {icon && (
+          <Ionicons 
+            name={icon} 
+            size={20} 
+            color={selectedItem ? colors.text.primary : colors.text.tertiary} 
+            style={styles.inputIcon}
+          />
+        )}
+        <Text
+          style={[
+            styles.pickerText,
+            selectedItem ? styles.selectedText : styles.placeholderText,
+            disabled && styles.disabledText
+          ]}
+        >
           {selectedItem ? selectedItem.label : placeholder}
         </Text>
-        <Ionicons 
-          name="chevron-down" 
-          size={20} 
-          color={disabled ? colors.text.disabled : colors.text.secondary} 
+        <Ionicons
+          name="chevron-down"
+          size={20}
+          color={disabled ? colors.text.disabled : colors.text.tertiary}
+          style={[
+            styles.chevron,
+            modalVisible && styles.chevronUp
+          ]}
         />
       </TouchableOpacity>
 
       <Modal
+        transparent
         visible={modalVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setModalVisible(false)}
+        animationType="none"
+        onRequestClose={hideModal}
       >
         <TouchableOpacity
           style={styles.modalOverlay}
+          onPress={hideModal}
           activeOpacity={1}
-          onPress={() => setModalVisible(false)}
         >
-          <View style={styles.modalContent}>
+          <Animated.View
+            style={[
+              styles.modalContent,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+                maxHeight: maxModalHeight,
+                marginBottom: insets.bottom || 20,
+              }
+            ]}
+          >
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Option</Text>
               <TouchableOpacity
-                onPress={() => setModalVisible(false)}
+                onPress={hideModal}
                 style={styles.closeButton}
+                activeOpacity={0.7}
               >
                 <Ionicons name="close" size={24} color={colors.text.primary} />
               </TouchableOpacity>
             </View>
-            
+
             <FlatList
               data={items}
-              keyExtractor={(item: PickerItem) => item.value}
-              renderItem={({ item }: { item: PickerItem }) => (
+              keyExtractor={(item) => item.value}
+              renderItem={({ item, index }) => (
                 <TouchableOpacity
                   style={[
                     styles.optionItem,
-                    selectedValue === item.value && styles.selectedOption
+                    value === item.value && styles.selectedOption,
+                    index === items.length - 1 && styles.lastOption
                   ]}
                   onPress={() => handleSelect(item.value)}
+                  activeOpacity={0.7}
                 >
-                  <Text style={[
-                    styles.optionText,
-                    selectedValue === item.value && styles.selectedOptionText
-                  ]}>
+                  <Text
+                    style={[
+                      styles.optionText,
+                      value === item.value && styles.selectedOptionText
+                    ]}
+                  >
                     {item.label}
                   </Text>
-                  {selectedValue === item.value && (
-                    <Ionicons name="checkmark" size={20} color={colors.primary} />
+                  {value === item.value && (
+                    <Ionicons
+                      name="checkmark"
+                      size={20}
+                      color={colors.primary}
+                    />
                   )}
                 </TouchableOpacity>
               )}
               showsVerticalScrollIndicator={false}
+              bounces={false}
             />
-          </View>
+          </Animated.View>
         </TouchableOpacity>
       </Modal>
     </>
@@ -118,43 +203,57 @@ export default function CustomPicker({
 
 const styles = StyleSheet.create({
   pickerButton: {
-    backgroundColor: colors.background.tertiary,
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.background.elevated,
+    borderRadius: 12,
     padding: spacing.lg,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
     borderColor: colors.border.primary,
-    minHeight: 52,
+    minHeight: 56,
   },
   pickerButtonDisabled: {
     opacity: 0.5,
   },
+  pickerButtonSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.background.card,
+  },
+  inputIcon: {
+    marginRight: spacing.md,
+  },
   pickerText: {
     fontSize: 16,
-    color: colors.text.primary,
     flex: 1,
   },
+  selectedText: {
+    color: colors.text.primary,
+    fontWeight: '500',
+  },
   placeholderText: {
-    color: colors.text.secondary,
+    color: colors.text.tertiary,
   },
   disabledText: {
     color: colors.text.disabled,
   },
+  chevron: {
+    marginLeft: spacing.sm,
+    transform: [{ rotate: '0deg' }],
+  },
+  chevronUp: {
+    transform: [{ rotate: '180deg' }],
+  },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+    padding: spacing.lg,
   },
   modalContent: {
     backgroundColor: colors.background.card,
-    borderRadius: borderRadius.lg,
-    width: '100%',
-    maxHeight: '70%',
+    borderRadius: 16,
     overflow: 'hidden',
+    ...shadows.xl,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -163,14 +262,20 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.primary,
+    backgroundColor: colors.background.elevated,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text.primary,
   },
   closeButton: {
-    padding: spacing.sm,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
   },
   optionItem: {
     flexDirection: 'row',
@@ -179,6 +284,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.primary,
+    minHeight: 56,
+  },
+  lastOption: {
+    borderBottomWidth: 0,
   },
   selectedOption: {
     backgroundColor: colors.interactive.hover,
@@ -190,6 +299,6 @@ const styles = StyleSheet.create({
   },
   selectedOptionText: {
     color: colors.primary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
