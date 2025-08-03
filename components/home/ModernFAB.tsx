@@ -41,9 +41,9 @@ const ModernFAB: React.FC = () => {
     }).start();
 
     if (action === 'account') {
-      router.push('/add-account');
+      router.push('accounts/add-account');
     } else if (action === 'balance') {
-      router.push('/add-balance');
+      router.push('accounts/add-balance');
     }
   };
 

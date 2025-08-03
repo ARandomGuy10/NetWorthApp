@@ -233,7 +233,7 @@ export default function AddAccountScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: Math.min(insets.top + 8, 24)}]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -244,7 +244,7 @@ export default function AddAccountScreen() {
           }}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={colors.text.primary} />
         </TouchableOpacity>
         
         <Text style={styles.headerTitle}>
@@ -488,30 +488,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.primary,
     backgroundColor: colors.background.primary,
+    minHeight: 32,
   },
   backButton: {
-    width: 40,
-    height: 40,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 20,
+    borderRadius: 16,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text.primary,
   },
   placeholder: {
-    width: 40,
+    width: 32,
   },
   scrollView: {
     flex: 1,
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing.sm,
   },
   inputGroup: {
     marginTop: spacing.xl,

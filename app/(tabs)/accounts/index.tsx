@@ -40,7 +40,6 @@ export default function AccountsScreen() {
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
   const handleAccountMenu = (account: DashboardAccount, event: any) => {
-    // Add haptic feedback for better UX
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     const { pageY, pageX } = event.nativeEvent;
@@ -65,7 +64,6 @@ export default function AccountsScreen() {
             try {
               await deleteAccountMutation.mutateAsync(selectedAccount.account_id);
               setMenuVisible(false);
-              // Add haptic feedback for completion
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             } catch (error) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -181,6 +179,8 @@ export default function AccountsScreen() {
 
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isFetching}
@@ -189,7 +189,7 @@ export default function AccountsScreen() {
             tintColor={colors.primary}
           />
         }
-        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         {assetAccounts.length > 0 && (
           <View style={styles.section}>
@@ -331,6 +331,7 @@ export default function AccountsScreen() {
           </View>
         )}
 
+        {/* Add New Account Button - Fixed positioning */}
         <TouchableOpacity 
           style={[
             styles.addAccountButton,
@@ -410,6 +411,10 @@ const styles = StyleSheet.create({
   },
   scrollView: { 
     flex: 1 
+  },
+  // Fixed: Simplified content container style
+  scrollContent: {
+    paddingBottom: spacing.xxxl + 80, // Extra padding to ensure button is always visible
   },
   section: { 
     marginTop: spacing.xxl, 
@@ -494,7 +499,7 @@ const styles = StyleSheet.create({
   },
   accountBalance: { 
     alignItems: 'flex-end', 
-    flexDirection: 'row', 
+    flexDirection: 'row'
   },
   balanceAmount: { 
     fontSize: 15, 
@@ -502,7 +507,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm 
   },
   moreButton: { 
-    padding: 12, // Larger touch area
+    padding: 12,
     marginLeft: 8,
     borderRadius: 8,
   },
@@ -526,6 +531,7 @@ const styles = StyleSheet.create({
     textAlign: 'center', 
     lineHeight: 20 
   },
+  // Fixed: Simplified add account button styling
   addAccountButton: { 
     backgroundColor: colors.primary, 
     flexDirection: 'row', 
@@ -535,6 +541,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md, 
     margin: spacing.xl, 
     marginTop: spacing.xxxl, 
+    marginBottom: spacing.xxxl, // Extra bottom margin
     ...shadows.md 
   },
   addAccountButtonDisabled: {
