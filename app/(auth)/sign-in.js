@@ -20,7 +20,7 @@ export default function SignInScreen() {
   // Redirect if already signed in
   useEffect(() => {
     if (isAuthLoaded && isSignedIn) {
-      router.replace('/(tabs)/home');
+      router.replace('/(tabs)/dashboard');
     } else if (isAuthLoaded) {
       setAuthLoading(false);
     }
@@ -48,8 +48,8 @@ export default function SignInScreen() {
       });
 
       await setActive({ session: completeSignIn.createdSessionId });
-      // Navigate to the home tab after successful sign in
-      router.replace('/(tabs)/home');
+      // Navigate to the dashboard tab after successful sign in
+      router.replace('/(tabs)/dashboard');
     } catch (err) {
       console.error('Sign in error:', err);
       Alert.alert('Error', err.errors?.[0]?.message || 'Failed to sign in');
@@ -72,8 +72,8 @@ export default function SignInScreen() {
       
       if (createdSessionId) {
         await setActive({ session: createdSessionId });
-        // Navigate to the home tab after successful OAuth sign in
-        router.replace('/(tabs)/home');
+        // Navigate to the dashboard tab after successful OAuth sign in
+        router.replace('/(tabs)/dashboard');
       }
     } catch (err) {
       console.error('OAuth error', err);
@@ -100,8 +100,8 @@ export default function SignInScreen() {
       
       if (createdSessionId) {
         await setActive({ session: createdSessionId });
-        // Navigate to the home tab after successful OAuth sign in
-        router.replace('/(tabs)/home');
+        // Navigate to the dashboard tab after successful OAuth sign in
+        router.replace('/(tabs)/dashboard');
       }
     } catch (err) {
       console.error('OAuth error', err);
