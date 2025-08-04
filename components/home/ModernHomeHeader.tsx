@@ -62,7 +62,7 @@ const ModernHomeHeader: React.FC<ModernHomeHeaderProps> = ({ profile, netWorthDa
         <Text style={styles.appTitle}>PocketRackr</Text>
         <TouchableOpacity
           style={styles.addButton}
-          onPress={() => router.push('/add-account')}
+          onPress={() => router.push('accounts/add-account')}
         >
           <Ionicons name="add" size={24} color={colors.text.primary} />
         </TouchableOpacity>

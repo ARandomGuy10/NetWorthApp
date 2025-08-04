@@ -112,7 +112,10 @@ export default function AccountsScreen() {
     },
   ];
 
-  if (isLoading) {
+   // Fixed: Better loading logic that accounts for cached data
+  const showLoadingSpinner = (isLoading || (!dashboardData && isFetching)) && !accounts.length;
+
+  if (showLoadingSpinner) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -183,7 +186,7 @@ export default function AccountsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isFetching}
+            refreshing={isFetching && isLoading}
             onRefresh={onRefresh}
             colors={[colors.primary]}
             tintColor={colors.primary}

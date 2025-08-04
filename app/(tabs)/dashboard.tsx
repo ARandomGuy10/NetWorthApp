@@ -39,8 +39,14 @@ function DashboardScreen() {
     refetch();
   }, [refetch]);
 
+  // Fixed: Better loading logic that respects cached data
+  const showLoadingSpinner = (profileLoading || dashboardLoading) && 
+                            !profile && 
+                            !dashboardData && 
+                            !isFetching;
+
   // Show loading while either profile or dashboard is loading
-  if ((profileLoading || dashboardLoading) && !isFetching) {
+  if (showLoadingSpinner) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -63,9 +69,10 @@ function DashboardScreen() {
         style={styles.scrollView}
         refreshControl={
           <RefreshControl 
-            refreshing={isFetching} 
+            refreshing={Boolean(isFetching && !dashboardData)} 
             onRefresh={onRefresh}
             tintColor={colors.primary}
+            progressViewOffset={0}
           />
         }
         showsVerticalScrollIndicator={false}
