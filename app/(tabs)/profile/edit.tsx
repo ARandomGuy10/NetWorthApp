@@ -1,159 +1,217 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
+  TextInput,
   TouchableOpacity,
-  ScrollView,
-  Alert,
   ActivityIndicator,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useProfile, useUpdateProfile } from '../../../hooks/useProfile';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
+import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
 
 export default function EditProfileScreen() {
+  const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { data: profile, isLoading } = useProfile();
+  const { data: profile, isLoading: isLoadingProfile } = useProfile();
   const updateProfileMutation = useUpdateProfile();
-  
+
   const [formData, setFormData] = useState({
-    first_name: profile?.first_name || '',
-    last_name: profile?.last_name || '',
-    preferred_currency: profile?.preferred_currency || 'EUR',
-    theme: profile?.theme || 'DARK',
+    first_name: '',
+    last_name: '',
+    preferred_currency: 'EUR',
   });
 
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        preferred_currency: profile.preferred_currency || 'EUR',
+      });
+    }
+  }, [profile]);
+
   const handleSave = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       await updateProfileMutation.mutateAsync(formData);
-      Alert.alert('Success', 'Profile updated successfully');
       router.back();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile');
+      // Error is handled by the hook's onError callback
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.center]}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
-  }
+  const isLoading = isLoadingProfile || updateProfileMutation.isPending;
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.form}>
-        <Text style={styles.label}>First Name</Text>
-        <TextInput
-          style={styles.input}
-          value={formData.first_name}
-          onChangeText={(text) => setFormData({ ...formData, first_name: text })}
-          placeholder="Enter first name"
-        />
-
-        <Text style={styles.label}>Last Name</Text>
-        <TextInput
-          style={styles.input}
-          value={formData.last_name}
-          onChangeText={(text) => setFormData({ ...formData, last_name: text })}
-          placeholder="Enter last name"
-        />
-
-        <Text style={styles.label}>Preferred Currency</Text>
-        <TextInput
-          style={styles.input}
-          value={formData.preferred_currency}
-          onChangeText={(text) => setFormData({ ...formData, preferred_currency: text })}
-          placeholder="EUR"
-        />
-
-        <Text style={styles.label}>Theme</Text>
-        <TextInput
-          style={styles.input}
-          value={formData.theme}
-          onChangeText={(text) => setFormData({ ...formData, theme: text })}
-          placeholder="DARK"
-        />
-
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={handleSave}
-          disabled={updateProfileMutation.isPending}
-        >
-          <Text style={styles.saveButtonText}>
-            {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
-          </Text>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => router.back()}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <View style={styles.placeholder} />
       </View>
-    </ScrollView>
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={10}
+      >
+        <ScrollView 
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {isLoadingProfile ? (
+            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xxl }} />
+          ) : (
+            <View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>First Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.first_name}
+                  onChangeText={(text) => setFormData({ ...formData, first_name: text })}
+                  placeholder="Enter your first name"
+                  placeholderTextColor={colors.text.secondary}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Last Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  value={formData.last_name}
+                  onChangeText={(text) => setFormData({ ...formData, last_name: text })}
+                  placeholder="Enter your last name"
+                  placeholderTextColor={colors.text.secondary}
+                  autoCapitalize="words"
+                  returnKeyType="done"
+                />
+              </View>
+
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
+                  onPress={handleSave}
+                  disabled={isLoading}
+                >
+                  {updateProfileMutation.isPending ? (
+                    <ActivityIndicator color={colors.text.inverse} />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Save Changes</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => router.back()}
+                  disabled={isLoading}
+                >
+                  <Text style={[styles.cancelButtonText, isLoading && { opacity: 0.5 }]}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f6fa',
+    backgroundColor: colors.background.primary,
   },
-  center: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border.primary,
+  },
+  backButton: {
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  form: {
-    margin: 20,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  placeholder: {
+    width: 32,
+  },
+  scrollView: {
+    flex: 1,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  inputGroup: {
+    marginBottom: spacing.xl,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#444',
-    marginBottom: 8,
-    marginTop: 15,
+    color: colors.text.primary,
+    marginBottom: spacing.md,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+  textInput: {
+    backgroundColor: colors.background.card,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
     fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    color: colors.text.primary,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
+    minHeight: 52,
+    ...shadows.sm,
+  },
+  buttonContainer: {
+    marginTop: spacing.xxl,
+    gap: spacing.md,
   },
   saveButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 15,
-    borderRadius: 8,
-    marginTop: 30,
-    marginBottom: 15,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
+    padding: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 52,
+    ...shadows.md,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
   },
   saveButtonText: {
-    color: 'white',
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: 'bold',
+    color: colors.text.inverse,
   },
   cancelButton: {
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 15,
-    borderRadius: 8,
+    padding: spacing.lg,
+    alignItems: 'center',
   },
   cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    textAlign: 'center',
+    fontSize: 15,
+    fontWeight: '500',
+    color: colors.text.secondary,
   },
 });

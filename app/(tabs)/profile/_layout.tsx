@@ -7,14 +7,15 @@ export default function ProfileLayout() {
         name="index" 
         options={{ 
           title: 'Profile',
-          headerShown: true,
+          headerShown: false,
           headerBackTitle: 'Back'
         }} 
       />
       <Stack.Screen 
-        name="edit" 
+        name="edit"
         options={{ 
           presentation: 'modal',
+          headerShown: false,
           title: 'Edit Profile' 
         }} 
       />

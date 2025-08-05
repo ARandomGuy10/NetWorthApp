@@ -7,7 +7,7 @@ export default function ProfileLayout() {
         name="index" 
         options={{ 
           title: 'Analytics',
-          headerShown: true,
+          headerShown: false,
           headerBackTitle: 'Back'
         }} 
       />

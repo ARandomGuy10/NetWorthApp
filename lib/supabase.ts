@@ -191,5 +191,19 @@ export const ACCOUNT_CATEGORIES = {
 };
 
 export const CURRENCIES = [
-  'EUR', 'USD', 'GBP', 'JPY', 'CAD', 'AUD', 'CHF', 'INR', 'CNY', 'SEK'
+  'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK',
+  'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK',
+  'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN',
+  'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'
+];
+
+export const THEMES = [
+  'LIGHT',
+  'DARK',
+  'SYSTEM',
+  'MODERN_FINANCE',
+  'WARM_LUXURY',
+  'NEO_BANKING',
+  'DARK_MODE_FOCUSED',
+  'EARTHY_CALM'
 ];
