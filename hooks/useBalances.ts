@@ -1,15 +1,14 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabase } from './useSupabase';
-import type { Account, Balance } from '../lib/supabase'; 
-import { useSmartMutation } from './useSmartMutation';
+import type { Balance } from '../lib/supabase';
 
+/* ---------- list ---------- */
 export const useBalances = (accountId: string) => {
   const supabase = useSupabase();
-  
   return useQuery({
-    queryKey: ['balances', accountId],
+    queryKey: ['balance', accountId],
+    enabled: !!accountId,
     queryFn: async (): Promise<Balance[]> => {
-      console.log('Fetching balances for account:', accountId);
       const { data, error } = await supabase
         .from('balance_entries')
         .select('*')
@@ -18,36 +17,39 @@ export const useBalances = (accountId: string) => {
       if (error) throw error;
       return data;
     },
-    enabled: !!accountId,
   });
 };
 
+/* ---------- add ---------- */
 export const useAddBalance = () => {
+  const supabase    = useSupabase();
   const queryClient = useQueryClient();
-  const supabase = useSupabase();
-  
-  return useSmartMutation({
-    mutationFn: async (balanceData: Omit<Balance, 'id' | 'created_at' | 'updated_at'>) => {
-      console.log('Adding balance for account:', balanceData.account_id);
+
+  return useMutation({
+  mutationFn: async (payload: Omit<Balance, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('balance_entries')
-        .insert([balanceData])
+        .insert([payload])
         .select()
         .single();
       if (error) throw error;
       return data;
     },
-    invalidateQueries: ['balances', 'accounts', 'dashboard'],
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['balance', vars.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['account', vars.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
   });
 };
 
+/* ---------- update ---------- */
 export const useUpdateBalance = () => {
+  const supabase    = useSupabase();
   const queryClient = useQueryClient();
-  const supabase = useSupabase();
-  
-  return useSmartMutation({
+
+  return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Balance> }) => {
-      console.log('Updating balance for account:', id);
       const { data, error } = await supabase
         .from('balance_entries')
         .update(updates)
@@ -57,20 +59,31 @@ export const useUpdateBalance = () => {
       if (error) throw error;
       return data;
     },
-    invalidateQueries: ['balances', 'accounts', 'dashboard'],
+    onSuccess: (_data, vars: { id: string; updates: Partial<Balance> }) => {
+      queryClient.invalidateQueries({ queryKey: ['balance', vars.id] });
+      queryClient.invalidateQueries({ queryKey: ['account', vars.updates.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
   });
 };
 
+/* ---------- delete ---------- */
 export const useDeleteBalance = () => {
+  const supabase    = useSupabase();
   const queryClient = useQueryClient();
-  const supabase = useSupabase();
-  
-  return useSmartMutation({
-    mutationFn: async (id: string) => {
-      console.log('Deleting balance for account:', id);
-      const { error } = await supabase.from('balances').delete().eq('id', id);
+
+  return useMutation({
+    mutationFn: async ({ id, account_id }: { id: string; account_id: string }) => {
+      const { error } = await supabase
+        .from('balance_entries')
+        .delete()
+        .eq('id', id);
       if (error) throw error;
     },
-    invalidateQueries: ['balances', 'accounts', 'dashboard'],
+    onSuccess: (_data, { account_id }) => {
+      queryClient.invalidateQueries({ queryKey: ['balance', account_id] });
+      queryClient.invalidateQueries({ queryKey: ['account', account_id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
   });
 };

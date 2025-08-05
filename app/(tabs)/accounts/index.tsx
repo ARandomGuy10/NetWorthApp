@@ -42,9 +42,9 @@ export default function AccountsScreen() {
   const handleAccountMenu = (account: DashboardAccount, event: any) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    const { pageY, pageX } = event.nativeEvent;
+    const { pageY } = event.nativeEvent;
     setSelectedAccount(account);
-    setMenuPosition({ x: pageX, y: pageY });
+    setMenuPosition({ x: 0, y: pageY });
     setMenuVisible(true);
   };
 

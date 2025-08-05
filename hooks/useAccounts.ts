@@ -2,11 +2,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
 import { useSupabase } from './useSupabase';
-import { useSmartMutation } from './useSmartMutation';
 import type { Account, AccountUpdate, CreateAccountData } from '../lib/supabase';
+import { useToast } from '../app/providers/ToastProvider';
 
 
 
+/* ---------- list ---------- */
 export const useAccounts = () => {
   const { user } = useUser();
   const supabase = useSupabase();
@@ -26,6 +27,7 @@ export const useAccounts = () => {
   });
 };
 
+/* ---------- details ---------- */
 export const useAccountDetails = (accountId: string) => {
   const supabase = useSupabase();
   
@@ -44,55 +46,47 @@ export const useAccountDetails = (accountId: string) => {
   });
 };
 
+/* ---------- add ---------- */
 export const useAddAccount = () => {
-  const { user } = useUser();
-  const supabase = useSupabase();
-  
-  return useSmartMutation({
-    mutationFn: async (accountData: CreateAccountData) => {
-      const { initial_balance, ...accountFields } = accountData;
-      
-      // Create account first
-      const { data: account, error: accountError } = await supabase
+  const { user }     = useUser();
+  const supabase     = useSupabase();
+  const queryClient  = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: CreateAccountData) => {
+      const { initial_balance, ...fields } = payload;
+
+      const { data: account, error } = await supabase
         .from('accounts')
-        .insert([{ 
-          ...accountFields, 
-          user_id: user!.id 
-        }])
+        .insert([{ ...fields, user_id: user!.id }])
         .select()
         .single();
-        
-      if (accountError) throw accountError;
-      
-      // Create initial balance entry if provided and greater than 0
+      if (error) throw error;
+
       if (initial_balance && initial_balance > 0) {
-        const { error: balanceError } = await supabase
-          .from('balance_entries')
-          .insert([{
-            account_id: account.id,
-            amount: initial_balance,
-            date: new Date().toISOString().split('T')[0],
-            notes: 'Initial balance'
-          }]);
-          
-        if (balanceError) {
-          console.error('Error creating initial balance:', balanceError);
-          // Note: We don't throw here to avoid rolling back the account creation
-          // The account will be created but without the initial balance
-        }
+        await supabase.from('balance_entries').insert([{
+          account_id: account.id,
+          amount: initial_balance,
+          date: new Date().toISOString().split('T')[0],
+          notes: 'Initial balance',
+        }]);
       }
-      
       return account;
+    },  
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
     },
-    invalidateQueries: ['accounts', 'dashboard', 'balances'],
   });
 };
 
+/* ---------- update ---------- */
 export const useUpdateAccount = () => {
-  const supabase = useSupabase();
-  
-  return useSmartMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: Partial<AccountUpdate> }) => {
+  const supabase    = useSupabase();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: Partial<Account> }) => {
       const { data, error } = await supabase
         .from('accounts')
         .update(updates)
@@ -102,31 +96,35 @@ export const useUpdateAccount = () => {
       if (error) throw error;
       return data;
     },
-    invalidateQueries: ['accounts', 'dashboard'],
+    
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['account', vars.id] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+    },
   });
 };
 
+/* ---------- delete ---------- */
 export const useDeleteAccount = () => {
-  const supabase = useSupabase();
-  
-  return useSmartMutation({
-    mutationFn: async (id: string) => {
-      // First delete all balance entries for this account
-      const { error: balanceError } = await supabase
-        .from('balance_entries')
-        .delete()
-        .eq('account_id', id);
-      
-      if (balanceError) throw balanceError;
-      
-      // Then delete the account
-      const { error: accountError } = await supabase
-        .from('accounts')
-        .delete()
-        .eq('id', id);
-        
-      if (accountError) throw accountError;
+  const supabase    = useSupabase();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
+
+  return useMutation({
+    mutationFn: async (accountId: string) => {
+      await supabase.from('balance_entries').delete().eq('account_id', accountId);
+      const { error } = await supabase.from('accounts').delete().eq('id', accountId);
+      if (error) throw error;
     },
-    invalidateQueries: ['accounts', 'dashboard', 'balances'],
+    
+    onSuccess: (_d, accountId) => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showToast('Account deleted successfully', 'success');
+    },
+    onError: (error) => {
+      showToast(error.message, 'error');
+    }
   });
 };
