@@ -13,6 +13,8 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 
+import { useIsFocused } from '@react-navigation/native';
+
 const ModernFAB: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [animation] = useState(new Animated.Value(0));
@@ -20,6 +22,14 @@ const ModernFAB: React.FC = () => {
   const router = useRouter();
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const isFocused = useIsFocused();
+
+  // Effect to close the FAB if the screen is not focused
+  React.useEffect(() => {
+    if (!isFocused && isOpen) {
+      toggleFAB();
+    }
+  }, [isFocused]);
 
   const toggleFAB = (): void => {
     const toValue = isOpen ? 0 : 1;
@@ -36,12 +46,7 @@ const ModernFAB: React.FC = () => {
 
   const handleAction = (action: 'account' | 'balance'): void => {
     toggleFAB();
-    Animated.spring(animation, {
-      toValue: 0,
-      friction: 6,
-      tension: 100,
-      useNativeDriver: true,
-    }).start();
+    
 
     if (action === 'account') {
       router.push('accounts/add-account');
