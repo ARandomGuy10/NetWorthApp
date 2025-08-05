@@ -22,15 +22,9 @@ import { ACCOUNT_CATEGORIES, CURRENCIES } from '@/lib/supabase';
 import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
 import CustomPicker from '@/components/ui/CustomPicker';
 import Switch from '@/components/ui/Switch';
-import Toast from '@/components/ui/Toast';
+import { useToast } from '@/hooks/providers/ToastProvider';
 
-type ToastType = 'success' | 'error' | 'warning' | 'info';
 
-interface ToastState {
-  visible: boolean;
-  message: string;
-  type: ToastType;
-}
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -52,11 +46,7 @@ export default function AddAccountScreen() {
   });
 
   const [initialLoading, setInitialLoading] = useState(isEditMode);
-  const [toast, setToast] = useState<ToastState>({
-    visible: false,
-    message: '',
-    type: 'success'
-  });
+  const { showToast } = useToast();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -98,11 +88,7 @@ export default function AddAccountScreen() {
         didPrefillRef.current = true;
       } catch (error) {
         console.error('Error parsing account data:', error);
-        setToast({
-          visible: true,
-          message: 'Error loading account data',
-          type: 'error'
-        });
+        showToast('Error loading account data', 'error');
       } finally {
         setInitialLoading(false);
       }
@@ -111,29 +97,17 @@ export default function AddAccountScreen() {
 
   const validateForm = () => {
     if (!formData.name.trim()) {
-      setToast({
-        visible: true,
-        message: 'Please enter an account name',
-        type: 'error'
-      });
+      showToast('Please enter an account name', 'error');
       return false;
     }
     
     if (!formData.category) {
-      setToast({
-        visible: true,
-        message: 'Please select a category',
-        type: 'error'
-      });
+      showToast('Please select a category', 'error');
       return false;
     }
     
     if (!isEditMode && formData.initial_balance && isNaN(parseFloat(formData.initial_balance))) {
-      setToast({
-        visible: true,
-        message: 'Please enter a valid initial balance',
-        type: 'error'
-      });
+      showToast('Please enter a valid initial balance', 'error');
       return false;
     }
     
@@ -161,12 +135,6 @@ export default function AddAccountScreen() {
           updates: saveData
         });
 
-        setToast({
-          visible: true,
-          message: 'Account updated successfully!',
-          type: 'success'
-        });
-        
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setTimeout(() => router.back(), 1500);
       } else {
@@ -182,22 +150,12 @@ export default function AddAccountScreen() {
 
         await addAccountMutation.mutateAsync(accountWithBalance);
 
-        setToast({
-          visible: true,
-          message: 'Account created successfully!',
-          type: 'success'
-        });
-        
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setTimeout(() => router.back(), 1500);
       }
     } catch (error) {
       console.error('Error saving account:', error);
-      setToast({
-        visible: true,
-        message: `Failed to ${isEditMode ? 'update' : 'create'} account. Please try again.`,
-        type: 'error'
-      });
+      showToast(`Failed to ${isEditMode ? 'update' : 'create'} account. Please try again.`, 'error');
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
@@ -457,12 +415,7 @@ export default function AddAccountScreen() {
         </Animated.ScrollView>
       </KeyboardAvoidingView>
 
-      <Toast
-        visible={toast.visible}
-        message={toast.message}
-        type={toast.type}
-        onDismiss={() => setToast({ ...toast, visible: false })}
-      />
+      
     </View>
   );
 }

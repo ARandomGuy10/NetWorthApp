@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router';
-import { ToastProvider } from './providers/ToastProvider';
+import { ToastProvider } from '../hooks/providers/ToastProvider';
 import { StatusBar } from 'expo-status-bar';
 import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo';
 import { tokenCache } from '@clerk/clerk-expo/token-cache';

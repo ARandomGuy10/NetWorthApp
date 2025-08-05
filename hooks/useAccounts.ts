@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
 import { useSupabase } from './useSupabase';
 import type { Account, AccountUpdate, CreateAccountData } from '../lib/supabase';
-import { useToast } from '../app/providers/ToastProvider';
+import { useToast } from './providers/ToastProvider';
 
 
 
@@ -51,6 +51,7 @@ export const useAddAccount = () => {
   const { user }     = useUser();
   const supabase     = useSupabase();
   const queryClient  = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async (payload: CreateAccountData) => {
@@ -76,7 +77,11 @@ export const useAddAccount = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showToast('Account added successfully', 'success');
     },
+    onError: (error) => {
+      showToast(error.message, 'error');
+    }
   });
 };
 
@@ -84,6 +89,7 @@ export const useAddAccount = () => {
 export const useUpdateAccount = () => {
   const supabase    = useSupabase();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Account> }) => {
@@ -101,7 +107,11 @@ export const useUpdateAccount = () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['account', vars.id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showToast('Account updated successfully', 'success');
     },
+    onError: (error) => {
+      showToast(error.message, 'error');
+    }
   });
 };
 
