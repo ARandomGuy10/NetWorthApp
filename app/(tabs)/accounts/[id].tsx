@@ -24,20 +24,19 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAccountDetails } from '@/hooks/useAccounts';
 import { useBalances, useDeleteBalance } from '@/hooks/useBalances';
 import { formatCurrency } from '@/utils/utils';
-import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
 import ActionMenu, { Action } from '@/components/ui/ActionMenu';
 import type { Balance } from '@/lib/supabase';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
-/* ───────────────── helper colour decisions ───────────────── */
-const cardBG  = colors.background.elevated;   // lifted a shade above page BG
-const txtMain = colors.text.primary;          // white
-const txtSub  = colors.text.secondary;        // light-grey
 
-export default function AccountDetailScreen() {
+  export default function AccountDetailScreen() {
   /* ───────── nav / params ───────── */
   const { id }       = useLocalSearchParams();
   const insets       = useSafeAreaInsets();
   const router       = useRouter();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   /* ───────── queries ───────── */
   const { data: account,   isLoading: accLoading } = useAccountDetails(id as string);
@@ -95,7 +94,7 @@ export default function AccountDetailScreen() {
   if (accLoading || balLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading account…</Text>
       </View>
     );
@@ -144,7 +143,7 @@ export default function AccountDetailScreen() {
       {/* ───── Header ───── */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.hBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={txtMain} />
+          <Ionicons name="arrow-back" size={22} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.hTitle} numberOfLines={1}>{account.name}</Text>
         <TouchableOpacity
@@ -156,7 +155,7 @@ export default function AccountDetailScreen() {
             })
           }
         >
-          <Ionicons name="create-outline" size={20} color={txtMain} />
+          <Ionicons name="create-outline" size={20} color={theme.colors.text.primary} />
         </TouchableOpacity>
       </View>
 
@@ -168,31 +167,31 @@ export default function AccountDetailScreen() {
           <RefreshControl
             refreshing={Boolean(isFetching && !balLoading)}
             onRefresh={onRefresh}
-            tintColor={colors.primary}
+            tintColor={theme.colors.primary}
           />
         }
       >
         {/* Summary card */}
-        <Animated.View style={[styles.card, { opacity: fade, backgroundColor: cardBG }]}>
+        <Animated.View style={[styles.card, { opacity: fade, backgroundColor: theme.colors.background.elevated }]}>
           <View style={styles.cardRow}>
             <View style={styles.iconWrap}>
-              <Ionicons name={iconFor(account.category)} size={24} color={colors.text.inverse} />
+              <Ionicons name={iconFor(account.category)} size={24} color={theme.colors.text.inverse} />
             </View>
             <View style={styles.meta}>
-              <Text style={[styles.metaName, { color: txtMain }]}>{account.name}</Text>
-              <Text style={[styles.metaSub,  { color: txtSub  }]}>
+              <Text style={[styles.metaName, { color: theme.colors.text.primary }]}>{account.name}</Text>
+              <Text style={[styles.metaSub,  { color: theme.colors.text.secondary  }]}>
                 {account.type === 'asset' ? 'Asset' : 'Liability'} · {account.category}
               </Text>
             </View>
           </View>
 
-          <Text style={[styles.balanceLabel, { color: txtSub }]}>Current Balance</Text>
+          <Text style={[styles.balanceLabel, { color: theme.colors.text.secondary }]}>Current Balance</Text>
           <Text
             style={[
               styles.balanceValue,
               account.type === 'liability'
-                ? { color: colors.liability }
-                : { color: colors.asset },
+                ? { color: theme.colors.liability }
+                : { color: theme.colors.asset },
             ]}
           >
             {account.type === 'liability' ? '-' : ''}
@@ -208,12 +207,12 @@ export default function AccountDetailScreen() {
             router.push({ pathname: 'accounts/add-balance', params: { accountId: id } })
           }
         >
-          <Ionicons name="add" size={18} color={colors.text.inverse} />
+          <Ionicons name="add" size={18} color={theme.colors.text.inverse} />
           <Text style={styles.ctaTxt}>Record New Balance</Text>
         </TouchableOpacity>
 
         {/* History header */}
-        <Text style={[styles.sectionHdr, { color: txtMain }]}>Balance History</Text>
+        <Text style={[styles.sectionHdr, { color: theme.colors.text.primary }]}>Balance History</Text>
 
         {/* History list */}
         {(!balances || balances.length === 0) ? (
@@ -221,8 +220,8 @@ export default function AccountDetailScreen() {
             <Ionicons
               name="time-outline"
               size={36}
-              color={colors.text.tertiary}
-              style={{ marginBottom: spacing.lg }}
+              color={theme.colors.text.tertiary}
+              style={{ marginBottom: theme.spacing.lg }}
             />
             <Text style={styles.emptyTitle}>No entries yet</Text>
             <Text style={styles.emptySub}>
@@ -243,7 +242,7 @@ export default function AccountDetailScreen() {
               </View>
               <View style={styles.itemRight}>
                 <Text style={styles.itemAmt}>{formatCurrency(b.amount, account.currency)}</Text>
-                <Ionicons name="ellipsis-horizontal" size={18} color={colors.text.secondary} />
+                <Ionicons name="ellipsis-horizontal" size={18} color={theme.colors.text.secondary} />
               </View>
             </TouchableOpacity>
           ))
@@ -261,61 +260,60 @@ export default function AccountDetailScreen() {
   );
 }
 
-/* ─────────────────────────── Styles ─────────────────────────── */
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  loadingText: { marginTop: spacing.lg, fontSize: 16, color: colors.text.secondary },
-  errorText:   { fontSize: 16, color: colors.error, marginBottom: spacing.lg },
+  loadingText: { marginTop: theme.spacing.lg, fontSize: 16, color: theme.colors.text.secondary },
+  errorText:   { fontSize: 16, color: theme.colors.error, marginBottom: theme.spacing.lg },
 
   backBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
   },
-  backTxt: { color: colors.text.inverse, fontWeight: '600' },
+  backTxt: { color: theme.colors.text.inverse, fontWeight: '600' },
 
   /* Header */
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
     height: 56,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
   },
   hBtn:   { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  hTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: txtMain },
+  hTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: theme.colors.text.primary },
 
   /* ScrollView */
-  scContent: { paddingBottom: spacing.xxxl },
+  scContent: { paddingBottom: theme.spacing.xxxl },
 
   /* Summary card */
   card: {
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.lg,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    marginTop: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border.primary,
-    ...shadows.md,
+    borderColor: theme.colors.border.primary,
+    ...theme.shadows.md,
   },
-  cardRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg },
+  cardRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.lg },
   iconWrap: {
     width: 48, height: 48, borderRadius: 24,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center', alignItems: 'center',
-    marginRight: spacing.lg,
+    marginRight: theme.spacing.lg,
   },
   meta:      { flex: 1 },
   metaName:  { fontSize: 18, fontWeight: '600' },
   metaSub:   { fontSize: 13 },
-  balanceLabel: { fontSize: 14, textAlign: 'center', marginBottom: spacing.xs },
+  balanceLabel: { fontSize: 14, textAlign: 'center', marginBottom: theme.spacing.xs },
   balanceValue: { fontSize: 32, fontWeight: 'bold', textAlign: 'center' },
 
   /* CTA */
@@ -323,43 +321,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
-    marginHorizontal: spacing.lg,
-    marginVertical: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.md,
-    ...shadows.md,
+    backgroundColor: theme.colors.primary,
+    marginHorizontal: theme.spacing.lg,
+    marginVertical: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    ...theme.shadows.md,
   },
-  ctaTxt: { color: colors.text.inverse, fontSize: 15, fontWeight: '700', marginLeft: spacing.sm },
+  ctaTxt: { color: theme.colors.text.inverse, fontSize: 15, fontWeight: '700', marginLeft: theme.spacing.sm },
 
   /* Section header */
   sectionHdr: {
     fontSize: 18,
     fontWeight: '600',
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
 
   /* Empty state */
-  empty:      { alignItems: 'center', padding: spacing.xxl },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: txtMain, marginTop: spacing.lg },
-  emptySub:   { fontSize: 14, color: colors.text.secondary, textAlign: 'center', marginTop: spacing.xs },
+  empty:      { alignItems: 'center', padding: theme.spacing.xxl },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text.primary, marginTop: theme.spacing.lg },
+  emptySub:   { fontSize: 14, color: theme.colors.text.secondary, textAlign: 'center', marginTop: theme.spacing.xs },
 
   /* History item */
   item: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.border.primary,
-    padding: spacing.lg,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.sm,
+    borderColor: theme.colors.border.primary,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.sm,
   },
-  itemDate:  { fontSize: 15, fontWeight: '600', color: colors.text.primary },
-  itemNotes: { fontSize: 13, color: colors.text.secondary, marginTop: 2 },
+  itemDate:  { fontSize: 15, fontWeight: '600', color: theme.colors.text.primary },
+  itemNotes: { fontSize: 13, color: theme.colors.text.secondary, marginTop: 2 },
   itemRight: { flexDirection: 'row', alignItems: 'center' },
-  itemAmt:   { fontSize: 15, fontWeight: 'bold', color: colors.text.primary, marginRight: spacing.sm },
+  itemAmt:   { fontSize: 15, fontWeight: 'bold', color: theme.colors.text.primary, marginRight: theme.spacing.sm },
 });
+

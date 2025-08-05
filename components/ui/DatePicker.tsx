@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius } from '../../src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 interface DatePickerProps {
   value?: string;
@@ -26,6 +27,8 @@ export default function DatePicker({
 }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState<boolean>(false);
   const [tempDate, setTempDate] = useState<Date>(value ? new Date(value) : new Date());
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const formatDateForDisplay = (dateString?: string): string => {
     if (!dateString) return placeholder;
@@ -85,7 +88,7 @@ export default function DatePicker({
         <Ionicons 
           name="calendar-outline" 
           size={20} 
-          color={disabled ? colors.text.disabled : colors.text.secondary} 
+          color={disabled ? theme.colors.text.disabled : theme.colors.text.secondary} 
         />
       </TouchableOpacity>
 
@@ -135,16 +138,16 @@ export default function DatePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   dateButton: {
-    backgroundColor: colors.background.tertiary,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border.primary,
+    borderColor: theme.colors.border.primary,
     minHeight: 52,
   },
   dateButtonDisabled: {
@@ -152,13 +155,13 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   placeholderText: {
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   disabledText: {
-    color: colors.text.disabled,
+    color: theme.colors.text.disabled,
   },
   modalOverlay: {
     flex: 1,
@@ -166,32 +169,32 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: colors.background.card,
-    borderTopLeftRadius: borderRadius.lg,
-    borderTopRightRadius: borderRadius.lg,
+    backgroundColor: theme.colors.background.card,
+    borderTopLeftRadius: theme.borderRadius.lg,
+    borderTopRightRadius: theme.borderRadius.lg,
     paddingBottom: 34, // Safe area padding
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
   },
   modalTitle: {
     fontSize: 17,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   modalButton: {
     fontSize: 17,
-    color: colors.primary,
+    color: theme.colors.primary,
   },
   confirmButton: {
     fontWeight: '600',
   },
   picker: {
-    backgroundColor: colors.background.card,
+    backgroundColor: theme.colors.background.card,
   },
 });

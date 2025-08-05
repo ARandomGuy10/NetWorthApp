@@ -11,7 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 export interface Action {
   title: string;
@@ -40,6 +41,9 @@ export default function ActionMenu({
   /* simple fade/scale anim */
   const fade  = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.8)).current;
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
 
   const insets = useSafeAreaInsets();
 
@@ -115,7 +119,7 @@ export default function ActionMenu({
                   <Ionicons
                     name={a.icon}
                     size={18}
-                    color={a.destructive ? colors.error : colors.text.primary}
+                    color={a.destructive ? theme.colors.error : theme.colors.text.primary}
                     style={styles.menuIcon}
                   />
                 )}
@@ -137,17 +141,17 @@ export default function ActionMenu({
 }
 
 /* ───────────────── styles ───────────────── */
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
   },
   menu: {
     position: 'absolute',
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
     minWidth: 200,
-    ...shadows.md,
+    ...theme.shadows.md,
   },
   menuItem: {
     flexDirection: 'row',
@@ -155,12 +159,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
     minHeight: 56,
   },
   lastMenuItem: { borderBottomWidth: 0 },
   destructiveMenuItem: { backgroundColor: 'rgba(255,59,48,0.06)' },
-  menuIcon: { marginRight: spacing.md },
-  menuText: { fontSize: 15, color: colors.text.primary, fontWeight: '500', flex: 1 },
-  destructiveText: { color: colors.error },
+  menuIcon: { marginRight: theme.spacing.md },
+  menuText: { fontSize: 15, color: theme.colors.text.primary, fontWeight: '500', flex: 1 },
+  destructiveText: { color: theme.colors.error },
 });

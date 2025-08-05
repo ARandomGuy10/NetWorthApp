@@ -10,7 +10,8 @@ import {
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../../src/styles/colors';
+import { Theme } from '@/lib/supabase';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
 const TAB_HEIGHT = 70; // Height of the tab bar
@@ -30,12 +31,13 @@ interface TabBarButtonProps {
   route: { name: string; key: string };
   isFocused: boolean;
   onPress: () => void;
+  theme: Theme;
 }
 
-const TabBarButton: React.FC<TabBarButtonProps> = ({ route, isFocused, onPress }) => {
+const TabBarButton: React.FC<TabBarButtonProps> = ({ route, isFocused, onPress, theme }) => {
   const routeName = route.name as RouteNames;
   const iconName = isFocused ? ICONS[routeName] : `${ICONS[routeName]}-outline` as keyof typeof Ionicons.glyphMap;
-  const iconColor = isFocused ? colors.text.primary : colors.text.secondary; // White for active, secondary for inactive
+  const iconColor = isFocused ? theme.colors.text.primary : theme.colors.text.secondary; // White for active, secondary for inactive
   const scale = React.useRef(new Animated.Value(1)).current; // For subtle scale animation
 
   useEffect(() => {
@@ -50,7 +52,7 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({ route, isFocused, onPress }
     <TouchableOpacity
       key={route.key}
       onPress={onPress}
-      style={styles.tabButton}
+      style={getStyles(theme).tabButton}
       activeOpacity={1}
     >
       <Animated.View style={{ transform: [{ scale }] }}>
@@ -62,6 +64,8 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({ route, isFocused, onPress }
 
 export default function CustomBottomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   return (
     <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_HEIGHT + insets.bottom }]}>
@@ -87,6 +91,7 @@ export default function CustomBottomTabBar({ state, descriptors, navigation }: B
             route={route}
             isFocused={isFocused}
             onPress={onPress}
+            theme={theme}
           />
         );
       })}
@@ -95,13 +100,13 @@ export default function CustomBottomTabBar({ state, descriptors, navigation }: B
 }
 
 // ✅ Your original styles preserved exactly
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.background.navBarBackground, // Use new color constant
+    backgroundColor: theme.colors.background.navBarBackground,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.25,

@@ -207,3 +207,12 @@ export const THEMES = [
   'DARK_MODE_FOCUSED',
   'EARTHY_CALM'
 ];
+
+
+export type Theme = {
+  name: string;
+  colors: any;
+  spacing: any;
+  borderRadius: any;
+  shadows: any;
+};

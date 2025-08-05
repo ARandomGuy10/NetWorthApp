@@ -9,8 +9,9 @@ import {
   Modal,
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { colors, spacing, borderRadius } from '@/src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { formatCurrency } from '@/utils/utils';
+import { Theme } from '@/lib/supabase';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -55,40 +56,43 @@ const ModernNetWorthChart: React.FC<ModernNetWorthChartProps> = ({ chartData, ne
   const [selectedRange, setSelectedRange] = useState<string>('6M');
   const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
   const [tooltipData, setTooltipData] = useState<TooltipData | null>(null);
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   // Get the currency from the data, with a fallback
   const currency = netWorthData?.currency || 'EUR';
 
   const chartConfig = {
     backgroundColor: 'transparent',
-    backgroundGradientFrom: colors.background.card,
-    backgroundGradientTo: colors.background.card,
+    backgroundGradientFrom: theme.colors.background.card,
+    backgroundGradientTo: theme.colors.background.card,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(32, 227, 178, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(229, 231, 235, ${opacity})`,
+    color: (opacity = 1) => theme.colors.primary.replace(')', `, ${opacity})`).replace('rgb', 'rgba'),
+    labelColor: (opacity = 1) => theme.colors.text.secondary.replace(')', `, ${opacity})`).replace('rgb', 'rgba'),
     style: {
       borderRadius: 16,
     },
     propsForDots: {
       r: '4',
       strokeWidth: '2',
-      stroke: colors.primary,
-      fill: colors.primary,
+      stroke: theme.colors.primary,
+      fill: theme.colors.primary,
     },
     propsForBackgroundLines: {
       strokeDasharray: '',
-      stroke: colors.border.primary,
+      stroke: theme.colors.border.primary,
       strokeWidth: 1,
     },
   };
 
   const processChartData = () => {
+    const line_color = (opacity = 1) => theme.colors.primary.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
     if (!chartData || chartData.length === 0) {
       return {
         labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
         datasets: [{
           data: [0, 0, 0, 0, 0, 0],
-          color: (opacity = 1) => `rgba(32, 227, 178, ${opacity})`,
+          color: line_color,
           strokeWidth: 3,
         }],
       };
@@ -98,7 +102,7 @@ const ModernNetWorthChart: React.FC<ModernNetWorthChartProps> = ({ chartData, ne
       labels: chartData.slice(-6).map(item => item.label),
       datasets: [{
         data: chartData.slice(-6).map(item => item.value),
-        color: (opacity = 1) => `rgba(32, 227, 178, ${opacity})`,
+        color: line_color,
         strokeWidth: 3,
       }],
     };
@@ -214,24 +218,24 @@ const ModernNetWorthChart: React.FC<ModernNetWorthChartProps> = ({ chartData, ne
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   currentValue: {
     alignItems: 'flex-end',
@@ -239,56 +243,56 @@ const styles = StyleSheet.create({
   valueText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   assetsText: {
     fontSize: 12,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   liabilitiesText: {
     fontSize: 12,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   chartContainer: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   chart: {
-    borderRadius: borderRadius.md,
+    borderRadius: theme.borderRadius.md,
   },
   xAxisLabels: {
     flexDirection: 'row',
     justifyContent: 'space-around',
     width: screenWidth - 80,
-    marginTop: spacing.sm,
+    marginTop: theme.spacing.sm,
   },
   xAxisLabel: {
     fontSize: 12,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   timeRangeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: colors.background.tertiary,
-    borderRadius: borderRadius.md,
-    padding: spacing.xs,
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xs,
   },
   timeRangeButton: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
   },
   timeRangeButtonActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
   },
   timeRangeText: {
     fontSize: 14,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
     fontWeight: '500',
   },
   timeRangeTextActive: {
-    color: colors.background.primary,
+    color: theme.colors.background.primary,
     fontWeight: '600',
   },
   modalOverlay: {
@@ -298,35 +302,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tooltip: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.elevated,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     minWidth: 200,
     alignItems: 'center',
   },
   tooltipTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.sm,
   },
   tooltipValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.primary,
-    marginBottom: spacing.md,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.md,
   },
   tooltipBreakdown: {
     alignItems: 'center',
   },
   tooltipAssets: {
     fontSize: 14,
-    color: colors.asset,
-    marginBottom: spacing.xs,
+    color: theme.colors.asset,
+    marginBottom: theme.spacing.xs,
   },
   tooltipLiabilities: {
     fontSize: 14,
-    color: colors.liability,
+    color: theme.colors.liability,
   },
 });
 

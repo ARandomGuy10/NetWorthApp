@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { ThemeProvider } from '../src/styles/theme/ThemeContext';
 import { ToastProvider } from '../hooks/providers/ToastProvider';
 import { StatusBar } from 'expo-status-bar';
 import { ClerkProvider, ClerkLoaded } from '@clerk/clerk-expo';
@@ -16,21 +17,23 @@ if (!publishableKey) {
 
 export default function RootLayout() {
   return (
-    <ClerkProvider 
+    <ClerkProvider
       tokenCache={tokenCache}
       publishableKey={publishableKey}
     >
       <QueryClientProvider client={queryClient}>
-        <ToastProvider>
-          <ClerkLoaded>
-          <StatusBar style="auto" />
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="(auth)" />
-              <Stack.Screen name="(tabs)" />
-            </Stack>
-          </ClerkLoaded>
-        </ToastProvider>
+        <ThemeProvider>
+          <ToastProvider>
+            <ClerkLoaded>
+              <StatusBar style="auto" />
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" />
+                <Stack.Screen name="(auth)" />
+                <Stack.Screen name="(tabs)" />
+              </Stack>
+            </ClerkLoaded>
+          </ToastProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );

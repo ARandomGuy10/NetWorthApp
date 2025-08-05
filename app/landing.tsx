@@ -11,11 +11,16 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { colors, spacing, borderRadius, shadows } from '../src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 const { width, height } = Dimensions.get('window');
 
 export default function LandingPage() {
+
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
+
   const handleGetStarted = () => {
     router.push('/(auth)/sign-up');
   };
@@ -30,7 +35,7 @@ export default function LandingPage() {
       <View style={styles.header}>
         <View style={styles.logo}>
           <View style={styles.logoIcon}>
-            <Ionicons name="trending-up" size={24} color={colors.primary} />
+            <Ionicons name="trending-up" size={24} color={theme.colors.primary} />
           </View>
           <Text style={styles.logoText}>pocketrackr</Text>
         </View>
@@ -78,7 +83,7 @@ export default function LandingPage() {
           <View style={styles.phoneMockup}>
             <View style={styles.phoneHeader}>
               <View style={styles.logoIconSmall}>
-                <Ionicons name="trending-up" size={16} color={colors.primary} />
+                <Ionicons name="trending-up" size={16} color={theme.colors.primary} />
               </View>
               <Text style={styles.phoneLogoText}>pocketrackr</Text>
             </View>
@@ -120,7 +125,7 @@ export default function LandingPage() {
                 <Text style={styles.breakdownValue}>$12,700</Text>
               </View>
 
-              <Text style={[styles.breakdownTitle, { marginTop: spacing.lg }]}>Liabilities Breakdown</Text>
+              <Text style={[styles.breakdownTitle, { marginTop: theme.spacing.lg }]}>Liabilities Breakdown</Text>
               <View style={styles.breakdownItem}>
                 <Text style={styles.breakdownLabel}>Mortgage</Text>
                 <Text style={styles.breakdownValue}>$88,000</Text>
@@ -151,21 +156,21 @@ export default function LandingPage() {
       <View style={styles.featuresSection}>
         <View style={styles.featureItem}>
           <View style={styles.featureIcon}>
-            <Ionicons name="trending-up" size={32} color={colors.primary} />
+            <Ionicons name="trending-up" size={32} color={theme.colors.primary} />
           </View>
           <Text style={styles.featureTitle}>Real-time{'\n'}Net Worth{'\n'}Tracking</Text>
         </View>
 
         <View style={styles.featureItem}>
           <View style={styles.featureIcon}>
-            <Ionicons name="bar-chart" size={32} color={colors.primary} />
+            <Ionicons name="bar-chart" size={32} color={theme.colors.primary} />
           </View>
           <Text style={styles.featureTitle}>Comprehensive{'\n'}Asset/Liability{'\n'}Breakdown</Text>
         </View>
 
         <View style={styles.featureItem}>
           <View style={styles.featureIcon}>
-            <Ionicons name="target" size={32} color={colors.primary} />
+            <Ionicons name="target" size={32} color={theme.colors.primary} />
           </View>
           <Text style={styles.featureTitle}>Goal Tracking{'\n'}& Progress</Text>
         </View>
@@ -187,18 +192,18 @@ export default function LandingPage() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    paddingTop: Platform.OS === 'web' ? spacing.xl : spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
+    paddingTop: Platform.OS === 'web' ? theme.spacing.xl : theme.spacing.lg,
   },
   logo: {
     flexDirection: 'row',
@@ -208,46 +213,46 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: `${colors.primary}20`,
+    backgroundColor: `${theme.colors.primary}20`,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.sm,
+    marginRight: theme.spacing.sm,
   },
   logoText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   nav: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xl,
+    gap: theme.spacing.xl,
   },
   navItem: {
-    paddingVertical: spacing.sm,
+    paddingVertical: theme.spacing.sm,
   },
   navText: {
     fontSize: 16,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
     fontWeight: '500',
   },
   getStartedButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
   },
   getStartedText: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.background.primary,
+    color: theme.colors.background.primary,
   },
   heroSection: {
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxxl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xxxl,
     alignItems: 'center',
-    gap: spacing.xxxl,
+    gap: theme.spacing.xxxl,
   },
   heroContent: {
     flex: Platform.OS === 'web' ? 1 : 0,
@@ -256,29 +261,29 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: Platform.OS === 'web' ? 48 : 36,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     textAlign: Platform.OS === 'web' ? 'left' : 'center',
-    marginBottom: spacing.xl,
+    marginBottom: theme.spacing.xl,
     lineHeight: Platform.OS === 'web' ? 56 : 44,
   },
   heroSubtitle: {
     fontSize: 18,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
     textAlign: Platform.OS === 'web' ? 'left' : 'center',
-    marginBottom: spacing.xxxl,
+    marginBottom: theme.spacing.xxxl,
     lineHeight: 26,
   },
   downloadButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xxxl,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.md,
-    ...shadows.md,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xxxl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    ...theme.shadows.md,
   },
   downloadButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.background.primary,
+    color: theme.colors.background.primary,
   },
   appPreview: {
     flex: Platform.OS === 'web' ? 1 : 0,
@@ -288,62 +293,62 @@ const styles = StyleSheet.create({
   phoneMockup: {
     width: Platform.OS === 'web' ? 350 : width * 0.8,
     height: Platform.OS === 'web' ? 700 : 600,
-    backgroundColor: colors.background.secondary,
+    backgroundColor: theme.colors.background.secondary,
     borderRadius: 24,
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     borderWidth: 2,
-    borderColor: colors.border.primary,
-    ...shadows.lg,
+    borderColor: theme.colors.border.primary,
+    ...theme.shadows.lg,
   },
   phoneHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   logoIconSmall: {
     width: 24,
     height: 24,
     borderRadius: 6,
-    backgroundColor: `${colors.primary}20`,
+    backgroundColor: `${theme.colors.primary}20`,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.sm,
+    marginRight: theme.spacing.sm,
   },
   phoneLogoText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   phoneButtons: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.xl,
   },
   phoneButton: {
     flex: 1,
-    backgroundColor: colors.background.tertiary,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.sm,
+    backgroundColor: theme.colors.background.tertiary,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   phoneButtonText: {
     fontSize: 12,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
     fontWeight: '500',
   },
   phoneNetWorth: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   phoneChart: {
     height: 80,
-    backgroundColor: colors.background.tertiary,
-    borderRadius: borderRadius.md,
-    marginBottom: spacing.lg,
+    backgroundColor: theme.colors.background.tertiary,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
@@ -354,12 +359,12 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     height: 2,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 1,
   },
   chartPlaceholder: {
     fontSize: 12,
-    color: colors.text.tertiary,
+    color: theme.colors.text.tertiary,
     textAlign: 'center',
   },
   phoneBreakdown: {
@@ -368,54 +373,54 @@ const styles = StyleSheet.create({
   breakdownTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.sm,
   },
   breakdownItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
+    paddingVertical: theme.spacing.xs,
   },
   breakdownLabel: {
     fontSize: 13,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   breakdownValue: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   goalSection: {
-    marginTop: spacing.lg,
+    marginTop: theme.spacing.lg,
   },
   goalLabel: {
     fontSize: 13,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.xs,
   },
   progressBar: {
     height: 6,
-    backgroundColor: colors.background.tertiary,
+    backgroundColor: theme.colors.background.tertiary,
     borderRadius: 3,
-    marginBottom: spacing.xs,
+    marginBottom: theme.spacing.xs,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     borderRadius: 3,
   },
   progressText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.primary,
+    color: theme.colors.primary,
     textAlign: 'right',
   },
   featuresSection: {
     flexDirection: Platform.OS === 'web' ? 'row' : 'column',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxxl,
-    gap: spacing.xxxl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xxxl,
+    gap: theme.spacing.xxxl,
     justifyContent: 'center',
   },
   featureItem: {
@@ -426,52 +431,52 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: `${colors.primary}20`,
+    backgroundColor: `${theme.colors.primary}20`,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   featureTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     textAlign: 'center',
     lineHeight: 24,
   },
   ctaSection: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxxl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xxxl,
     alignItems: 'center',
   },
   ctaTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: theme.spacing.xl,
     maxWidth: 600,
   },
   ctaButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xxxl,
-    paddingVertical: spacing.lg,
-    borderRadius: borderRadius.md,
-    ...shadows.md,
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xxxl,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    ...theme.shadows.md,
   },
   ctaButtonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.background.primary,
+    color: theme.colors.background.primary,
   },
   footer: {
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.xl,
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: colors.border.primary,
+    borderTopColor: theme.colors.border.primary,
   },
   footerText: {
     fontSize: 14,
-    color: colors.text.tertiary,
+    color: theme.colors.text.tertiary,
   },
 });

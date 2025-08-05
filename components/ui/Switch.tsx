@@ -6,7 +6,8 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing } from '../../src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 interface SwitchProps {
   value: boolean;
@@ -22,11 +23,13 @@ export default function Switch({
   onValueChange, 
   disabled = false,
   size = 'medium',
-  activeColor = colors.primary,
-  inactiveColor = colors.border.secondary
+  activeColor = '#10B981',
+  inactiveColor = '#F87171'
 }: SwitchProps): JSX.Element {
   const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const sizes = {
     small: { width: 36, height: 20, thumbSize: 16 },
@@ -131,7 +134,7 @@ export default function Switch({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     justifyContent: 'center',
   },
@@ -145,7 +148,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   thumb: {
-    backgroundColor: colors.background.card,
+    backgroundColor: theme.colors.background.card,
     position: 'absolute',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

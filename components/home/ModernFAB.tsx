@@ -10,13 +10,16 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
+import { useTheme } from '../../src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 const ModernFAB: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [animation] = useState(new Animated.Value(0));
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const toggleFAB = (): void => {
     const toValue = isOpen ? 0 : 1;
@@ -98,7 +101,7 @@ const ModernFAB: React.FC = () => {
             activeOpacity={0.8}
           >
             <View style={styles.actionIcon}>
-              <Ionicons name="add-circle-outline" size={20} color={colors.text.inverse} />
+              <Ionicons name="add-circle-outline" size={20} color={theme.colors.text.inverse} />
             </View>
             <Text style={styles.actionText}>Add Balance</Text>
           </TouchableOpacity>
@@ -120,7 +123,7 @@ const ModernFAB: React.FC = () => {
             activeOpacity={0.8}
           >
             <View style={styles.actionIcon}>
-              <Ionicons name="wallet-outline" size={20} color={colors.text.inverse} />
+              <Ionicons name="wallet-outline" size={20} color={theme.colors.text.inverse} />
             </View>
             <Text style={styles.actionText}>Add Account</Text>
           </TouchableOpacity>
@@ -129,7 +132,7 @@ const ModernFAB: React.FC = () => {
         {/* Main FAB */}
         <TouchableOpacity style={styles.fab} onPress={toggleFAB}>
           <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-            <Ionicons name="add" size={28} color={colors.background.primary} />
+            <Ionicons name="add" size={28} color={theme.colors.background.primary} />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -137,10 +140,10 @@ const ModernFAB: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     position: 'absolute',
-    right: spacing.xl,
+    right: theme.spacing.xl,
     alignItems: 'center',
     zIndex: 1000,
   },
@@ -156,10 +159,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.lg,
+    ...theme.shadows.lg,
     elevation: 8,
   },
   actionButton: {
@@ -171,28 +174,28 @@ const styles = StyleSheet.create({
   actionButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.card,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.lg,
+    backgroundColor: theme.colors.background.card,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
     borderWidth: 1,
-    borderColor: colors.border.primary,
-    ...shadows.md,
+    borderColor: theme.colors.border.primary,
+    ...theme.shadows.md,
     minWidth: 160,
   },
   actionIcon: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: theme.spacing.md,
   },
   actionText: {
     fontSize: 16,
     fontWeight: '500',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     flex: 1,
   },
 });

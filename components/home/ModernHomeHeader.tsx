@@ -4,7 +4,8 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { formatCurrency } from '@/utils/utils';
-import { colors, spacing } from '@/src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 interface Profile {
   id: string;
@@ -37,6 +38,8 @@ interface ModernHomeHeaderProps {
 
 const ModernHomeHeader: React.FC<ModernHomeHeaderProps> = ({ profile, netWorthData, trend }) => {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   
   const getGreeting = (): string => {
     const hour = new Date().getHours();
@@ -51,8 +54,8 @@ const ModernHomeHeader: React.FC<ModernHomeHeaderProps> = ({ profile, netWorthDa
   };
 
   const getTrendColor = (): string => {
-    if (!trend) return colors.text.secondary;
-    return trend.isPositive ? colors.asset : colors.error;
+    if (!trend) return theme.colors.text.secondary;
+    return trend.isPositive ? theme.colors.asset : theme.colors.error;
   };
 
   return (
@@ -64,7 +67,7 @@ const ModernHomeHeader: React.FC<ModernHomeHeaderProps> = ({ profile, netWorthDa
           style={styles.addButton}
           onPress={() => router.push('accounts/add-account')}
         >
-          <Ionicons name="add" size={24} color={colors.text.primary} />
+          <Ionicons name="add" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
       </View>
 
@@ -97,41 +100,41 @@ const ModernHomeHeader: React.FC<ModernHomeHeaderProps> = ({ profile, netWorthDa
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.xl,
   },
   topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: theme.spacing.xl,
   },
   appTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   addButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.background.card,
+    backgroundColor: theme.colors.background.card,
     justifyContent: 'center',
     alignItems: 'center',
   },
   greeting: {
     fontSize: 24,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.lg,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.lg,
   },
   netWorthAmount: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.sm,
     letterSpacing: -2,
   },
   trendContainer: {
@@ -139,7 +142,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   trendIcon: {
-    marginRight: spacing.xs,
+    marginRight: theme.spacing.xs,
   },
   trendText: {
     fontSize: 16,

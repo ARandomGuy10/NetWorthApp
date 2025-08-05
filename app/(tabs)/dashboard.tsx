@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDashboardData } from '@/hooks/useDashboard';
 import { useProfile } from '@/hooks/useProfile';
-import type { DashboardAccount } from '@/lib/supabase';
+import type { DashboardAccount, Theme } from '@/lib/supabase';
 
 // Import modern components
 import ModernHomeHeader from '../../components/home/ModernHomeHeader';
@@ -19,11 +19,13 @@ import ModernNetWorthChart from '../../components/home/ModernNetWorthChart';
 import AssetsLiabilitiesSection from '../../components/home/AssetsLiabilitiesSection';
 import AccountsList from '../../components/home/AccountsList';
 import ModernFAB from '../../components/home/ModernFAB';
-import { colors } from '../../src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 function DashboardScreen() {
   console.log('DashboardScreen rendered');
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   // Get both profile and dashboard data
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -49,7 +51,7 @@ function DashboardScreen() {
   if (showLoadingSpinner) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -71,7 +73,7 @@ function DashboardScreen() {
           <RefreshControl 
             refreshing={Boolean(isFetching && !dashboardData)} 
             onRefresh={onRefresh}
-            tintColor={colors.primary}
+            tintColor={theme.colors.primary}
             progressViewOffset={0}
           />
         }
@@ -101,10 +103,10 @@ function DashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   centered: {
     justifyContent: 'center',

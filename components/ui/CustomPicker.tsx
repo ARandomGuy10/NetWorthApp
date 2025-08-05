@@ -12,7 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
+import { useTheme } from '../../src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 export interface PickerItem {
   label: string;
@@ -40,7 +41,8 @@ export default function CustomPicker({
   const [fadeAnim] = useState(new Animated.Value(0));
   const [slideAnim] = useState(new Animated.Value(50));
   const insets = useSafeAreaInsets();
-  
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const selectedItem = items.find(item => item.value === value);
 
   const showModal = () => {
@@ -104,7 +106,7 @@ export default function CustomPicker({
           <Ionicons 
             name={icon} 
             size={20} 
-            color={selectedItem ? colors.text.primary : colors.text.tertiary} 
+            color={selectedItem ? theme.colors.text.primary : theme.colors.text.tertiary} 
             style={styles.inputIcon}
           />
         )}
@@ -120,7 +122,7 @@ export default function CustomPicker({
         <Ionicons
           name="chevron-down"
           size={20}
-          color={disabled ? colors.text.disabled : colors.text.tertiary}
+          color={disabled ? theme.colors.text.disabled : theme.colors.text.tertiary}
           style={[
             styles.chevron,
             modalVisible && styles.chevronUp
@@ -157,7 +159,7 @@ export default function CustomPicker({
                 style={styles.closeButton}
                 activeOpacity={0.7}
               >
-                <Ionicons name="close" size={24} color={colors.text.primary} />
+                <Ionicons name="close" size={24} color={theme.colors.text.primary} />
               </TouchableOpacity>
             </View>
 
@@ -186,7 +188,7 @@ export default function CustomPicker({
                     <Ionicons
                       name="checkmark"
                       size={20}
-                      color={colors.primary}
+                      color={theme.colors.primary}
                     />
                   )}
                 </TouchableOpacity>
@@ -201,43 +203,43 @@ export default function CustomPicker({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   pickerButton: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: theme.colors.background.elevated,
     borderRadius: 12,
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.border.primary,
+    borderColor: theme.colors.border.primary,
     minHeight: 56,
   },
   pickerButtonDisabled: {
     opacity: 0.5,
   },
   pickerButtonSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.background.card,
+    borderColor: theme.colors.primary,
+    backgroundColor: theme.colors.background.card,
   },
   inputIcon: {
-    marginRight: spacing.md,
+    marginRight: theme.spacing.md,
   },
   pickerText: {
     fontSize: 16,
     flex: 1,
   },
   selectedText: {
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     fontWeight: '500',
   },
   placeholderText: {
-    color: colors.text.tertiary,
+    color: theme.colors.text.tertiary,
   },
   disabledText: {
-    color: colors.text.disabled,
+    color: theme.colors.text.disabled,
   },
   chevron: {
-    marginLeft: spacing.sm,
+    marginLeft: theme.spacing.sm,
     transform: [{ rotate: '0deg' }],
   },
   chevronUp: {
@@ -247,27 +249,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
   },
   modalContent: {
-    backgroundColor: colors.background.card,
+    backgroundColor: theme.colors.background.card,
     borderRadius: 16,
     overflow: 'hidden',
-    ...shadows.xl,
+    ...theme.shadows.xl,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: theme.spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
-    backgroundColor: colors.background.elevated,
+    borderBottomColor: theme.colors.border.primary,
+    backgroundColor: theme.colors.background.elevated,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   closeButton: {
     width: 32,
@@ -275,30 +277,30 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   optionItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
     minHeight: 56,
   },
   lastOption: {
     borderBottomWidth: 0,
   },
   selectedOption: {
-    backgroundColor: colors.interactive.hover,
+    backgroundColor: theme.colors.interactive.hover,
   },
   optionText: {
     fontSize: 16,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     flex: 1,
   },
   selectedOptionText: {
-    color: colors.primary,
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 });

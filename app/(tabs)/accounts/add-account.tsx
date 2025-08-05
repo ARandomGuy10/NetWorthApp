@@ -19,12 +19,11 @@ import * as Haptics from 'expo-haptics';
 
 import { useAddAccount, useUpdateAccount } from '@/hooks/useAccounts';
 import { ACCOUNT_CATEGORIES, CURRENCIES } from '@/lib/supabase';
-import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
+import { useToast } from '@/hooks/providers/ToastProvider';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 import CustomPicker from '@/components/ui/CustomPicker';
 import Switch from '@/components/ui/Switch';
-import { useToast } from '@/hooks/providers/ToastProvider';
-
-
+import { Theme } from '@/lib/supabase';
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -32,6 +31,8 @@ export default function AddAccountScreen() {
   const { accountId, mode, accountData } = useLocalSearchParams();
   const addAccountMutation = useAddAccount();
   const updateAccountMutation = useUpdateAccount();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   
   const isEditMode = mode === 'edit' && accountId;
 
@@ -185,7 +186,7 @@ export default function AddAccountScreen() {
   if (initialLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading account...</Text>
       </View>
     );
@@ -203,7 +204,7 @@ export default function AddAccountScreen() {
           }}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={20} color={colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </TouchableOpacity>
         
         <Text style={styles.headerTitle}>
@@ -234,7 +235,7 @@ export default function AddAccountScreen() {
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
               placeholder="e.g., Chase Checking, Vanguard IRA"
-              placeholderTextColor={colors.text.secondary}
+              placeholderTextColor={theme.colors.text.secondary}
               editable={!loading}
               autoCapitalize="words"
               returnKeyType="next"
@@ -257,7 +258,7 @@ export default function AddAccountScreen() {
                 <Ionicons
                   name="trending-up"
                   size={16}
-                  color={formData.type === 'asset' ? colors.text.inverse : colors.asset}
+                  color={formData.type === 'asset' ? theme.colors.text.inverse : theme.colors.asset}
                   style={styles.iconSpacing}
                 />
                 <Text
@@ -282,7 +283,7 @@ export default function AddAccountScreen() {
                 <Ionicons
                   name="trending-down"
                   size={16}
-                  color={formData.type === 'liability' ? colors.text.inverse : colors.liability}
+                  color={formData.type === 'liability' ? theme.colors.text.inverse : theme.colors.liability}
                   style={styles.iconSpacing}
                 />
                 <Text
@@ -335,7 +336,7 @@ export default function AddAccountScreen() {
                   value={formData.initial_balance}
                   onChangeText={(text) => setFormData({ ...formData, initial_balance: text })}
                   placeholder="0.00"
-                  placeholderTextColor={colors.text.secondary}
+                  placeholderTextColor={theme.colors.text.secondary}
                   keyboardType="decimal-pad"
                   editable={!loading}
                   returnKeyType="next"
@@ -352,7 +353,7 @@ export default function AddAccountScreen() {
               value={formData.institution}
               onChangeText={(text) => setFormData({ ...formData, institution: text })}
               placeholder="Optional"
-              placeholderTextColor={colors.text.secondary}
+              placeholderTextColor={theme.colors.text.secondary}
               editable={!loading}
               autoCapitalize="words"
               returnKeyType="done"
@@ -375,6 +376,8 @@ export default function AddAccountScreen() {
                   setFormData({ ...formData, include_in_net_worth: value });
                 }}
                 disabled={isLoading}
+                activeColor={theme.colors.primary}
+                inactiveColor={theme.colors.border.secondary}
               />
             </View>
           </View>
@@ -391,7 +394,7 @@ export default function AddAccountScreen() {
               activeOpacity={0.8}
             >
               {loading ? (
-                <ActivityIndicator size="small" color={colors.text.inverse} />
+                <ActivityIndicator size="small" color={theme.colors.text.inverse} />
               ) : (
                 <Text style={styles.saveButtonText}>
                   {isEditMode ? 'Update Account' : 'Save Account'}
@@ -421,10 +424,10 @@ export default function AddAccountScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   keyboardView: {
     flex: 1,
@@ -434,19 +437,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: spacing.lg,
+    marginTop: theme.spacing.lg,
     fontSize: 16,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
-    backgroundColor: colors.background.primary,
+    borderBottomColor: theme.colors.border.primary,
+    backgroundColor: theme.colors.background.primary,
     minHeight: 32,
   },
   backButton: {
@@ -459,24 +462,24 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   placeholder: {
     width: 32,
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.sm,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.sm,
   },
   inputGroup: {
-    marginTop: spacing.xl,
+    marginTop: theme.spacing.xl,
   },
   rowContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: spacing.lg,
-    marginTop: spacing.xl,
+    gap: theme.spacing.lg,
+    marginTop: theme.spacing.xl,
   },
   halfWidth: {
     flex: 1,
@@ -485,45 +488,45 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.sm,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.sm,
   },
   textInput: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     fontSize: 16,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     borderWidth: 1,
-    borderColor: colors.border.primary,
+    borderColor: theme.colors.border.primary,
     minHeight: 52,
-    ...shadows.sm,
+    ...theme.shadows.sm,
   },
   textInputDisabled: {
     opacity: 0.6,
   },
   typeSelector: {
     flexDirection: 'row',
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
     padding: 4,
     borderWidth: 1,
-    borderColor: colors.border.primary,
-    ...shadows.sm,
+    borderColor: theme.colors.border.primary,
+    ...theme.shadows.sm,
   },
   typeButton: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.sm,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 44,
   },
   typeButtonActive: {
-    backgroundColor: colors.primary,
-    ...shadows.sm,
+    backgroundColor: theme.colors.primary,
+    ...theme.shadows.sm,
   },
   typeButtonInactive: {
     backgroundColor: 'transparent',
@@ -533,48 +536,48 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   typeButtonTextActive: {
-    color: colors.text.inverse,
+    color: theme.colors.text.inverse,
   },
   typeButtonTextInactive: {
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   iconSpacing: {
-    marginRight: spacing.sm,
+    marginRight: theme.spacing.sm,
   },
   switchContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     borderWidth: 1,
-    borderColor: colors.border.primary,
-    ...shadows.sm,
+    borderColor: theme.colors.border.primary,
+    ...theme.shadows.sm,
   },
   switchLabel: {
     flex: 1,
-    marginRight: spacing.lg,
+    marginRight: theme.spacing.lg,
   },
   switchDescription: {
     fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
     lineHeight: 18,
   },
   buttonContainer: {
-    marginTop: spacing.xxl,
-    marginBottom: spacing.xxl,
-    gap: spacing.md,
+    marginTop: theme.spacing.xxl,
+    marginBottom: theme.spacing.xxl,
+    gap: theme.spacing.md,
   },
   saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     alignItems: 'center',
     minHeight: 52,
     justifyContent: 'center',
-    ...shadows.md,
+    ...theme.shadows.md,
   },
   saveButtonDisabled: {
     opacity: 0.6,
@@ -582,17 +585,17 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.inverse,
+    color: theme.colors.text.inverse,
   },
   cancelButton: {
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     alignItems: 'center',
-    borderRadius: borderRadius.md,
+    borderRadius: theme.borderRadius.md,
   },
   cancelButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   cancelButtonTextDisabled: {
     opacity: 0.5,

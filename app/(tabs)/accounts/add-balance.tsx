@@ -19,16 +19,18 @@ import * as Haptics from 'expo-haptics';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useAddBalance, useUpdateBalance } from '@/hooks/useBalances';
 import { useToast } from '@/hooks/providers/ToastProvider';
-import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
 import CustomPicker from '@/components/ui/CustomPicker';
 import DatePicker from '@/components/ui/DatePicker';
-import { Balance } from '@/lib/supabase';
+import { Balance, Theme } from '@/lib/supabase';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 export default function AddBalanceScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { accountId, balanceId, mode, balanceData } = useLocalSearchParams();
   const { showToast } = useToast();
+   const { theme } = useTheme();
+   const styles = getStyles(theme);
 
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const addBalanceMutation = useAddBalance();
@@ -153,7 +155,7 @@ export default function AddBalanceScreen() {
   if (initialLoading || accountsLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
@@ -163,7 +165,7 @@ export default function AddBalanceScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={20} color={colors.text.primary} />
+          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditMode ? 'Edit Balance' : 'Record Balance'}</Text>
         <View style={styles.placeholder} />
@@ -176,7 +178,7 @@ export default function AddBalanceScreen() {
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + theme.spacing.xxl }}
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View style={{
@@ -219,7 +221,7 @@ export default function AddBalanceScreen() {
                   value={formData.amount}
                   onChangeText={(text) => setFormData({ ...formData, amount: text })}
                   placeholder="0.00"
-                  placeholderTextColor={colors.text.secondary}
+                  placeholderTextColor={theme.colors.text.secondary}
                   keyboardType="decimal-pad"
                   editable={!loading}
                   returnKeyType="done"
@@ -235,7 +237,7 @@ export default function AddBalanceScreen() {
                 value={formData.notes}
                 onChangeText={(text) => setFormData({ ...formData, notes: text })}
                 placeholder="Optional"
-                placeholderTextColor={colors.text.secondary}
+                placeholderTextColor={theme.colors.text.secondary}
                 multiline
                 editable={!loading}
               />
@@ -249,7 +251,7 @@ export default function AddBalanceScreen() {
                 activeOpacity={0.8}
               >
                 {loading ? (
-                  <ActivityIndicator color={colors.text.inverse} />
+                  <ActivityIndicator color={theme.colors.text.inverse} />
                 ) : (
                   <Text style={styles.saveButtonText}>{isEditMode ? 'Update Entry' : 'Save Entry'}</Text>
                 )}
@@ -271,28 +273,28 @@ export default function AddBalanceScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: spacing.lg,
+    marginTop: theme.spacing.lg,
     fontSize: 16,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
   },
   backButton: {
     width: 32,
@@ -303,96 +305,96 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   placeholder: {
     width: 32,
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
   },
   inputGroup: {
-    marginBottom: spacing.xl,
+    marginBottom: theme.spacing.xl,
   },
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.md,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
   },
   accountInfo: {
-    marginBottom: spacing.xl,
-    padding: spacing.lg,
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
+    marginBottom: theme.spacing.xl,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.border.primary,
+    borderColor: theme.colors.border.primary,
   },
   accountName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   accountMeta: {
     fontSize: 14,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
   amountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    borderColor: colors.border.primary,
-    paddingHorizontal: spacing.lg,
+    borderColor: theme.colors.border.primary,
+    paddingHorizontal: theme.spacing.lg,
     minHeight: 52,
-    ...shadows.sm,
+    ...theme.shadows.sm,
   },
   currencySymbol: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.secondary,
-    marginRight: spacing.sm,
+    color: theme.colors.text.secondary,
+    marginRight: theme.spacing.sm,
   },
   amountInput: {
     flex: 1,
     fontSize: 16,
-    color: colors.text.primary,
-    paddingVertical: spacing.lg,
+    color: theme.colors.text.primary,
+    paddingVertical: theme.spacing.lg,
   },
   notesInput: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     fontSize: 16,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     borderWidth: 1,
-    borderColor: colors.border.primary,
+    borderColor: theme.colors.border.primary,
     minHeight: 100,
     textAlignVertical: 'top',
-    ...shadows.sm,
+    ...theme.shadows.sm,
   },
   helperText: {
     fontSize: 13,
-    color: colors.text.secondary,
-    marginTop: spacing.sm,
-    paddingLeft: spacing.xs,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.sm,
+    paddingLeft: theme.spacing.xs,
   },
   buttonContainer: {
-    marginTop: spacing.xxl,
-    gap: spacing.md,
+    marginTop: theme.spacing.xxl,
+    gap: theme.spacing.md,
   },
   saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
-    ...shadows.md,
+    ...theme.shadows.md,
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -400,15 +402,15 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.inverse,
+    color: theme.colors.text.inverse,
   },
   cancelButton: {
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
 });

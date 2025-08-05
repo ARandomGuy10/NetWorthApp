@@ -18,15 +18,19 @@ import * as Haptics from 'expo-haptics';
 import { useDashboardData } from '../../../hooks/useDashboard';
 import { useDeleteAccount } from '../../../hooks/useAccounts';
 import { formatCurrency } from '../../../utils/utils';
-import { colors, spacing, borderRadius, shadows } from '../../../src/styles/colors';
 import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
-import { DashboardAccount } from '../../../lib/supabase';
+import { DashboardAccount, Theme } from '../../../lib/supabase';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+
 
 export default function AccountsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: dashboardData, isLoading, refetch, isFetching } = useDashboardData();
   const deleteAccountMutation = useDeleteAccount();
+
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   // Extract accounts with latest balances from dashboard data
   const accounts = dashboardData?.accounts || [];
@@ -118,7 +122,7 @@ export default function AccountsScreen() {
   if (showLoadingSpinner) {
     return (
       <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
         <Text style={styles.loadingText}>Loading accounts...</Text>
       </View>
     );
@@ -176,7 +180,7 @@ export default function AccountsScreen() {
           }}
           activeOpacity={0.7}
         >
-          <Ionicons name="add" size={20} color={colors.text.inverse} />
+          <Ionicons name="add" size={20} color={theme.colors.text.inverse} />
         </TouchableOpacity>
       </View>
 
@@ -187,9 +191,9 @@ export default function AccountsScreen() {
         refreshControl={
           <RefreshControl
             refreshing={isFetching && isLoading}
-            onRefresh={onRefresh}
-            colors={[colors.primary]}
-            tintColor={colors.primary}
+            onRefresh={onRefresh} 
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
           />
         }
         keyboardShouldPersistTaps="handled"
@@ -198,10 +202,10 @@ export default function AccountsScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
-                <View style={[styles.sectionIndicator, { backgroundColor: colors.asset }]} />
+                <View style={[styles.sectionIndicator, { backgroundColor: theme.colors.asset }]} />
                 <Text style={styles.sectionTitle}>Assets</Text>
               </View>
-              <Text style={[styles.sectionTotal, { color: colors.asset }]}>
+              <Text style={[styles.sectionTotal, { color: theme.colors.asset }]}>
                 {formatCurrency(totalAssets, currency)}
               </Text>
             </View>
@@ -216,11 +220,11 @@ export default function AccountsScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.accountInfo}>
-                  <View style={[styles.accountIcon, { backgroundColor: colors.interactive.hover }]}>
+                  <View style={[styles.accountIcon, { backgroundColor: theme.colors.interactive.hover }]}>
                     <Ionicons 
                       name={getAccountIcon(account.category)} 
                       size={20} 
-                      color={colors.asset} 
+                      color={theme.colors.asset} 
                     />
                   </View>
                   <View style={styles.accountDetails}>
@@ -234,7 +238,7 @@ export default function AccountsScreen() {
                   </View>
                 </View>
                 <View style={styles.accountBalance}>
-                  <Text style={[styles.balanceAmount, { color: colors.asset }]}>
+                  <Text style={[styles.balanceAmount, { color: theme.colors.asset }]}>
                     {formatCurrency(account.latest_balance, account.currency)}
                   </Text>
                   <TouchableOpacity 
@@ -249,7 +253,7 @@ export default function AccountsScreen() {
                     <Ionicons 
                       name="ellipsis-horizontal" 
                       size={18} 
-                      color={colors.text.secondary} 
+                      color={theme.colors.text.secondary} 
                     />
                   </TouchableOpacity>
                 </View>
@@ -262,10 +266,10 @@ export default function AccountsScreen() {
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
-                <View style={[styles.sectionIndicator, { backgroundColor: colors.liability }]} />
+                <View style={[styles.sectionIndicator, { backgroundColor: theme.colors.liability }]} />
                 <Text style={styles.sectionTitle}>Liabilities</Text>
               </View>
-              <Text style={[styles.sectionTotal, { color: colors.liability }]}>
+              <Text style={[styles.sectionTotal, { color: theme.colors.liability }]}>
                 -{formatCurrency(totalLiabilities, currency)}
               </Text>
             </View>
@@ -280,11 +284,11 @@ export default function AccountsScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.accountInfo}>
-                  <View style={[styles.accountIcon, { backgroundColor: colors.interactive.hover }]}>
+                  <View style={[styles.accountIcon, { backgroundColor: theme.colors.interactive.hover }]}>
                     <Ionicons 
                       name={getAccountIcon(account.category)} 
                       size={20} 
-                      color={colors.liability} 
+                      color={theme.colors.liability} 
                     />
                   </View>
                   <View style={styles.accountDetails}>
@@ -298,7 +302,7 @@ export default function AccountsScreen() {
                   </View>
                 </View>
                 <View style={styles.accountBalance}>
-                  <Text style={[styles.balanceAmount, { color: colors.liability }]}>
+                  <Text style={[styles.balanceAmount, { color: theme.colors.liability }]}>
                     -{formatCurrency(account.latest_balance, account.currency)}
                   </Text>
                   <TouchableOpacity 
@@ -313,7 +317,7 @@ export default function AccountsScreen() {
                     <Ionicons 
                       name="ellipsis-horizontal" 
                       size={18} 
-                      color={colors.text.secondary} 
+                      color={theme.colors.text.secondary} 
                     />
                   </TouchableOpacity>
                 </View>
@@ -325,7 +329,7 @@ export default function AccountsScreen() {
         {accounts.length === 0 && !isLoading && (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <Ionicons name="wallet-outline" size={48} color={colors.text.tertiary} />
+              <Ionicons name="wallet-outline" size={48} color={theme.colors.text.tertiary} />
             </View>
             <Text style={styles.emptyTitle}>No accounts yet</Text>
             <Text style={styles.emptyText}>
@@ -350,9 +354,9 @@ export default function AccountsScreen() {
           disabled={isDeleting}
         >
           {isDeleting ? (
-            <ActivityIndicator size="small" color={colors.text.inverse} />
+            <ActivityIndicator size="small" color={theme.colors.text.inverse} />
           ) : (
-            <Ionicons name="add" size={20} color={colors.text.inverse} />
+            <Ionicons name="add" size={20} color={theme.colors.text.inverse} />
           )}
           <Text style={styles.addAccountText}>
             {isDeleting ? 'Processing...' : 'Add New Account'}
@@ -370,64 +374,64 @@ export default function AccountsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: colors.background.primary 
+    backgroundColor: theme.colors.background.primary 
   },
   centered: { 
     justifyContent: 'center', 
     alignItems: 'center' 
   },
   loadingText: { 
-    marginTop: spacing.lg, 
+    marginTop: theme.spacing.lg, 
     fontSize: 16, 
-    color: colors.text.secondary 
+    color: theme.colors.text.secondary 
   },
   header: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    paddingHorizontal: spacing.xl, 
-    paddingVertical: spacing.lg, 
+    paddingHorizontal: theme.spacing.xl, 
+    paddingVertical: theme.spacing.lg, 
     borderBottomWidth: 1, 
-    borderBottomColor: colors.border.primary 
+    borderBottomColor: theme.colors.border.primary 
   },
   headerTitle: { 
     fontSize: 24, 
     fontWeight: 'bold', 
-    color: colors.text.primary 
+    color: theme.colors.text.primary 
   },
   headerSubtitle: { 
     fontSize: 14, 
-    color: colors.text.secondary, 
+    color: theme.colors.text.secondary, 
     marginTop: 2 
   },
   addButton: { 
     width: 36, 
     height: 36, 
     borderRadius: 18, 
-    backgroundColor: colors.primary, 
+    backgroundColor: theme.colors.primary, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    ...shadows.sm 
+    ...theme.shadows.sm 
   },
   scrollView: { 
     flex: 1 
   },
   // Fixed: Simplified content container style
   scrollContent: {
-    paddingBottom: spacing.xxxl + 80, // Extra padding to ensure button is always visible
+    paddingBottom: theme.spacing.xxxl + 80, // Extra padding to ensure button is always visible
   },
   section: { 
-    marginTop: spacing.xxl, 
-    paddingHorizontal: spacing.xl 
+    marginTop: theme.spacing.xxl, 
+    paddingHorizontal: theme.spacing.xl 
   },
   sectionHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    marginBottom: spacing.lg 
+    marginBottom: theme.spacing.lg 
   },
   sectionTitleContainer: { 
     flexDirection: 'row', 
@@ -437,28 +441,28 @@ const styles = StyleSheet.create({
     width: 4, 
     height: 16, 
     borderRadius: 2, 
-    marginRight: spacing.sm 
+    marginRight: theme.spacing.sm 
   },
   sectionTitle: { 
     fontSize: 18, 
     fontWeight: '600', 
-    color: colors.text.primary 
+    color: theme.colors.text.primary 
   },
   sectionTotal: { 
     fontSize: 16, 
     fontWeight: 'bold' 
   },
   accountCard: { 
-    backgroundColor: colors.background.card, 
-    borderRadius: borderRadius.md, 
-    padding: spacing.lg, 
-    marginBottom: spacing.sm, 
+    backgroundColor: theme.colors.background.card, 
+    borderRadius: theme.borderRadius.md, 
+    padding: theme.spacing.lg, 
+    marginBottom: theme.spacing.sm, 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
     borderWidth: 1, 
-    borderColor: colors.border.primary, 
-    ...shadows.sm 
+    borderColor: theme.colors.border.primary, 
+    ...theme.shadows.sm 
   },
   accountInfo: { 
     flexDirection: 'row', 
@@ -471,7 +475,7 @@ const styles = StyleSheet.create({
     borderRadius: 20, 
     justifyContent: 'center', 
     alignItems: 'center', 
-    marginRight: spacing.md 
+    marginRight: theme.spacing.md 
   },
   accountDetails: { 
     flex: 1 
@@ -479,8 +483,8 @@ const styles = StyleSheet.create({
   accountName: { 
     fontSize: 15, 
     fontWeight: '600', 
-    color: colors.text.primary, 
-    marginBottom: spacing.xs 
+    color: theme.colors.text.primary, 
+    marginBottom: theme.spacing.xs 
   },
   accountMeta: { 
     flexDirection: 'row', 
@@ -488,14 +492,14 @@ const styles = StyleSheet.create({
   },
   accountInstitution: { 
     fontSize: 13, 
-    color: colors.text.secondary, 
+    color: theme.colors.text.secondary, 
     flex: 1 
   },
   accountCurrency: { 
     fontSize: 12, 
-    color: colors.text.tertiary, 
-    backgroundColor: colors.background.elevated, 
-    paddingHorizontal: spacing.sm, 
+    color: theme.colors.text.tertiary, 
+    backgroundColor: theme.colors.background.elevated, 
+    paddingHorizontal: theme.spacing.sm, 
     paddingVertical: 2, 
     borderRadius: 4, 
     overflow: 'hidden' 
@@ -507,7 +511,7 @@ const styles = StyleSheet.create({
   balanceAmount: { 
     fontSize: 15, 
     fontWeight: 'bold', 
-    marginRight: spacing.sm 
+    marginRight: theme.spacing.sm 
   },
   moreButton: { 
     padding: 12,
@@ -515,37 +519,37 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   emptyState: { 
-    padding: spacing.xxxl, 
+    padding: theme.spacing.xxxl, 
     alignItems: 'center', 
-    marginTop: spacing.xxxl 
+    marginTop: theme.spacing.xxxl 
   },
   emptyIcon: { 
-    marginBottom: spacing.lg 
+    marginBottom: theme.spacing.lg 
   },
   emptyTitle: { 
     fontSize: 18, 
     fontWeight: '600', 
-    color: colors.text.primary, 
-    marginBottom: spacing.sm 
+    color: theme.colors.text.primary, 
+    marginBottom: theme.spacing.sm 
   },
   emptyText: { 
     fontSize: 14, 
-    color: colors.text.secondary, 
+    color: theme.colors.text.secondary, 
     textAlign: 'center', 
     lineHeight: 20 
   },
   // Fixed: Simplified add account button styling
   addAccountButton: { 
-    backgroundColor: colors.primary, 
+    backgroundColor: theme.colors.primary, 
     flexDirection: 'row', 
     alignItems: 'center', 
     justifyContent: 'center', 
-    padding: spacing.lg, 
-    borderRadius: borderRadius.md, 
-    margin: spacing.xl, 
-    marginTop: spacing.xxxl, 
-    marginBottom: spacing.xxxl, // Extra bottom margin
-    ...shadows.md 
+    padding: theme.spacing.lg, 
+    borderRadius: theme.borderRadius.md, 
+    margin: theme.spacing.xl, 
+    marginTop: theme.spacing.xxxl, 
+    marginBottom: theme.spacing.xxxl, // Extra bottom margin
+    ...theme.shadows.md 
   },
   addAccountButtonDisabled: {
     opacity: 0.6,
@@ -553,7 +557,7 @@ const styles = StyleSheet.create({
   addAccountText: { 
     fontSize: 15, 
     fontWeight: 'bold', 
-    color: colors.text.inverse, 
-    marginLeft: spacing.sm 
+    color: theme.colors.text.inverse, 
+    marginLeft: theme.spacing.sm 
   },
 });

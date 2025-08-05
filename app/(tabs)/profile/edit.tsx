@@ -16,13 +16,17 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
-import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
+
 
 export default function EditProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: profile, isLoading: isLoadingProfile } = useProfile();
   const updateProfileMutation = useUpdateProfile();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const [formData, setFormData] = useState({
     first_name: '',
@@ -56,7 +60,7 @@ export default function EditProfileScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <View style={styles.placeholder} />
@@ -69,11 +73,11 @@ export default function EditProfileScreen() {
       >
         <ScrollView 
           style={styles.scrollView}
-          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + theme.spacing.xxl }}
           keyboardShouldPersistTaps="handled"
         >
           {isLoadingProfile ? (
-            <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: spacing.xxl }} />
+            <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: theme.spacing.xxl }} />
           ) : (
             <View>
               <View style={styles.inputGroup}>
@@ -83,7 +87,7 @@ export default function EditProfileScreen() {
                   value={formData.first_name}
                   onChangeText={(text) => setFormData({ ...formData, first_name: text })}
                   placeholder="Enter your first name"
-                  placeholderTextColor={colors.text.secondary}
+                  placeholderTextColor={theme.colors.text.secondary}
                   autoCapitalize="words"
                   returnKeyType="next"
                 />
@@ -96,7 +100,7 @@ export default function EditProfileScreen() {
                   value={formData.last_name}
                   onChangeText={(text) => setFormData({ ...formData, last_name: text })}
                   placeholder="Enter your last name"
-                  placeholderTextColor={colors.text.secondary}
+                  placeholderTextColor={theme.colors.text.secondary}
                   autoCapitalize="words"
                   returnKeyType="done"
                 />
@@ -109,7 +113,7 @@ export default function EditProfileScreen() {
                   disabled={isLoading}
                 >
                   {updateProfileMutation.isPending ? (
-                    <ActivityIndicator color={colors.text.inverse} />
+                    <ActivityIndicator color={theme.colors.text.inverse} />
                   ) : (
                     <Text style={styles.saveButtonText}>Save Changes</Text>
                   )}
@@ -131,19 +135,19 @@ export default function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
   },
   backButton: {
     width: 32,
@@ -154,48 +158,48 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   placeholder: {
     width: 32,
   },
   scrollView: {
     flex: 1,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
   },
   inputGroup: {
-    marginBottom: spacing.xl,
+    marginBottom: theme.spacing.xl,
   },
   label: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.md,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.md,
   },
   textInput: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     fontSize: 16,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     borderWidth: 1,
-    borderColor: colors.border.primary,
+    borderColor: theme.colors.border.primary,
     minHeight: 52,
-    ...shadows.sm,
+    ...theme.shadows.sm,
   },
   buttonContainer: {
-    marginTop: spacing.xxl,
-    gap: spacing.md,
+    marginTop: theme.spacing.xxl,
+    gap: theme.spacing.md,
   },
   saveButton: {
-    backgroundColor: colors.primary,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
-    ...shadows.md,
+    ...theme.shadows.md,
   },
   saveButtonDisabled: {
     opacity: 0.5,
@@ -203,15 +207,15 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.inverse,
+    color: theme.colors.text.inverse,
   },
   cancelButton: {
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     alignItems: 'center',
   },
   cancelButtonText: {
     fontSize: 15,
     fontWeight: '500',
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
   },
 });

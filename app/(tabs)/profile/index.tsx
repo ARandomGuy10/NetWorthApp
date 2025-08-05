@@ -18,9 +18,9 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
-import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
-import { CURRENCIES, THEMES } from '@/lib/supabase';
+import { CURRENCIES, Theme, THEMES } from '@/lib/supabase';
 import ActionSheet, { ActionSheetRef } from 'react-native-actions-sheet';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 export default function ProfileScreen() {
   const { user } = useUser();
@@ -32,6 +32,10 @@ export default function ProfileScreen() {
   const currencySheetRef = useRef<ActionSheetRef>(null);
   const themeSheetRef = useRef<ActionSheetRef>(null);
   const insets = useSafeAreaInsets();
+
+  const { theme , switchTheme} = useTheme();
+  const styles = getStyles(theme);
+  
 
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -91,6 +95,7 @@ export default function ProfileScreen() {
   const handleThemeSelect = async (theme: string) => {
     themeSheetRef.current?.hide();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    switchTheme(theme);
     await updateProfileMutation.mutateAsync({ theme: theme });
   };
 
@@ -104,7 +109,7 @@ export default function ProfileScreen() {
   if (isLoading) {
     return (
       <View style={styles.centeredContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -124,20 +129,19 @@ export default function ProfileScreen() {
     <ScrollView 
       style={styles.container} 
       contentContainerStyle={{
-        paddingBottom: insets.bottom + spacing.xxl,
+        paddingBottom: insets.bottom + theme.spacing.xxl,
         flexGrow: 1, // Ensure ScrollView grows to fill space
       }}
     >
       <Animated.View style={{ opacity: fadeAnim }}>
-        {/* Profile Header */}
         <View style={{
-          backgroundColor: colors.background.secondary,
-          padding: spacing.xl,
-          paddingTop: insets.top + spacing.xl,
+          backgroundColor: theme.colors.background.secondary,
+          padding: theme.spacing.xl,
+          paddingTop: insets.top + theme.spacing.xl,
           alignItems: 'center',
           borderBottomWidth: 1,
-          borderBottomColor: colors.border.primary,
-          marginBottom: spacing.xl, // Added margin bottom to separate from sections
+          borderBottomColor: theme.colors.border.primary,
+          marginBottom: theme.spacing.xl, // Added margin bottom to separate from sections
         }}>
           <View style={styles.avatarContainer}>
             <Text style={styles.avatarText}>{getInitials()}</Text>
@@ -150,42 +154,42 @@ export default function ProfileScreen() {
         </View>
         
 
-        {/* Settings Sections */}
+       
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.card}>
-            <SettingRow icon="cash-outline" text="Preferred Currency" value={profile?.preferred_currency || 'EUR'} onPress={() => handleAction('currency')} />
-            <SettingRow icon="color-palette-outline" text="Theme" value={profile?.theme || 'SYSTEM'} onPress={() => handleAction('theme')} />
-            <SettingRow icon="notifications-outline" text="Notifications" isSwitch={true} switchValue={notificationsEnabled} onSwitchChange={setNotificationsEnabled} />
+            <SettingRow icon="cash-outline" text="Preferred Currency" value={profile?.preferred_currency || 'EUR'} onPress={() => handleAction('currency') } styles ={styles} theme={theme}/>
+            <SettingRow icon="color-palette-outline" text="Theme" value={profile?.theme || 'SYSTEM'} onPress={() => handleAction('theme')} styles={styles} theme={theme}/>
+            <SettingRow icon="notifications-outline" text="Notifications" isSwitch={true} switchValue={notificationsEnabled} onSwitchChange={setNotificationsEnabled} styles={styles} theme={theme}/>
           </View>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support & Data</Text>
           <View style={styles.card}>
-            <SettingRow icon="help-circle-outline" text="Help & Support" onPress={() => handleAction('support')} />
-            <SettingRow icon="document-text-outline" text="Terms of Service" onPress={() => handleAction('terms')} />
-            <SettingRow icon="shield-checkmark-outline" text="Privacy Policy" onPress={() => handleAction('privacy')} />
-            <SettingRow icon="download-outline" text="Export Data" onPress={() => handleAction('export')} />
+            <SettingRow icon="help-circle-outline" text="Help & Support" onPress={() => handleAction('support')} styles={styles} theme={theme}/>
+            <SettingRow icon="document-text-outline" text="Terms of Service" onPress={() => handleAction('terms')} styles={styles} theme={theme}/>
+            <SettingRow icon="shield-checkmark-outline" text="Privacy Policy" onPress={() => handleAction('privacy')} styles={styles} theme={theme}/>
+            <SettingRow icon="download-outline" text="Export Data" onPress={() => handleAction('export')} styles={styles} theme={theme}/>
           </View>
         </View>
 
-        {/* Actions */}
-        <View style={[styles.section, { marginBottom: spacing.xxxl + 80 }]}> {/* Increased bottom margin for scrollability */}
-          <TouchableOpacity style={[styles.actionButton, styles.signOutButton]} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={22} color={colors.error} />
-            <Text style={[styles.actionButtonText, { color: colors.error }]}>Sign Out</Text>
+        
+        <View style={[styles.section, { marginBottom: theme.spacing.xxxl + 80 }]}> 
+          <TouchableOpacity style={styles.actionButton} onPress={handleSignOut}>
+            <Ionicons name="log-out-outline" size={22} color={theme.colors.error} />
+            <Text style={[styles.actionButtonText, { color: theme.colors.error }]}>Sign Out</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={() => handleAction('delete')}>
-            <Ionicons name="trash-outline" size={22} color={colors.error} />
-            <Text style={[styles.actionButtonText, { color: colors.error }]}>Delete Account</Text>
+          <TouchableOpacity style={styles.actionButton} onPress={() => handleAction('delete')}>
+            <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
+            <Text style={[styles.actionButtonText, { color: theme.colors.error }]}>Delete Account</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
 
-      <ActionSheet ref={currencySheetRef} containerStyle={{ backgroundColor: colors.background.primary }}>
-        <View style={[styles.actionSheetContainer, { backgroundColor: colors.background.primary }]}>
-          <Text style={[styles.actionSheetTitle, { color: colors.text.primary }]}>Select Currency</Text>
+      <ActionSheet ref={currencySheetRef} containerStyle={{ backgroundColor: theme.colors.background.primary }}>
+        <View style={[styles.actionSheetContainer, { backgroundColor: theme.colors.background.primary }]}>
+          <Text style={[styles.actionSheetTitle, { color: theme.colors.text.primary }]}>Select Currency</Text>
           <ScrollView style={styles.currencyList}>
             {CURRENCIES.map((currency) => (
               <TouchableOpacity
@@ -193,9 +197,9 @@ export default function ProfileScreen() {
                 style={styles.currencyRow}
                 onPress={() => handleCurrencySelect(currency)}
               >
-                <Text style={[styles.currencyText, { color: colors.text.primary }]}>{currency}</Text>
+                <Text style={[styles.currencyText, { color: theme.colors.text.primary }]}>{currency}</Text>
                 {profile?.preferred_currency === currency && (
-                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
                 )}
               </TouchableOpacity>
             ))}
@@ -203,9 +207,9 @@ export default function ProfileScreen() {
         </View>
       </ActionSheet>
 
-      <ActionSheet ref={themeSheetRef} containerStyle={{ backgroundColor: colors.background.primary }}>
-        <View style={[styles.actionSheetContainer, { backgroundColor: colors.background.primary }]}>
-          <Text style={[styles.actionSheetTitle, { color: colors.text.primary }]}>Select Theme</Text>
+      <ActionSheet ref={themeSheetRef} containerStyle={{ backgroundColor: theme.colors.background.primary }}>
+        <View style={[styles.actionSheetContainer, { backgroundColor: theme.colors.background.primary }]}>
+          <Text style={[styles.actionSheetTitle, { color: theme.colors.text.primary }]}>Select Theme</Text>
           <ScrollView style={styles.currencyList}>
             {THEMES.map((theme) => (
               <TouchableOpacity
@@ -213,9 +217,9 @@ export default function ProfileScreen() {
                 style={styles.currencyRow}
                 onPress={() => handleThemeSelect(theme)}
               >
-                <Text style={[styles.currencyText, { color: colors.text.primary }]}>{theme}</Text>
+                <Text style={[styles.currencyText, { color: '#fff' }]}>{theme}</Text>
                 {profile?.theme === theme && (
-                  <Ionicons name="checkmark-circle" size={24} color={colors.primary} />
+                  <Ionicons name="checkmark-circle" size={24} color="#fff" />
                 )}
               </TouchableOpacity>
             ))}
@@ -226,10 +230,10 @@ export default function ProfileScreen() {
   );
 }
 
-const SettingRow = ({ icon, text, value, onPress, isSwitch, switchValue, onSwitchChange }: any) => (
+const SettingRow = ({ icon, text, value, onPress, isSwitch, switchValue, onSwitchChange, styles, theme }: any) => (
   <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={isSwitch}>
     <View style={styles.settingRowLeft}>
-      <Ionicons name={icon} size={24} color={colors.text.secondary} style={styles.settingIcon} />
+      <Ionicons name={icon} size={24} color={theme.colors.text.secondary} style={styles.settingIcon} />
       <Text style={styles.settingText}>{text}</Text>
     </View>
     <View style={styles.settingRowRight}>
@@ -238,40 +242,40 @@ const SettingRow = ({ icon, text, value, onPress, isSwitch, switchValue, onSwitc
       ) : (
         <>
           {value && <Text style={styles.settingValue}>{value}</Text>}
-          <Ionicons name="chevron-forward" size={20} color={colors.text.tertiary} />
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
         </>
       )}
     </View>
   </TouchableOpacity>
 );
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   contentContainer: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: theme.spacing.xxl,
   },
   centeredContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
+    backgroundColor: theme.colors.background.primary,
   },
   errorText: {
     fontSize: 16,
-    color: colors.text.secondary,
-    marginBottom: spacing.lg,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.lg,
   },
   retryButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
-    borderRadius: borderRadius.md,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
   },
   retryButtonText: {
-    color: colors.text.inverse,
+    color: theme.colors.text.inverse,
     fontWeight: '600',
   },
   
@@ -279,75 +283,75 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.primary,
+    backgroundColor: theme.colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    ...shadows.md,
+    marginBottom: theme.spacing.md,
+    ... theme.shadows.md,
   },
   avatarText: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: colors.text.inverse,
+    color: theme.colors.text.inverse,
   },
   userName: {
     fontSize: 22,
     fontWeight: 'bold',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   userEmail: {
     fontSize: 16,
-    color: colors.text.secondary,
-    marginBottom: spacing.lg,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.lg,
   },
   editProfileButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.lg,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.lg,
   },
   editProfileButtonText: {
-    color: colors.text.inverse,
+    color: theme.colors.text.inverse,
     fontWeight: '600',
     fontSize: 14,
   },
   section: {
-    marginTop: spacing.xl,
-    paddingHorizontal: spacing.lg,
+    marginTop: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.lg,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.secondary,
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.sm,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
   },
   card: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
-    ...shadows.sm,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    ...theme.shadows.sm,
     overflow: 'hidden',
   },
   settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
   },
   settingRowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   settingIcon: {
-    marginRight: spacing.lg,
+    marginRight: theme.spacing.lg,
   },
   settingText: {
     fontSize: 16,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   settingRowRight: {
     flexDirection: 'row',
@@ -355,23 +359,23 @@ const styles = StyleSheet.create({
   },
   settingValue: {
     fontSize: 16,
-    color: colors.text.secondary,
-    marginRight: spacing.sm,
+    color: theme.colors.text.secondary,
+    marginRight: theme.spacing.sm,
   },
   actionButton: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.md,
-    ...shadows.sm,
+    marginTop: theme.spacing.md,
+    ...theme.shadows.sm,
   },
   actionButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: spacing.md,
+    marginLeft: theme.spacing.md,
   },
   signOutButton: {
     // No specific styles needed here now
@@ -380,15 +384,15 @@ const styles = StyleSheet.create({
     // No specific styles needed here now
   },
   actionSheetContainer: {
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     paddingBottom: 40, // Extra space for home indicator
   },
   actionSheetTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   currencyList: {
     maxHeight: 300,
@@ -397,12 +401,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    paddingVertical: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border.primary,
+    borderBottomColor: theme.colors.border.primary,
   },
   currencyText: {
     fontSize: 16,
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
 });

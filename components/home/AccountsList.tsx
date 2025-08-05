@@ -10,7 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { formatCurrency } from '@/utils/utils';
-import { colors, spacing, borderRadius } from '../../src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 // TypeScript interfaces
 interface Account {
@@ -30,6 +31,8 @@ interface AccountsListProps {
 
 const AccountsList: React.FC<AccountsListProps> = ({ accounts }) => {
   const router = useRouter();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   const getAccountIcon = (category: string): keyof typeof Ionicons.glyphMap => {
     const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -51,7 +54,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts }) => {
   };
 
   const getAccountIconColor = (type: 'asset' | 'liability'): string => {
-    return type === 'asset' ? colors.asset : colors.liability;
+    return type === 'asset' ? theme.colors.asset : theme.colors.liability;
   };
 
   // No need to combine arrays anymore. We use the 'accounts' prop directly.
@@ -60,7 +63,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts }) => {
       <View style={styles.container}>
         <Text style={styles.title}>Accounts</Text>
         <View style={styles.emptyState}>
-          <Ionicons name="wallet-outline" size={48} color={colors.text.tertiary} />
+          <Ionicons name="wallet-outline" size={48} color={theme.colors.text.tertiary} />
           <Text style={styles.emptyTitle}>No accounts yet</Text>
           <Text style={styles.emptyText}>Add your first account to get started</Text>
         </View>
@@ -79,7 +82,7 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts }) => {
             <TouchableOpacity
               key={account.account_id} // Use the correct key from the edge function response
               style={styles.accountCard}
-              onPress={() => router.push(`/account/${account.account_id}`)}
+              onPress={() => router.push(`/accounts/${account.account_id}`)}
               activeOpacity={0.8}
             >
               <View style={styles.accountHeader}>
@@ -112,31 +115,31 @@ const AccountsList: React.FC<AccountsListProps> = ({ accounts }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
-    marginBottom: spacing.xl,
+    marginBottom: theme.spacing.xl,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    color: theme.colors.text.primary,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   accountsContainer: {
     flexDirection: 'row',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    gap: theme.spacing.md,
   },
   accountCard: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
     width: 140,
     minHeight: 120,
   },
   accountHeader: {
-    marginBottom: spacing.md,
+    marginBottom: theme.spacing.md,
   },
   accountIcon: {
     width: 48,
@@ -152,31 +155,31 @@ const styles = StyleSheet.create({
   accountName: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.xs,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   accountBalance: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   emptyState: {
     alignItems: 'center',
-    padding: spacing.xl,
-    marginHorizontal: spacing.lg,
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.lg,
+    padding: theme.spacing.xl,
+    marginHorizontal: theme.spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
   },
   emptyTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginTop: spacing.md,
-    marginBottom: spacing.sm,
+    color: theme.colors.text.primary,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
   },
   emptyText: {
     fontSize: 14,
-    color: colors.text.secondary,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
 });

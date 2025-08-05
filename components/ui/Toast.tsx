@@ -10,7 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { colors, spacing, borderRadius, shadows } from '../../src/styles/colors';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -45,6 +46,8 @@ export default function Toast({
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.9)).current;
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   
   // Use onHide if provided for backward compatibility, otherwise use onDismiss
   const dismissHandler = onHide || onDismiss;
@@ -118,33 +121,33 @@ export default function Toast({
     switch (type) {
       case 'success':
         return {
-          backgroundColor: colors.success,
+          backgroundColor: theme.colors.success,
           icon: 'checkmark-circle',
-          textColor: colors.text.inverse,
+          textColor: theme.colors.text.inverse,
         };
       case 'error':
         return {
-          backgroundColor: colors.error,
+          backgroundColor: theme.colors.error,
           icon: 'alert-circle',
-          textColor: colors.text.inverse,
+          textColor: theme.colors.text.inverse,
         };
       case 'warning':
         return {
-          backgroundColor: colors.warning,
+          backgroundColor: theme.colors.warning,
           icon: 'warning',
-          textColor: colors.text.inverse,
+          textColor: theme.colors.text.inverse,
         };
       case 'info':
         return {
-          backgroundColor: colors.info,
+          backgroundColor: theme.colors.info,
           icon: 'information-circle',
-          textColor: colors.text.inverse,
+          textColor: theme.colors.text.inverse,
         };
       default:
         return {
-          backgroundColor: colors.success,
+          backgroundColor: theme.colors.success,
           icon: 'checkmark-circle',
-          textColor: colors.text.inverse,
+          textColor: theme.colors.text.inverse,
         };
     }
   };
@@ -167,7 +170,7 @@ export default function Toast({
           ],
           top: position === 'top' ? insets.top + 10 : undefined,
           bottom: position === 'bottom' ? insets.bottom + 10 : undefined,
-          maxWidth: screenWidth - (spacing.lg * 2),
+          maxWidth: screenWidth - (theme.spacing.lg * 2),
         }
       ]}
     >
@@ -202,23 +205,23 @@ export default function Toast({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
+    left: theme.spacing.lg,
+    right: theme.spacing.lg,
     borderRadius: 12,
     zIndex: 9999,
-    ...shadows.xl,
+    ...theme.shadows.xl,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.lg,
+    padding: theme.spacing.lg,
     minHeight: 56,
   },
   icon: {
-    marginRight: spacing.md,
+    marginRight: theme.spacing.md,
     flexShrink: 0,
   },
   message: {
@@ -228,8 +231,8 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   closeButton: {
-    marginLeft: spacing.md,
-    padding: spacing.xs,
+    marginLeft: theme.spacing.md,
+    padding: theme.spacing.xs,
     borderRadius: 12,
     flexShrink: 0,
   },

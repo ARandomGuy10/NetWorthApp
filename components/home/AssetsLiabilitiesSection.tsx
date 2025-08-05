@@ -2,7 +2,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { AnimatedCircularProgress } from 'react-native-circular-progress';
-import { colors, spacing, borderRadius } from '../../src/styles/colors';
+import { useTheme } from '../../src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
+
 
 interface NetWorthData {
   totalAssets: number;
@@ -16,6 +18,8 @@ interface AssetsLiabilitiesSectionProps {
 }
 
 const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({ netWorthData }) => {
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
   const totalValue = (netWorthData?.totalAssets || 0) + (netWorthData?.totalLiabilities || 0);
   const assetsPercentage = totalValue > 0 ? ((netWorthData?.totalAssets || 0) / totalValue) * 100 : 0;
   const liabilitiesPercentage = totalValue > 0 ? ((netWorthData?.totalLiabilities || 0) / totalValue) * 100 : 0;
@@ -31,8 +35,8 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({ net
             size={120}
             width={8}
             fill={assetsPercentage}
-            tintColor={colors.asset}
-            backgroundColor={colors.background.tertiary}
+            tintColor={theme.colors.asset}
+            backgroundColor={theme.colors.background.tertiary}
             rotation={0}
             lineCap="round"
           >
@@ -51,8 +55,8 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({ net
             size={120}
             width={8}
             fill={liabilitiesPercentage}
-            tintColor={colors.liability}
-            backgroundColor={colors.background.tertiary}
+            tintColor={theme.colors.liability}
+            backgroundColor={theme.colors.background.tertiary}
             rotation={0}
             lineCap="round"
           >
@@ -69,19 +73,19 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({ net
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
-    backgroundColor: colors.background.card,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.lg,
+    backgroundColor: theme.colors.background.card,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   title: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.text.primary,
-    marginBottom: spacing.lg,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.lg,
   },
   chartsContainer: {
     flexDirection: 'row',
@@ -94,12 +98,12 @@ const styles = StyleSheet.create({
   percentageText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: colors.text.primary,
+    color: theme.colors.text.primary,
   },
   chartLabel: {
     fontSize: 16,
-    color: colors.text.secondary,
-    marginTop: spacing.md,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.md,
     fontWeight: '500',
   },
 });

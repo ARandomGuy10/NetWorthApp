@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { router } from 'expo-router';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { Theme } from '@/lib/supabase';
 
 /**
  * Initial route component that handles the app's initial routing
@@ -9,6 +11,8 @@ import { router } from 'expo-router';
  */
 export default function Index() {
   const { isSignedIn, isLoaded } = useAuth();
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -38,22 +42,22 @@ export default function Index() {
   // Show loading state while checking auth status
   return (
     <View style={styles.container}>
-      <ActivityIndicator size ="large" color="#007AFF" />
+      <ActivityIndicator size ="large" color={theme.colors.primary} />
       <Text style={styles.loadingText}>Loading...</Text>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background.primary,
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#666',
+    color: theme.colors.text.secondary,
   },
 });
