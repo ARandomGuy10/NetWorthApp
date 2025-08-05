@@ -37,17 +37,21 @@ function DashboardScreen() {
     isFetching 
   } = useDashboardData();
 
-  const onRefresh = useCallback(() => {
-    refetch();
+  const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
+
+  const onRefresh = React.useCallback(async () => {
+    setIsManualRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
   }, [refetch]);
 
-  // Fixed: Better loading logic that respects cached data
-  const showLoadingSpinner = (profileLoading || dashboardLoading) && 
-                            !profile && 
-                            !dashboardData && 
-                            !isFetching;
+  // Show full-screen spinner only on initial load when no data is available
+  const showLoadingSpinner = dashboardLoading && !dashboardData;
 
-  // Show loading while either profile or dashboard is loading
+  // Show loading while either profile or dashboard is loading for the first time
   if (showLoadingSpinner) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -70,8 +74,8 @@ function DashboardScreen() {
       <ScrollView
         style={styles.scrollView}
         refreshControl={
-          <RefreshControl 
-            refreshing={Boolean(isFetching && !dashboardData)} 
+          <RefreshControl
+            refreshing={isManualRefreshing}
             onRefresh={onRefresh}
             tintColor={theme.colors.primary}
             progressViewOffset={0}

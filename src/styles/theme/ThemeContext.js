@@ -2,48 +2,46 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { useProfile } from '@/hooks/useProfile';
-import { themes, DARK_THEME } from './themes';
+import { themes } from './themes';
 
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
   console.log('ThemeProvider rendered');
   const { isSignedIn } = useAuth();
-  const { data: profile } = useProfile();
+  const { data: profile, isLoading: profileLoading } = useProfile();
   const systemColorScheme = useColorScheme();
-  console.log('systemColorScheme', systemColorScheme);
 
-  const getInitialTheme = () => {
-    const userTheme = profile?.theme;
-    if (isSignedIn && userTheme) {
-      const themeKey = `${userTheme}_THEME`; // Construct the correct key
-      if (userTheme === 'SYSTEM') {
-        return systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME;
-      } else if (themes[themeKey]) {
-        return themes[themeKey];
-      }
-    }
-    // Default for signed-out users or if no theme is set
-    return systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME;
-  };
-
-  const [theme, setTheme] = useState(getInitialTheme);
+  const [theme, setTheme] = useState(themes.DARK_THEME); // Start with a default
 
   useEffect(() => {
-    setTheme(getInitialTheme());
-  }, [profile, isSignedIn, systemColorScheme]);
+    let currentTheme;
+    const userThemePref = profile?.theme;
+
+    if (isSignedIn && userThemePref) {
+      if (userThemePref === 'SYSTEM') {
+        currentTheme = systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME;
+      } else {
+        const themeKey = `${userThemePref}_THEME`;
+        currentTheme = themes[themeKey] || (systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME);
+      }
+    } else {
+      currentTheme = systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME;
+    }
+    setTheme(currentTheme);
+  }, [profile, isSignedIn, systemColorScheme, profileLoading]);
+
+  // Do not render the app until the profile is loaded for signed-in users
+  if (isSignedIn && profileLoading) {
+    return null; // Or a global loading screen
+  }
 
   const switchTheme = (themeName) => {
-    let newTheme;
-    const themeKey = `${themeName}_THEME`; // Construct the correct key
+    const themeKey = `${themeName}_THEME`;
     if (themeName === 'SYSTEM') {
-      newTheme = systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME;
+      setTheme(systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME);
     } else if (themes[themeKey]) {
-      newTheme = themes[themeKey];
-    }
-
-    if (newTheme) {
-      setTheme(newTheme);
+      setTheme(themes[themeKey]);
     }
   };
 

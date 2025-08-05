@@ -10,7 +10,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -32,6 +31,15 @@ interface ToastStyle {
   textColor: string;
 }
 
+// Define static colors to avoid theme dependency
+const staticColors = {
+  success: '#28a745',
+  error: '#dc3545',
+  warning: '#ffc107',
+  info: '#17a2b8',
+  textInverse: '#ffffff',
+};
+
 export default function Toast({
   visible,
   message,
@@ -46,8 +54,7 @@ export default function Toast({
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.9)).current;
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const styles = getStyles();
   
   // Use onHide if provided for backward compatibility, otherwise use onDismiss
   const dismissHandler = onHide || onDismiss;
@@ -121,33 +128,33 @@ export default function Toast({
     switch (type) {
       case 'success':
         return {
-          backgroundColor: theme.colors.success,
+          backgroundColor: staticColors.success,
           icon: 'checkmark-circle',
-          textColor: theme.colors.text.inverse,
+          textColor: staticColors.textInverse,
         };
       case 'error':
         return {
-          backgroundColor: theme.colors.error,
+          backgroundColor: staticColors.error,
           icon: 'alert-circle',
-          textColor: theme.colors.text.inverse,
+          textColor: staticColors.textInverse,
         };
       case 'warning':
         return {
-          backgroundColor: theme.colors.warning,
+          backgroundColor: staticColors.warning,
           icon: 'warning',
-          textColor: theme.colors.text.inverse,
+          textColor: staticColors.textInverse,
         };
       case 'info':
         return {
-          backgroundColor: theme.colors.info,
+          backgroundColor: staticColors.info,
           icon: 'information-circle',
-          textColor: theme.colors.text.inverse,
+          textColor: staticColors.textInverse,
         };
       default:
         return {
-          backgroundColor: theme.colors.success,
+          backgroundColor: staticColors.success,
           icon: 'checkmark-circle',
-          textColor: theme.colors.text.inverse,
+          textColor: staticColors.textInverse,
         };
     }
   };
@@ -170,7 +177,7 @@ export default function Toast({
           ],
           top: position === 'top' ? insets.top + 10 : undefined,
           bottom: position === 'bottom' ? insets.bottom + 10 : undefined,
-          maxWidth: screenWidth - (theme.spacing.lg * 2),
+          maxWidth: screenWidth - 32, // 16px padding on each side
         }
       ]}
     >
@@ -205,23 +212,30 @@ export default function Toast({
   );
 }
 
-const getStyles = (theme: Theme) => StyleSheet.create({
+const getStyles = () => StyleSheet.create({
   container: {
     position: 'absolute',
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
+    left: 16,
+    right: 16,
     borderRadius: 12,
     zIndex: 9999,
-    ...theme.shadows.xl,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: theme.spacing.lg,
+    padding: 16,
     minHeight: 56,
   },
   icon: {
-    marginRight: theme.spacing.md,
+    marginRight: 12,
     flexShrink: 0,
   },
   message: {
@@ -231,8 +245,8 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     lineHeight: 20,
   },
   closeButton: {
-    marginLeft: theme.spacing.md,
-    padding: theme.spacing.xs,
+    marginLeft: 12,
+    padding: 4,
     borderRadius: 12,
     flexShrink: 0,
   },
