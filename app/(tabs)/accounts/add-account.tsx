@@ -69,6 +69,7 @@ export default function AddAccountScreen() {
 
   // Load existing account data for edit mode
   useEffect(() => {
+    console.log("useEffect");
     if (isEditMode && accountData && !didPrefillRef.current) {
       try {
         const parsedData = typeof accountData === 'string' 
@@ -76,8 +77,8 @@ export default function AddAccountScreen() {
           : accountData;
         
         setFormData({
-          name: parsedData.account_name || '',
-          type: parsedData.account_type || 'asset',
+          name: parsedData.account_name || parsedData.name || '',
+          type: parsedData.account_type || parsedData.type || 'asset',
           category: parsedData.category || '',
           currency: parsedData.currency || 'EUR',
           institution: parsedData.institution || '',

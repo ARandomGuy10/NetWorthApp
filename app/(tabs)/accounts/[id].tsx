@@ -121,7 +121,7 @@ export default function AccountDetailScreen() {
         if (!selectedBal) return;
         router.push({
           pathname: 'accounts/add-balance',
-          params: { accountId: id, balanceId: selectedBal.id, mode: 'edit' },
+          params: { accountId: id, balanceId: selectedBal.id, mode: 'edit', balanceData: JSON.stringify(selectedBal) },
         });
         setMenuVisible(false);
       },

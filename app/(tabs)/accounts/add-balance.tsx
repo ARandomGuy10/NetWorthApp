@@ -6,7 +6,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
@@ -15,30 +14,23 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 
-import { useAccounts } from '../../../hooks/useAccounts';
-import { useAddBalance, useUpdateBalance, useBalances } from '../../../hooks/useBalances';
-import { formatCurrency } from '../../../utils/utils';
-import { colors, spacing, borderRadius, shadows } from '../../../src/styles/colors';
-import CustomPicker from '../../../components/ui/CustomPicker';
-import DatePicker from '../../../components/ui/DatePicker';
-import Toast from '../../../components/ui/Toast';
+import { useAccounts } from '@/hooks/useAccounts';
+import { useAddBalance, useUpdateBalance } from '@/hooks/useBalances';
+import { useToast } from '@/hooks/providers/ToastProvider';
+import { colors, spacing, borderRadius, shadows } from '@/src/styles/colors';
+import CustomPicker from '@/components/ui/CustomPicker';
+import DatePicker from '@/components/ui/DatePicker';
 import { Balance } from '@/lib/supabase';
-
-type ToastType = 'success' | 'error' | 'warning' | 'info';
-
-interface ToastState {
-  visible: boolean;
-  message: string;
-  type: ToastType;
-}
 
 export default function AddBalanceScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { accountId, balanceId, mode } = useLocalSearchParams();
+  const { accountId, balanceId, mode, balanceData } = useLocalSearchParams();
+  const { showToast } = useToast();
 
-  const { data: accounts } = useAccounts();
+  const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const addBalanceMutation = useAddBalance();
   const updateBalanceMutation = useUpdateBalance();
 
@@ -51,125 +43,97 @@ export default function AddBalanceScreen() {
   });
 
   const [initialLoading, setInitialLoading] = useState(true);
-  const [toast, setToast] = useState<ToastState>({ 
-    visible: false, 
-    message: '', 
-    type: 'success' 
-  });
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
 
   const isEditMode = mode === 'edit' && balanceId;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, []);
 
   useEffect(() => {
-    loadInitialData();
-  }, [accounts, isEditMode, balanceId]);
+    if (!accountsLoading) {
+      loadInitialData();
+    }
+  }, [accountsLoading, accounts, isEditMode, balanceId]);
 
-  const loadInitialData = async () => {
+  const loadInitialData = () => {
     try {
       setInitialLoading(true);
 
-      // If we have an accountId, set it as selected
-      if (accountId && accounts) {
+      if (isEditMode && typeof balanceData === 'string') {
+        const parsedBalance = JSON.parse(balanceData);
+        const account = accounts?.find(acc => acc.id === parsedBalance.account_id);
+        setSelectedAccount(account);
+        setFormData({
+          account_id: parsedBalance.account_id,
+          amount: parsedBalance.amount.toString(),
+          date: parsedBalance.date,
+          notes: parsedBalance.notes || '',
+        });
+      } else if (accountId && accounts) {
         const account = accounts.find(acc => acc.id === accountId);
         setSelectedAccount(account);
         setFormData(prev => ({ ...prev, account_id: accountId as string }));
       }
-
-      // If editing, load the balance entry data
-      if (isEditMode && balanceId) {
-        // You would fetch balance data here if needed
-        // For now, we'll handle this case when you implement balance fetching by ID
-      }
     } catch (error) {
       console.error('Error loading initial data:', error);
-      Alert.alert('Error', 'Failed to load data');
+      showToast('Failed to load data', 'error');
     } finally {
       setInitialLoading(false);
     }
   };
 
-  const getAccountIcon = (category: string): keyof typeof Ionicons.glyphMap => {
-    const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-      'Cash': 'cash-outline',
-      'Checking': 'card-outline',
-      'Savings': 'wallet-outline',
-      'Investment': 'trending-up-outline',
-      'Retirement': 'shield-outline',
-      'Real Estate': 'home-outline',
-      'Vehicle': 'car-outline',
-      'Credit Card': 'card-outline',
-      'Personal Loan': 'document-text-outline',
-      'Mortgage': 'home-outline',
-      'Auto Loan': 'car-outline',
-      'Student Loan': 'school-outline',
-    };
-    return iconMap[category] || 'ellipse-outline';
-  };
-
   const handleSave = async () => {
     if (!formData.account_id) {
-      Alert.alert('Error', 'Please select an account');
+      showToast('Please select an account', 'error');
       return;
     }
 
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      Alert.alert('Error', 'Please enter a valid amount greater than 0');
+    if (!formData.amount || parseFloat(formData.amount) < 0) {
+      showToast('Please enter a valid amount', 'error');
       return;
     }
 
     if (!formData.date) {
-      Alert.alert('Error', 'Please select a date');
+      showToast('Please select a date', 'error');
       return;
     }
 
-    try {
-      const balanceData : Omit<Balance, 'id' | 'created_at' | 'updated_at'> = {
-        account_id: formData.account_id,
-        amount: parseFloat(formData.amount),
-        date: formData.date,
-        notes: formData.notes.trim(),
-      };
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    const balancePayload: Omit<Balance, 'id' | 'created_at' | 'updated_at'> = {
+      account_id: formData.account_id,
+      amount: parseFloat(formData.amount),
+      date: formData.date,
+      notes: formData.notes.trim(),
+    };
+
+    try {
       if (isEditMode) {
-        await updateBalanceMutation.mutateAsync({ 
-          id: balanceId as string, 
-          updates: balanceData 
-        });
-        Alert.alert('Success', 'Balance entry updated successfully', [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
-      } else {
-        await addBalanceMutation.mutateAsync(balanceData);
-        setToast({
-          visible: true,
-          message: 'Balance entry created successfully!',
-          type: 'success'
-        });
-        setTimeout(() => router.back(), 1500);
-      }
-    } catch (error: any) {
-      console.error('Error saving balance entry:', error);
-      if (error?.message?.includes('duplicate key')) {
-        setToast({
-          visible: true,
-          message: 'A balance entry already exists for this date. Please choose a different date.',
-          type: 'error'
+        await updateBalanceMutation.mutateAsync({
+          id: balanceId as string,
+          updates: balancePayload,
         });
       } else {
-        setToast({
-          visible: true,
-          message: 'Failed to save balance entry. Please try again.',
-          type: 'error'
-        });
+        await addBalanceMutation.mutateAsync(balancePayload);
       }
+      router.back();
+    } catch (error) {
+      // Errors are handled by the mutation's onError callback
+      console.error('Save operation failed', error);
     }
   };
 
@@ -179,23 +143,14 @@ export default function AddBalanceScreen() {
     setFormData({ ...formData, account_id: accountId });
   };
 
-  const formatDateForDisplay = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
   const accountOptions = accounts?.map(account => ({
     label: `${account.name} (${account.currency})`,
-    value: account.id
+    value: account.id,
   })) || [];
 
-  const loading = addBalanceMutation.isPending || updateBalanceMutation.isPending;
+  const loading = addBalanceMutation.isPending || updateBalanceMutation.isPending || initialLoading;
 
-  if (initialLoading) {
+  if (initialLoading || accountsLoading) {
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={colors.primary} />
@@ -205,155 +160,114 @@ export default function AddBalanceScreen() {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.keyboardView} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView 
-        style={styles.scrollView} 
-        contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxxl }}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={20} color={colors.text.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Balance' : 'Record Balance'}</Text>
+        <View style={styles.placeholder} />
+      </View>
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 4 : 0}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => router.back()}
-            activeOpacity={0.7}
-          >
-            <Ionicons name="chevron-back" size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>
-            {isEditMode ? 'Edit Balance' : 'Record Balance'}
-          </Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* Account Selection */}
-        {!accountId && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Select Account</Text>
-            <CustomPicker
-              selectedValue={formData.account_id}
-              onValueChange={handleAccountChange}
-              items={accountOptions}
-              placeholder="Select an account"
-              disabled={loading}
-            />
-          </View>
-        )}
-
-        {/* Selected Account Info */}
-        {selectedAccount && (
-          <View style={styles.accountInfo}>
-            <View style={styles.accountHeader}>
-              <View style={[
-                styles.accountIcon, 
-                { backgroundColor: selectedAccount.type === 'asset' ? colors.asset : colors.liability }
-              ]}>
-                <Ionicons 
-                  name={getAccountIcon(selectedAccount.category)} 
-                  size={24} 
-                  color="white" 
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xxl }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View style={{
+            opacity: fadeAnim,
+            transform: [{ translateY: slideAnim }]
+          }}>
+            {!isEditMode && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Account</Text>
+                <CustomPicker
+                  value={formData.account_id}
+                  onValueChange={handleAccountChange}
+                  items={accountOptions}
+                  placeholder="Select an account"
+                  disabled={loading || !!accountId}
                 />
               </View>
-              <View style={styles.accountDetails}>
-                <Text style={styles.accountName}>{selectedAccount.name}</Text>
-                <Text style={styles.accountMeta}>
-                  {selectedAccount.type === 'asset' ? 'Asset' : 'Liability'} • {selectedAccount.category}
-                </Text>
-                <Text style={styles.currentBalance}>
-                  Current: {formatCurrency(selectedAccount.latest_balance || 0, selectedAccount.currency)}
-                </Text>
-              </View>
+            )}
+
+            
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Date</Text>
+              <DatePicker
+                value={formData.date}
+                onChange={(date) => setFormData({ ...formData, date })}
+                disabled={loading}
+              />
+              <Text style={styles.helperText}>
+                Only one balance entry per date is allowed.
+              </Text>
             </View>
-          </View>
-        )}
 
-        {/* Date */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Date</Text>
-          <DatePicker
-            value={formData.date}
-            onChange={(date) => setFormData({ ...formData, date })}
-            disabled={loading}
-          />
-          <Text style={styles.helperText}>
-            Note: Only one balance entry per date is allowed per account.
-          </Text>
-        </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Amount</Text>
+              <View style={styles.amountContainer}>
+                <Text style={styles.currencySymbol}>{selectedAccount?.currency || ''}</Text>
+                <TextInput
+                  style={styles.amountInput}
+                  value={formData.amount}
+                  onChangeText={(text) => setFormData({ ...formData, amount: text })}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.text.secondary}
+                  keyboardType="decimal-pad"
+                  editable={!loading}
+                  returnKeyType="done"
+                />
+              </View>
+              <Text style={styles.helperText}>Enter the total balance (always positive).</Text>
+            </View>
 
-        {/* Amount */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Amount</Text>
-          <View style={styles.amountContainer}>
-            <Text style={styles.currencySymbol}>
-              {selectedAccount?.currency || 'EUR'}
-            </Text>
-            <TextInput
-              style={styles.amountInput}
-              value={formData.amount}
-              onChangeText={(text) => setFormData({ ...formData, amount: text })}
-              placeholder="0.00"
-              placeholderTextColor={colors.text.secondary}
-              keyboardType="decimal-pad"
-              editable={!loading}
-            />
-          </View>
-          <Text style={styles.helperText}>
-            Enter the total balance amount (always positive).
-          </Text>
-        </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Notes</Text>
+              <TextInput
+                style={styles.notesInput}
+                value={formData.notes}
+                onChangeText={(text) => setFormData({ ...formData, notes: text })}
+                placeholder="Optional"
+                placeholderTextColor={colors.text.secondary}
+                multiline
+                editable={!loading}
+              />
+            </View>
 
-        {/* Notes */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Notes (Optional)</Text>
-          <TextInput
-            style={styles.notesInput}
-            value={formData.notes}
-            onChangeText={(text) => setFormData({ ...formData, notes: text })}
-            placeholder="Add any additional notes about this balance entry..."
-            placeholderTextColor={colors.text.secondary}
-            multiline
-            numberOfLines={3}
-            textAlignVertical="top"
-            editable={!loading}
-          />
-        </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity
+                style={[styles.saveButton, loading && styles.saveButtonDisabled]}
+                onPress={handleSave}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color={colors.text.inverse} />
+                ) : (
+                  <Text style={styles.saveButtonText}>{isEditMode ? 'Update Entry' : 'Save Entry'}</Text>
+                )}
+              </TouchableOpacity>
 
-        {/* Save Button */}
-        <TouchableOpacity
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-          activeOpacity={0.8}
-        >
-          {loading ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <Text style={styles.saveButtonText}>
-              {isEditMode ? 'Update Entry' : 'Save Entry'}
-            </Text>
-          )}
-        </TouchableOpacity>
-
-        {/* Cancel Button */}
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={() => router.back()}
-          disabled={loading}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-
-        <Toast
-          visible={toast.visible}
-          message={toast.message}
-          type={toast.type}
-          onDismiss={() => setToast({ ...toast, visible: false })}
-        />
-      </ScrollView>
-    </KeyboardAvoidingView>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => router.back()}
+                disabled={loading}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.cancelButtonText, loading && { opacity: 0.5 }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
@@ -361,9 +275,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background.primary,
-  },
-  keyboardView: {
-    flex: 1,
   },
   centered: {
     justifyContent: 'center',
@@ -378,141 +289,126 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: colors.border.primary,
   },
   backButton: {
-    width: 36,
-    height: 36,
+    width: 32,
+    height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 18,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.text.primary,
   },
   placeholder: {
-    width: 36,
+    width: 32,
   },
   scrollView: {
     flex: 1,
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
   },
   inputGroup: {
-    marginTop: spacing.xxl,
+    marginBottom: spacing.xl,
   },
   label: {
     fontSize: 15,
     fontWeight: '600',
     color: colors.text.primary,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   accountInfo: {
+    marginBottom: spacing.xl,
+    padding: spacing.lg,
     backgroundColor: colors.background.card,
     borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    marginTop: spacing.xxl,
     borderWidth: 1,
     borderColor: colors.border.primary,
   },
-  accountHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  accountIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing.md,
-  },
-  accountDetails: {
-    flex: 1,
-  },
   accountName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },
   accountMeta: {
-    fontSize: 13,
+    fontSize: 14,
     color: colors.text.secondary,
-    marginBottom: spacing.xs,
-  },
-  currentBalance: {
-    fontSize: 13,
-    color: colors.text.tertiary,
   },
   amountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.tertiary,
+    backgroundColor: colors.background.card,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border.primary,
+    paddingHorizontal: spacing.lg,
     minHeight: 52,
+    ...shadows.sm,
   },
   currencySymbol: {
     fontSize: 16,
     fontWeight: '600',
     color: colors.text.secondary,
-    paddingHorizontal: spacing.lg,
+    marginRight: spacing.sm,
   },
   amountInput: {
     flex: 1,
     fontSize: 16,
     color: colors.text.primary,
     paddingVertical: spacing.lg,
-    paddingRight: spacing.lg,
   },
   notesInput: {
-    backgroundColor: colors.background.tertiary,
+    backgroundColor: colors.background.card,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
     fontSize: 16,
     color: colors.text.primary,
     borderWidth: 1,
     borderColor: colors.border.primary,
-    minHeight: 80,
+    minHeight: 100,
+    textAlignVertical: 'top',
+    ...shadows.sm,
   },
   helperText: {
     fontSize: 13,
     color: colors.text.secondary,
     marginTop: spacing.sm,
-    lineHeight: 18,
+    paddingLeft: spacing.xs,
+  },
+  buttonContainer: {
+    marginTop: spacing.xxl,
+    gap: spacing.md,
   },
   saveButton: {
     backgroundColor: colors.primary,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
     alignItems: 'center',
-    marginTop: spacing.xxxl,
-    marginBottom: spacing.lg,
-    minHeight: 52,
     justifyContent: 'center',
+    minHeight: 52,
     ...shadows.md,
   },
   saveButtonDisabled: {
-    opacity: 0.6,
+    opacity: 0.5,
   },
   saveButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: 'bold',
     color: colors.text.inverse,
   },
   cancelButton: {
     padding: spacing.lg,
     alignItems: 'center',
-    marginBottom: spacing.xxxl,
   },
   cancelButtonText: {
     fontSize: 15,
+    fontWeight: '500',
     color: colors.text.secondary,
   },
 });

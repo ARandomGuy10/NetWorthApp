@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSupabase } from './useSupabase';
 import type { Balance } from '../lib/supabase';
+import { useToast } from '../hooks/providers/ToastProvider';
 
 /* ---------- list ---------- */
 export const useBalances = (accountId: string) => {
@@ -9,6 +10,7 @@ export const useBalances = (accountId: string) => {
     queryKey: ['balance', accountId],
     enabled: !!accountId,
     queryFn: async (): Promise<Balance[]> => {
+      console.log('🔥 CALLING DATABASE - useBalances queryFn, Account ID:', accountId);
       const { data, error } = await supabase
         .from('balance_entries')
         .select('*')
@@ -24,12 +26,14 @@ export const useBalances = (accountId: string) => {
 export const useAddBalance = () => {
   const supabase    = useSupabase();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
   mutationFn: async (payload: Omit<Balance, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
+      console.log('🔥 CALLING DATABASE - useAddBalance mutationFn');
+        const { data, error } = await supabase
         .from('balance_entries')
-        .insert([payload])
+        .upsert(payload, { onConflict: 'account_id,date' })
         .select()
         .single();
       if (error) throw error;
@@ -37,9 +41,12 @@ export const useAddBalance = () => {
     },
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['balance', vars.account_id] });
-      queryClient.invalidateQueries({ queryKey: ['account', vars.account_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showToast('Balance added successfully', 'success');
     },
+    onError: (error) => {
+      showToast(error.message, 'error');
+    }
   });
 };
 
@@ -47,9 +54,11 @@ export const useAddBalance = () => {
 export const useUpdateBalance = () => {
   const supabase    = useSupabase();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Balance> }) => {
+      console.log('🔥 CALLING DATABASE - useUpdateBalance mutationFn');
       const { data, error } = await supabase
         .from('balance_entries')
         .update(updates)
@@ -60,10 +69,13 @@ export const useUpdateBalance = () => {
       return data;
     },
     onSuccess: (_data, vars: { id: string; updates: Partial<Balance> }) => {
-      queryClient.invalidateQueries({ queryKey: ['balance', vars.id] });
-      queryClient.invalidateQueries({ queryKey: ['account', vars.updates.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['balance', vars.updates.account_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showToast('Balance updated successfully', 'success');
     },
+    onError: (error) => {
+      showToast(error.message, 'error');
+    }
   });
 };
 
@@ -71,9 +83,11 @@ export const useUpdateBalance = () => {
 export const useDeleteBalance = () => {
   const supabase    = useSupabase();
   const queryClient = useQueryClient();
+  const { showToast } = useToast();
 
   return useMutation({
     mutationFn: async ({ id, account_id }: { id: string; account_id: string }) => {
+      console.log('🔥 CALLING DATABASE - useDeleteBalance mutationFn');
       const { error } = await supabase
         .from('balance_entries')
         .delete()
@@ -82,8 +96,11 @@ export const useDeleteBalance = () => {
     },
     onSuccess: (_data, { account_id }) => {
       queryClient.invalidateQueries({ queryKey: ['balance', account_id] });
-      queryClient.invalidateQueries({ queryKey: ['account', account_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      showToast('Balance deleted successfully', 'success');
     },
+    onError: (error) => {
+      showToast(error.message, 'error');
+    }
   });
 };

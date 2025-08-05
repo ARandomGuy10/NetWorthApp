@@ -39,7 +39,7 @@ export default function Switch({
   useEffect(() => {
     Animated.spring(animatedValue, {
       toValue: value ? 1 : 0,
-      useNativeDriver: false,
+      useNativeDriver: true,  // Changed to true for consistency
       tension: 100,
       friction: 8,
     }).start();
@@ -51,17 +51,20 @@ export default function Switch({
     // Haptic feedback
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
-    // Scale animation for press feedback
-    Animated.sequence([
-      Animated.timing(scaleAnim, {
-        toValue: 0.95,
-        duration: 100,
+    // Use a different animation approach that works well with native driver
+    Animated.parallel([
+      Animated.spring(scaleAnim, {
+        toValue: 1.1,
         useNativeDriver: true,
+        tension: 100,
+        friction: 8,
       }),
-      Animated.timing(scaleAnim, {
+      Animated.spring(scaleAnim, {
         toValue: 1,
-        duration: 100,
         useNativeDriver: true,
+        delay: 100,
+        tension: 100,
+        friction: 8,
       }),
     ]).start();
 
@@ -78,10 +81,13 @@ export default function Switch({
     outputRange: [2, currentSize.width - currentSize.thumbSize - 2],
   });
 
-  const thumbScale = animatedValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [1, 1.1, 1],
-  });
+  const thumbScale = Animated.multiply(
+    animatedValue.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [1, 1.1, 1],
+    }),
+    scaleAnim
+  );
 
   return (
     <TouchableOpacity

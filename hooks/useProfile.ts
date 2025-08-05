@@ -11,7 +11,7 @@ export const useProfile = () => {
   return useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async (): Promise<Profile | null> => {
-      console.log('🔥 Fetching user profile');
+      console.log('🔥 CALLING DATABASE - useProfile queryFn');
       
       const { data, error } = await supabase
         .from('profiles')
@@ -35,6 +35,7 @@ export const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: async (updates: Partial<Profile>) => {
+      console.log('🔥 CALLING DATABASE - useUpdateProfile mutationFn');
       const { data, error } = await supabase
         .from('profiles')
         .update({ ...updates, updated_at: new Date().toISOString() })

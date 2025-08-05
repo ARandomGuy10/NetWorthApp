@@ -15,6 +15,7 @@ export const useAccounts = () => {
   return useQuery({
     queryKey: ['accounts', user?.id],
     queryFn: async (): Promise<Account[]> => {
+      console.log('🔥 CALLING DATABASE - useAccounts queryFn');
       const { data, error } = await supabase
         .from('accounts')
         .select('*')
@@ -34,6 +35,7 @@ export const useAccountDetails = (accountId: string) => {
   return useQuery({
     queryKey: ['account', accountId],
     queryFn: async (): Promise<Account | null> => {
+      console.log('🔥 CALLING DATABASE - useAccountDetails queryFn', accountId);
       const { data, error } = await supabase
         .from('accounts')
         .select('*')
@@ -57,6 +59,7 @@ export const useAddAccount = () => {
     mutationFn: async (payload: CreateAccountData) => {
       const { initial_balance, ...fields } = payload;
 
+      console.log('🔥 CALLING DATABASE - useAddAccount mutationFn');
       const { data: account, error } = await supabase
         .from('accounts')
         .insert([{ ...fields, user_id: user!.id }])
@@ -93,6 +96,7 @@ export const useUpdateAccount = () => {
 
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: Partial<Account> }) => {
+      console.log('🔥 CALLING DATABASE - useUpdateAccount mutationFn', id);
       const { data, error } = await supabase
         .from('accounts')
         .update(updates)
@@ -102,11 +106,14 @@ export const useUpdateAccount = () => {
       if (error) throw error;
       return data;
     },
-    
-    onSuccess: (_d, vars) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['account', vars.id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['account', variables.id] });
+
+      // Manually update the cache for the specific account
+      //queryClient.setQueryData(['account', variables.id], data);
+      
       showToast('Account updated successfully', 'success');
     },
     onError: (error) => {
@@ -123,6 +130,7 @@ export const useDeleteAccount = () => {
 
   return useMutation({
     mutationFn: async (accountId: string) => {
+      console.log('🔥 CALLING DATABASE - useDeleteAccount mutationFn');
       await supabase.from('balance_entries').delete().eq('account_id', accountId);
       const { error } = await supabase.from('accounts').delete().eq('id', accountId);
       if (error) throw error;
