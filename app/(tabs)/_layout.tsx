@@ -1,9 +1,9 @@
-import { Tabs } from 'expo-router';
+import { Tabs, router } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect } from 'react';
-import { router } from 'expo-router';
 import { View, ActivityIndicator, Text } from 'react-native';
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
+import { StackActions } from '@react-navigation/native';
 
 export default function TabsLayout() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -50,6 +50,12 @@ export default function TabsLayout() {
           name="accounts" 
           options={{
             title: undefined,
+          }}
+          listeners={{
+            tabPress: (e) => {
+              e.preventDefault();
+              router.navigate('/(tabs)/accounts');
+            },
           }}
         />
         <Tabs.Screen 

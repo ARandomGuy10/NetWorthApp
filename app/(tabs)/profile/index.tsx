@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,8 @@ import { CURRENCIES, Theme, THEMES } from '@/lib/supabase';
 import ActionSheet, { ActionSheetRef } from 'react-native-actions-sheet';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 
-export default function ProfileScreen() {
+function ProfileScreen() {
+  console.log('ProfileScreen rendered');
   const { user } = useUser();
   const { signOut } = useAuth();
   const router = useRouter();
@@ -410,3 +411,5 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     color: theme.colors.text.primary,
   },
 });
+
+export default memo(ProfileScreen);

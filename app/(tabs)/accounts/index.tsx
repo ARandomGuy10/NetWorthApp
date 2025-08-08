@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import {
   View,
   Text,
@@ -23,7 +23,8 @@ import { DashboardAccount, Theme } from '../../../lib/supabase';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 
-export default function AccountsScreen() {
+function AccountsScreen() {
+  console.log('AccountsScreen rendered');
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { data: dashboardData, isLoading, refetch, isFetching } = useDashboardData();
@@ -561,3 +562,5 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     marginLeft: theme.spacing.sm 
   },
 });
+
+export default memo(AccountsScreen);

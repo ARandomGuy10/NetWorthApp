@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export default function AnalyticsScreen() {
+function AnalyticsScreen() {
   const insets = useSafeAreaInsets();
 
   console.log('Inside AnalyticsScreen');
@@ -54,3 +55,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+
+export default memo(AnalyticsScreen);
