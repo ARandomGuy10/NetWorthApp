@@ -4,9 +4,12 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
 import { StackActions } from '@react-navigation/native';
+import { useProfile, useCreateProfile } from '../../hooks/useProfile';
 
 export default function TabsLayout() {
   const { isSignedIn, isLoaded } = useAuth();
+  const { data: profile, isLoading: isProfileLoading } = useProfile();
+  const { mutate: createProfile } = useCreateProfile();
   console.log('TabsLayout rendered');
 
   // Redirect if not authenticated
@@ -14,7 +17,11 @@ export default function TabsLayout() {
     if (isLoaded && !isSignedIn) {
       router.replace('/(auth)/sign-in');
     }
-  }, [isSignedIn, isLoaded]);
+
+    if (isLoaded && isSignedIn && !isProfileLoading && profile === null) {
+      createProfile();
+    }
+  }, [isSignedIn, isLoaded, isProfileLoading, profile]);
 
   // Show loading while auth loads
   if (!isLoaded || !isSignedIn) {

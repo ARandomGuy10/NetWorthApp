@@ -22,6 +22,7 @@ export type Database = {
           timezone: string | null;
           date_format: string | null;
           last_sign_in_at: string | null;
+          avatar_url: string | null;
           created_at: string | null;
           updated_at: string | null;
           theme: string;

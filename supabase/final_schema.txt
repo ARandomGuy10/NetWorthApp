@@ -43,11 +43,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   first_name TEXT,
   last_name TEXT,
   email TEXT UNIQUE,
+  avatar_url TEXT,
+  last_sign_in_at timestamptz,
   preferred_currency public.currency_code NOT NULL DEFAULT 'EUR',
   timezone VARCHAR(50) DEFAULT 'UTC',
   date_format VARCHAR(20) DEFAULT 'YYYY-MM-DD',
-  avatar_url TEXT,
-  last_sign_in_at timestamptz,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   theme public.theme NOT NULL DEFAULT 'DARK'
