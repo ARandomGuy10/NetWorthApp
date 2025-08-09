@@ -42,6 +42,7 @@ export const useAddBalance = () => {
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['balance', vars.account_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       showToast('Balance added successfully', 'success');
     },
     onError: (error) => {
@@ -71,6 +72,7 @@ export const useUpdateBalance = () => {
     onSuccess: (_data, vars: { id: string; updates: Partial<Balance> }) => {
       queryClient.invalidateQueries({ queryKey: ['balance', vars.updates.account_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       showToast('Balance updated successfully', 'success');
     },
     onError: (error) => {
@@ -97,6 +99,7 @@ export const useDeleteBalance = () => {
     onSuccess: (_data, { account_id }) => {
       queryClient.invalidateQueries({ queryKey: ['balance', account_id] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       showToast('Balance deleted successfully', 'success');
     },
     onError: (error) => {
