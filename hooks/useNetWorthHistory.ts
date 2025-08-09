@@ -105,7 +105,7 @@ export const useNetWorthHistory = (options: UseNetWorthHistoryOptions) => {
         console.error('Error fetching net worth history:', error);
         throw error;
       }
-
+      //console.log('🔥 Net Worth History:', data);
       return data;
     },
     enabled: !!user?.id && !!profile && enabled,

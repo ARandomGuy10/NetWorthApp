@@ -59,15 +59,15 @@ interface NetWorthDataPoint {
 const CONFIG = {
   RATE_CACHE_TTL: 60 * 60 * 1000, // 1 hour - only for exchange rates
   DEFAULT_MAX_POINTS: {
-    '1M': 31,
+    '1M': 60,
     '3M': 90,
-    '6M': 26,
-    '12M': 52,
+    '6M': 30,
+    '12M': 60,
     'ALL': 120
   },
   FALLBACK_SAMPLING: {
     '1M': 'daily',
-    '3M': 'adaptive',
+    '3M': 'weekly',
     '6M': 'weekly',
     '12M': 'weekly',
     'ALL': 'monthly'

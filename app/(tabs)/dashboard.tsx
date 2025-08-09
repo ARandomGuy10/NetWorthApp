@@ -1,4 +1,3 @@
-// app/(tabs)/dashboard.tsx
 import React, { useCallback, memo } from 'react';
 import {
   View,
@@ -8,17 +7,18 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
 import { useDashboardData } from '@/hooks/useDashboard';
 import { useProfile } from '@/hooks/useProfile';
-import type { DashboardAccount, Theme } from '@/lib/supabase';
+import type { Theme } from '@/lib/supabase';
 
-// Import modern components
-import ModernHomeHeader from '../../components/home/ModernHomeHeader';
-import ModernNetWorthChart from '../../components/home/ModernNetWorthChart';
-import AssetsLiabilitiesSection from '../../components/home/AssetsLiabilitiesSection';
-import AccountsList from '../../components/home/AccountsList';
-import ModernFAB from '../../components/home/ModernFAB';
+// Import both versions to test
+// Comment out the one you don't want to use
+//import IntegratedDashboard_Victory from '@/components/home/IntegratedDashboard_Victory';
+import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
+
+import AssetsLiabilitiesSection from '@/components/home/AssetsLiabilitiesSection';
+import AccountsList from '@/components/home/AccountsList';
+import ModernFAB from '@/components/home/ModernFAB';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 function DashboardScreen() {
@@ -38,8 +38,7 @@ function DashboardScreen() {
   } = useDashboardData();
 
   const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
-
-  const onRefresh = React.useCallback(async () => {
+  const onRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
     try {
       await refetch();
@@ -48,10 +47,8 @@ function DashboardScreen() {
     }
   }, [refetch]);
 
-  // Show full-screen spinner only on initial load when no data is available
   const showLoadingSpinner = dashboardLoading && !dashboardData;
 
-  // Show loading while either profile or dashboard is loading for the first time
   if (showLoadingSpinner) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -60,7 +57,6 @@ function DashboardScreen() {
     );
   }
 
-  // Prepare data for components
   const netWorthData = {
     totalAssets: dashboardData?.totalAssets || 0,
     totalLiabilities: dashboardData?.totalLiabilities || 0,
@@ -83,17 +79,14 @@ function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <ModernHomeHeader />
+        <IntegratedDashboard_Wagmi />
 
-        <ModernNetWorthChart 
-          chartData={dashboardData?.chartData} 
-          netWorthData={netWorthData} 
-        />
-
-        <AssetsLiabilitiesSection netWorthData={netWorthData} />
-
-        <AccountsList accounts={dashboardData?.accounts || []} />
-
+        {/* Other sections with padding */}
+        <View style={{ marginTop: 16, paddingHorizontal: 16 }}>
+          <AssetsLiabilitiesSection netWorthData={netWorthData} />
+          <AccountsList accounts={dashboardData?.accounts || []} />
+        </View>
+        
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
