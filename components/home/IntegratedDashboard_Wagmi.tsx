@@ -35,6 +35,15 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   const [range, setRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
   const { data, isLoading, error } = useNetWorthHistory({ period: range });
 
+  // State for custom tooltip
+  const [tooltipData, setTooltipData] = useState<{
+    visible: boolean;
+    value: number;
+    date: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good Morning!';
@@ -48,17 +57,13 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     return firstName + lastName || 'U';
   };
 
-  // Fixed: Proper haptic callback
   const invokeHaptic = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
-  // Fixed: Proper onCurrentIndexChange callback
-  const onCurrentIndexChange = useCallback((index: number) => {
-    invokeHaptic();
-  }, [invokeHaptic]);
 
   const prepared = useMemo(() => {
+    console.log(data);
     const empty = { chartData: [], latest: 0, first: 0, delta: 0, pct: 0, currency: 'EUR' };
     if (!data || !data.data || !data.data.length) return empty;
 
@@ -83,35 +88,11 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
       }
     }
 
-    // Fixed: Ensure minimum data points for full width and pad for edge-to-edge coverage
+    // Ensure minimum data points for full width
     let chartData = filtered.map((d) => ({
       timestamp: new Date(d.date).getTime(),
       value: d.net_worth,
     }));
-
-    // If we have fewer than 6 points, pad the data to ensure full width coverage
-    if (chartData.length > 0 && chartData.length < 6) {
-      const firstPoint = chartData[0];
-      const lastPoint = chartData[chartData.length - 1];
-      const timeSpan = lastPoint.timestamp - firstPoint.timestamp;
-      const timeStep = timeSpan / (6 - chartData.length + 1);
-
-      // Add points at the beginning
-      for (let i = 2; i >= 1; i--) {
-        chartData.unshift({
-          timestamp: firstPoint.timestamp - (timeStep * i),
-          value: firstPoint.value,
-        });
-      }
-
-      // Add points at the end
-      for (let i = 1; i <= 2; i++) {
-        chartData.push({
-          timestamp: lastPoint.timestamp + (timeStep * i),
-          value: lastPoint.value,
-        });
-      }
-    }
 
     const values = chartData.map(d => d.value);
     const latestVal = values[values.length - 1];
@@ -128,6 +109,34 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
       currency: data.currency || 'EUR',
     };
   }, [data, range]);
+
+  // Enhanced callback to handle tooltip data
+  const onCurrentIndexChange = useCallback((index: number) => {
+    invokeHaptic();
+    
+    // Show tooltip with current data point
+    if (prepared.chartData[index]) {
+      const dataPoint = prepared.chartData[index];
+      const date = new Date(dataPoint.timestamp);
+      
+      setTooltipData({
+        visible: true,
+        value: dataPoint.value,
+        date: date.toLocaleDateString('en', { 
+          weekday: 'short',
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        x: 50, // You can calculate actual position if needed
+        y: 50,
+      });
+      
+      // Hide tooltip after 3 seconds
+      setTimeout(() => {
+        setTooltipData(null);
+      }, 3000);
+    }
+  }, [invokeHaptic, prepared.chartData]);
 
   const lineColor = theme.colors.asset || theme.colors.primary || '#22c55e';
   const styles = getStyles(theme);
@@ -209,11 +218,10 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
         {/* Centered Net Worth Display */}
         <View style={styles.netWorthContainer}>
           <LineChart.Provider data={prepared.chartData} onCurrentIndexChange={onCurrentIndexChange}>
-            {/* FIXED: Use static text instead of LineChart.PriceText */}
             <Text style={[styles.netWorthText, { color: theme.colors.text.primary }]}>
               {formatCurrency(prepared.latest, prepared.currency)}
             </Text>
-    
+            
             <View style={[
               styles.netWorthChangeContainer, 
               { backgroundColor: prepared.delta >= 0 ? '#22c55e25' : '#ef444425' }
@@ -228,40 +236,34 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
           </LineChart.Provider>
         </View>
 
-
-        {/* Interactive Chart Section */}
+        {/* Interactive Chart Section with Custom Tooltip */}
         <View style={styles.chartContainer}>
           <LineChart.Provider data={prepared.chartData} onCurrentIndexChange={onCurrentIndexChange}>
-            {/* Fixed: Full width chart */}
             <LineChart width={screenWidth} height={220}>
               <LineChart.Path color={lineColor} width={3} />
-              {/* Fixed: Use correct props for CursorCrosshair */}
               <LineChart.CursorCrosshair 
                 color={lineColor}
                 onActivated={invokeHaptic}
                 onEnded={invokeHaptic}
-              >
-                <LineChart.Tooltip 
-                  textStyle={{
-                    backgroundColor: theme.colors.background.secondary,
-                    borderRadius: 8,
-                    color: theme.colors.text.primary,
-                    fontSize: 14,
-                    padding: 8,
-                  }}
-                />
-              </LineChart.CursorCrosshair>
+              />
             </LineChart>
-            
-            <LineChart.DatetimeText
-              style={{
-                color: theme.colors.text.secondary,
-                fontSize: 12,
-                textAlign: 'center',
-                marginTop: 8,
-              }}
-            />
           </LineChart.Provider>
+          
+          {/* Custom Tooltip - Safe Implementation */}
+          {tooltipData && (
+            <View style={[styles.customTooltip, { 
+              backgroundColor: theme.colors.background.secondary,
+              borderColor: lineColor 
+            }]}>
+              <Text style={[styles.tooltipValue, { color: theme.colors.text.primary }]}>
+                {formatCurrency(tooltipData.value, prepared.currency)}
+              </Text>
+              <Text style={[styles.tooltipDate, { color: theme.colors.text.secondary }]}>
+                {tooltipData.date}
+              </Text>
+              <View style={[styles.tooltipArrow, { borderTopColor: theme.colors.background.secondary }]} />
+            </View>
+          )}
         </View>
 
         {/* Period Selector */}
@@ -295,6 +297,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
 };
 
 const getStyles = (theme: any) => StyleSheet.create({
+  // ... all your existing styles ...
   container: {
     width: screenWidth,
     paddingTop: 30,
@@ -384,6 +387,55 @@ const getStyles = (theme: any) => StyleSheet.create({
   chartContainer: {
     marginBottom: 16,
     alignItems: 'center',
+    position: 'relative', // Important for tooltip positioning
+  },
+  // New Custom Tooltip Styles
+  customTooltip: {
+    position: 'absolute',
+    top: 20,
+    alignSelf: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    minWidth: 140,
+    zIndex: 1000,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  tooltipValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  tooltipDate: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -6,
+    left: '50%',
+    marginLeft: -6,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderTopWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   periodSelectorContainer: {
     flexDirection: 'row',
