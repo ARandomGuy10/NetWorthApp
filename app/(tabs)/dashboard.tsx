@@ -83,11 +83,7 @@ function DashboardScreen() {
         }
         showsVerticalScrollIndicator={false}
       >
-        <ModernHomeHeader 
-          profile={profile} 
-          netWorthData={netWorthData} 
-          trend={dashboardData?.trend}
-        />
+        <ModernHomeHeader />
 
         <ModernNetWorthChart 
           chartData={dashboardData?.chartData} 

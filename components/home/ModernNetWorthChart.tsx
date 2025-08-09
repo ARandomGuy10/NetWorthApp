@@ -6,331 +6,363 @@ import {
   StyleSheet,
   Dimensions,
   TouchableOpacity,
-  Modal,
+  ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { formatCurrency } from '@/utils/utils';
 import { Theme } from '@/lib/supabase';
+import { useNetWorthHistory } from '@/hooks/useNetWorthHistory';
 
 const { width: screenWidth } = Dimensions.get('window');
 
-interface TimeRange {
-  label: string;
-  value: number | string;
-}
-
-const TIME_RANGES: TimeRange[] = [
-  { label: '1M', value: 1 },
-  { label: '3M', value: 3 },
-  { label: '6M', value: 6 },
-  { label: '1Y', value: 12 },
-  { label: 'All', value: 'all' },
+const TIME_RANGES = [
+  { label: '1M', value: '1M' as const },
+  { label: '3M', value: '3M' as const },
+  { label: '6M', value: '6M' as const },
+  { label: '1Y', value: '12M' as const },
+  { label: 'All', value: 'ALL' as const },
 ];
 
-interface ChartDataPoint {
-  label: string;
-  value: number;
-}
-
-interface NetWorthData {
-  totalAssets: number;
-  totalLiabilities: number;
-  totalNetWorth: number;
-  currency: string;
-}
-
-interface TooltipData {
-  label: string;
-  value: number;
-  assets: number;
-  liabilities: number;
-}
-
-interface ModernNetWorthChartProps {
-  chartData?: ChartDataPoint[];
-  netWorthData?: NetWorthData;
-}
-
-const ModernNetWorthChart: React.FC<ModernNetWorthChartProps> = ({ chartData, netWorthData }) => {
-  const [selectedRange, setSelectedRange] = useState<string>('6M');
-  const [tooltipVisible, setTooltipVisible] = useState<boolean>(false);
-  const [tooltipData, setTooltipData] = useState<TooltipData | null>(null);
+const ModernNetWorthChart: React.FC = () => {
+  const [selectedRange, setSelectedRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
-  // Get the currency from the data, with a fallback
-  const currency = netWorthData?.currency || 'EUR';
+  const { data, isLoading, error } = useNetWorthHistory({ period: selectedRange });
 
+  const getPointsToShow = () => {
+    switch (selectedRange) {
+      case '1M': return -30;
+      case '3M': return -20;
+      case '6M': return -15;
+      case '12M': return -12;
+      case 'ALL': return -10;
+      default: return -6;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <LinearGradient
+        colors={['#F8FAFC', '#FFFFFF']}
+        style={styles.container}
+      >
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#22C55E" />
+          <Text style={styles.loadingText}>Loading portfolio...</Text>
+        </View>
+      </LinearGradient>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <Ionicons name="analytics-outline" size={48} color="#EF4444" />
+          <Text style={styles.errorText}>Chart unavailable</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const chartData = data?.data || [];
+  const pointsToShow = getPointsToShow();
+  const displayData = chartData.slice(pointsToShow);
+
+  if (displayData.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.noDataContainer}>
+          <Ionicons name="trending-up-outline" size={64} color="#9CA3AF" />
+          <Text style={styles.noDataText}>Start tracking to see your growth</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const values = displayData.map(item => item.net_worth);
+  const latestValue = values[values.length - 1];
+  const firstValue = values[0];
+  const growth = latestValue - firstValue;
+  const growthPercentage = firstValue !== 0 ? (growth / Math.abs(firstValue)) * 100 : 0;
+  const isPositive = growth >= 0;
+
+  // Enhanced chart data
+  const processedData = {
+    labels: displayData.map(() => ''),
+    datasets: [{
+      data: values,
+      color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
+      strokeWidth: 3,
+    }],
+  };
+
+  // Premium chart configuration
   const chartConfig = {
     backgroundColor: 'transparent',
-    backgroundGradientFrom: theme.colors.background.card,
-    backgroundGradientTo: theme.colors.background.card,
+    backgroundGradientFrom: '#FFFFFF',
+    backgroundGradientTo: '#FFFFFF',
     decimalPlaces: 0,
-    color: (opacity = 1) => theme.colors.primary.replace(')', `, ${opacity})`).replace('rgb', 'rgba'),
-    labelColor: (opacity = 1) => theme.colors.text.secondary.replace(')', `, ${opacity})`).replace('rgb', 'rgba'),
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '4',
-      strokeWidth: '2',
-      stroke: theme.colors.primary,
-      fill: theme.colors.primary,
-    },
+    color: (opacity = 1) => `rgba(34, 197, 94, ${opacity})`,
+    labelColor: () => 'transparent',
+    style: { borderRadius: 0 },
+    formatYLabel: () => '',
     propsForBackgroundLines: {
-      strokeDasharray: '',
-      stroke: theme.colors.border.primary,
-      strokeWidth: 1,
+      strokeWidth: 0, // Remove grid lines for cleaner look
     },
-  };
-
-  const processChartData = () => {
-    const line_color = (opacity = 1) => theme.colors.primary.replace(')', `, ${opacity})`).replace('rgb', 'rgba');
-    if (!chartData || chartData.length === 0) {
-      return {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{
-          data: [0, 0, 0, 0, 0, 0],
-          color: line_color,
-          strokeWidth: 3,
-        }],
-      };
-    }
-
-    return {
-      labels: chartData.slice(-6).map(item => item.label),
-      datasets: [{
-        data: chartData.slice(-6).map(item => item.value),
-        color: line_color,
-        strokeWidth: 3,
-      }],
-    };
-  };
-
-  const handleDataPointClick = (data: { index: number; value: number }): void => {
-    const pointIndex = data.index;
-    const value = data.value;
-    const label = processChartData().labels[pointIndex];
-    
-    setTooltipData({
-      label,
-      value,
-      assets: netWorthData?.totalAssets || 0,
-      liabilities: netWorthData?.totalLiabilities || 0,
-    });
-    setTooltipVisible(true);
+    fillShadowGradient: '#22C55E',
+    fillShadowGradientOpacity: 0.1,
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Net Worth</Text>
-        <View style={styles.currentValue}>
-          {/* Use the formatCurrency function */}
-          <Text style={styles.valueText}>
-            {netWorthData ? formatCurrency(netWorthData.totalNetWorth, currency) : formatCurrency(0, currency)}
+    <View style={styles.outerContainer}>
+      {/* Header Section */}
+      <LinearGradient
+        colors={['#FFFFFF', '#F9FAFB']}
+        style={styles.headerContainer}
+      >
+        <View style={styles.valueSection}>
+          <Text style={styles.currentValue}>
+            {formatCurrency(latestValue, data?.currency || 'EUR')}
           </Text>
-          {/* The asset and liability counts have been removed */}
+          
+          <View style={[styles.growthBadge, { backgroundColor: isPositive ? '#DCFCE7' : '#FEE2E2' }]}>
+            <Ionicons 
+              name={isPositive ? "trending-up" : "trending-down"} 
+              size={16} 
+              color={isPositive ? '#22C55E' : '#EF4444'} 
+            />
+            <Text style={[styles.growthText, { color: isPositive ? '#22C55E' : '#EF4444' }]}>
+              {isPositive ? '+' : ''}{formatCurrency(growth, data?.currency || 'EUR')} ({Math.abs(growthPercentage).toFixed(1)}%)
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.chartContainer}>
+        <View style={styles.periodInfo}>
+          <Text style={styles.periodLabel}>
+            {TIME_RANGES.find(r => r.value === selectedRange)?.label} Period
+          </Text>
+          <Text style={styles.dataPoints}>
+            {displayData.length} data points
+          </Text>
+        </View>
+      </LinearGradient>
+
+      {/* Full-Width Chart Section */}
+      <View style={styles.chartSection}>
         <LineChart
-          data={processChartData()}
-          width={screenWidth - 40}
-          height={200}
+          data={processedData}
+          width={screenWidth}
+          height={240}
           chartConfig={chartConfig}
-          bezier
           style={styles.chart}
-          onDataPointClick={handleDataPointClick}
-          withHorizontalLabels={false}
-          withVerticalLabels={false}
-          withDots={true}
+          bezier={true}
+          withDots={false}
           withShadow={false}
           withInnerLines={false}
           withOuterLines={false}
+          withHorizontalLabels={false}
+          withVerticalLabels={false}
+          segments={0}
         />
         
-        {/* Custom X-axis labels */}
-        <View style={styles.xAxisLabels}>
-          {processChartData().labels.map((label, index) => (
-            <Text key={index} style={styles.xAxisLabel}>
-              {label}
-            </Text>
+        {/* Gradient overlay for premium effect */}
+        <LinearGradient
+          colors={['rgba(34, 197, 94, 0.1)', 'transparent']}
+          style={styles.chartOverlay}
+          pointerEvents="none"
+        />
+      </View>
+
+      {/* Enhanced Time Range Selector */}
+      <View style={styles.selectorContainer}>
+        <View style={styles.buttonContainer}>
+          {TIME_RANGES.map((range) => (
+            <TouchableOpacity
+              key={range.value}
+              style={[
+                styles.button,
+                selectedRange === range.value && styles.buttonActive,
+              ]}
+              onPress={() => setSelectedRange(range.value)}
+              activeOpacity={0.8}
+            >
+              <Text
+                style={[
+                  styles.buttonText,
+                  selectedRange === range.value && styles.buttonTextActive,
+                ]}
+              >
+                {range.label}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
       </View>
-
-      {/* Time Range Selector */}
-      <View style={styles.timeRangeContainer}>
-        {TIME_RANGES.map((range) => (
-          <TouchableOpacity
-            key={range.label}
-            style={[
-              styles.timeRangeButton,
-              selectedRange === range.label && styles.timeRangeButtonActive,
-            ]}
-            onPress={() => setSelectedRange(range.label)}
-          >
-            <Text
-              style={[
-                styles.timeRangeText,
-                selectedRange === range.label && styles.timeRangeTextActive,
-              ]}
-            >
-              {range.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* Tooltip Modal */}
-      <Modal
-        visible={tooltipVisible}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setTooltipVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setTooltipVisible(false)}
-        >
-          <View style={styles.tooltip}>
-            <Text style={styles.tooltipTitle}>{tooltipData?.label}</Text>
-            {/* Use the formatCurrency function in the tooltip */}
-            <Text style={styles.tooltipValue}>
-              {formatCurrency(tooltipData?.value || 0, currency)}
-            </Text>
-            <View style={styles.tooltipBreakdown}>
-              <Text style={styles.tooltipAssets}>
-                Assets: {formatCurrency(tooltipData?.assets || 0, currency)}
-              </Text>
-              <Text style={styles.tooltipLiabilities}>
-                Liabilities: {formatCurrency(tooltipData?.liabilities || 0, currency)}
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
     </View>
   );
 };
 
 const getStyles = (theme: Theme) => StyleSheet.create({
-  container: {
-    backgroundColor: theme.colors.background.card,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.lg,
+  outerContainer: {
+    backgroundColor: '#FFFFFF',
   },
-  header: {
+  container: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 24,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: theme.spacing.lg,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
+  valueSection: {
+    flex: 1,
   },
   currentValue: {
+    fontSize: 36,
+    fontWeight: '800',
+    color: '#111827',
+    marginBottom: 12,
+    letterSpacing: -1,
+  },
+  growthBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    alignSelf: 'flex-start',
+  },
+  growthText: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  periodInfo: {
     alignItems: 'flex-end',
   },
-  valueText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.xs,
+  periodLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 4,
   },
-  assetsText: {
+  dataPoints: {
     fontSize: 12,
-    color: theme.colors.text.secondary,
+    color: '#9CA3AF',
   },
-  liabilitiesText: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-  },
-  chartContainer: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.lg,
+  chartSection: {
+    position: 'relative',
+    backgroundColor: '#FFFFFF',
   },
   chart: {
-    borderRadius: theme.borderRadius.md,
+    marginLeft: 0,
+    paddingLeft: 0,
   },
-  xAxisLabels: {
+  chartOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    pointerEvents: 'none',
+  },
+  selectorContainer: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: screenWidth - 80,
-    marginTop: theme.spacing.sm,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 16,
+    padding: 4,
+    gap: 4,
   },
-  xAxisLabel: {
-    fontSize: 12,
-    color: theme.colors.text.secondary,
-  },
-  timeRangeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: theme.colors.background.tertiary,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.xs,
-  },
-  timeRangeButton: {
-    paddingVertical: theme.spacing.sm,
-    paddingHorizontal: theme.spacing.md,
-    borderRadius: theme.borderRadius.sm,
-  },
-  timeRangeButtonActive: {
-    backgroundColor: theme.colors.primary,
-  },
-  timeRangeText: {
-    fontSize: 14,
-    color: theme.colors.text.secondary,
-    fontWeight: '500',
-  },
-  timeRangeTextActive: {
-    color: theme.colors.background.primary,
-    fontWeight: '600',
-  },
-  modalOverlay: {
+  button: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonActive: {
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+    }),
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  buttonTextActive: {
+    color: '#111827',
+  },
+  loadingContainer: {
+    height: 320,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  tooltip: {
-    backgroundColor: theme.colors.background.elevated,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.lg,
-    minWidth: 200,
-    alignItems: 'center',
-  },
-  tooltipTitle: {
+  loadingText: {
+    marginTop: 16,
     fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
+    color: '#6B7280',
+    fontWeight: '500',
   },
-  tooltipValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    marginBottom: theme.spacing.md,
-  },
-  tooltipBreakdown: {
+  errorContainer: {
+    height: 320,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  tooltipAssets: {
-    fontSize: 14,
-    color: theme.colors.asset,
-    marginBottom: theme.spacing.xs,
+  errorText: {
+    fontSize: 18,
+    color: '#EF4444',
+    fontWeight: '600',
+    marginTop: 12,
   },
-  tooltipLiabilities: {
-    fontSize: 14,
-    color: theme.colors.liability,
+  noDataContainer: {
+    height: 320,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 40,
+  },
+  noDataText: {
+    fontSize: 18,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 16,
+    fontWeight: '500',
   },
 });
 
