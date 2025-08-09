@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   preferred_currency public.currency_code NOT NULL DEFAULT 'EUR',
   timezone VARCHAR(50) DEFAULT 'UTC',
   date_format VARCHAR(20) DEFAULT 'YYYY-MM-DD',
+  avatar_url TEXT,
   last_sign_in_at timestamptz,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
@@ -281,6 +282,189 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
+CREATE OR REPLACE FUNCTION public.get_net_worth_history(
+  start_date DATE,
+  end_date DATE DEFAULT CURRENT_DATE,
+  sampling_strategy TEXT DEFAULT 'adaptive',
+  max_points INTEGER DEFAULT 100
+)
+RETURNS TABLE(
+  date DATE,
+  accounts_data JSONB
+) AS $$
+DECLARE
+  total_days INTEGER;
+BEGIN
+  -- Validate inputs
+  IF start_date IS NULL OR end_date IS NULL THEN
+    RAISE EXCEPTION 'Both start_date and end_date are required';
+  END IF;
+
+  IF start_date > end_date THEN
+    RAISE EXCEPTION 'start_date cannot be after end_date';
+  END IF;
+
+  -- Normalize parameters
+  max_points := LEAST(GREATEST(max_points, 10), 500);
+  sampling_strategy := LOWER(COALESCE(sampling_strategy, 'adaptive'));
+  
+  IF sampling_strategy NOT IN ('daily', 'weekly', 'monthly', 'adaptive') THEN
+    sampling_strategy := 'adaptive';
+  END IF;
+
+  total_days := (end_date - start_date) + 1;
+
+  RETURN QUERY
+  WITH 
+    -- Generate anchor dates based on strategy
+    anchor_dates AS (
+      -- Daily sampling
+      SELECT gs::date AS anchor_date
+      FROM generate_series(start_date, end_date, '1 day'::interval) AS gs
+      WHERE sampling_strategy = 'daily'
+      
+      UNION ALL
+      
+      -- Weekly sampling (end of week - Sunday)
+      SELECT anchor_date FROM (
+        WITH first_eow AS (
+          SELECT CASE
+            WHEN (date_trunc('week', start_date)::date + 6) < start_date
+              THEN (date_trunc('week', start_date)::date + 13)
+            ELSE (date_trunc('week', start_date)::date + 6)
+          END AS first_week_end
+        )
+        SELECT gs::date AS anchor_date
+        FROM first_eow, 
+             generate_series(first_week_end, end_date, '7 days') AS gs
+      ) weekly_calc
+      WHERE sampling_strategy = 'weekly'
+      
+      UNION ALL
+      
+      -- Monthly sampling (end of month) - FIXED
+      SELECT anchor_date FROM (
+        WITH month_starts AS (
+          -- Generate the first day of each month in the range
+          SELECT generate_series(
+            date_trunc('month', start_date),
+            date_trunc('month', end_date),
+            '1 month'
+          )::date AS month_start
+        ),
+        month_ends AS (
+          -- Convert each month start to the actual last day of that month
+          SELECT (month_start + INTERVAL '1 month - 1 day')::date AS anchor_date
+          FROM month_starts
+        )
+        SELECT anchor_date
+        FROM month_ends
+        WHERE anchor_date >= start_date  -- Only include if month-end is within range
+      ) monthly_calc
+      WHERE sampling_strategy = 'monthly'
+      
+      UNION ALL
+      
+      -- Adaptive sampling
+      SELECT gs::date AS anchor_date
+      FROM generate_series(
+        start_date, 
+        end_date, 
+        (GREATEST(1, CEIL(total_days::DECIMAL / max_points)::INT)::text || ' days')::interval
+      ) AS gs
+      WHERE sampling_strategy = 'adaptive'
+    ),
+    
+    -- Always include end_date and remove duplicates
+    final_dates AS (
+      SELECT DISTINCT anchor_date
+      FROM (
+        SELECT anchor_date FROM anchor_dates
+        UNION
+        SELECT end_date AS anchor_date
+      ) combined
+      WHERE anchor_date BETWEEN start_date AND end_date
+      ORDER BY anchor_date
+    ),
+    
+    -- Apply max_points limit if needed (except for adaptive)
+    limited_dates AS (
+      SELECT anchor_date FROM final_dates
+      WHERE sampling_strategy = 'adaptive'
+      
+      UNION ALL
+      
+      SELECT anchor_date FROM (
+        WITH ordered AS (
+          SELECT anchor_date,
+                 ROW_NUMBER() OVER (ORDER BY anchor_date) AS rn,
+                 COUNT(*) OVER () AS total
+          FROM final_dates
+        )
+        SELECT anchor_date
+        FROM ordered
+        WHERE sampling_strategy != 'adaptive'
+          AND (
+            total <= max_points
+            OR rn % CEIL(total::DECIMAL / max_points)::INT = 1
+            OR anchor_date = end_date
+          )
+      ) limited_non_adaptive
+    ),
+    
+    -- Get account balances for each date
+    account_balances AS (
+      SELECT 
+        ld.anchor_date,
+        jsonb_agg(
+          jsonb_build_object(
+            'account_id', a.id,
+            'account_name', a.name,
+            'account_type', a.type,
+            'currency', a.currency,
+            'category', a.category,
+            'institution', a.institution,
+            'include_in_net_worth', a.include_in_net_worth,
+            'balance', COALESCE(latest_balance.amount, 0)
+          ) ORDER BY a.name
+        ) AS accounts_data
+      FROM limited_dates ld
+      CROSS JOIN public.accounts a
+      LEFT JOIN LATERAL (
+        SELECT be.amount
+        FROM public.balance_entries be
+        WHERE be.account_id = a.id
+          AND be.date <= ld.anchor_date
+        ORDER BY be.date DESC
+        LIMIT 1
+      ) latest_balance ON TRUE
+      WHERE a.user_id = get_user_id()
+        AND a.include_in_net_worth = TRUE
+      GROUP BY ld.anchor_date
+    )
+  
+  SELECT 
+    ab.anchor_date AS date,
+    ab.accounts_data
+  FROM account_balances ab
+  ORDER BY ab.anchor_date;
+
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Helper function for dynamic 'ALL' period (if you still need it)
+CREATE OR REPLACE FUNCTION public.get_earliest_balance_date()
+RETURNS DATE AS $$
+BEGIN
+  RETURN (
+    SELECT COALESCE(MIN(be.date), CURRENT_DATE - INTERVAL '1 year')
+    FROM public.balance_entries be
+    JOIN public.accounts a ON a.id = be.account_id
+    WHERE a.user_id = get_user_id()
+  );
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
+
 -- =============================================
 
 -- Optional Index Incase there is performane Issue
@@ -292,3 +476,8 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 -- Create an index to optimize the user_id filtering
 -- CREATE INDEX IF NOT EXISTS idx_accounts_user_id 
 -- ON public.accounts (user_id);
+
+-- Create an index to optimize the include_in_net_worth filtering
+-- CREATE INDEX IF NOT EXISTS idx_accounts_user_include 
+-- ON public.accounts (user_id, include_in_net_worth) 
+-- WHERE include_in_net_worth = TRUE;

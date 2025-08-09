@@ -1,0 +1,490 @@
+import { createClient } from 'jsr:@supabase/supabase-js@^2';
+
+enum ApiErrorType {
+  BAD_REQUEST = 'BAD_REQUEST',
+  UNAUTHORIZED = 'UNAUTHORIZED',
+  NOT_FOUND = 'NOT_FOUND',
+  RATE_LIMIT = 'RATE_LIMIT',
+  SERVER_ERROR = 'SERVER_ERROR'
+}
+
+class ApiError extends Error {
+  constructor(
+    public status: number, 
+    public message: string, 
+    public type: ApiErrorType = ApiErrorType.SERVER_ERROR
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+
+  toJSON() {
+    return {
+      status: this.status,
+      message: this.message,
+      type: this.type
+    };
+  }
+}
+
+interface NetWorthHistoryParams {
+  period: '1M' | '3M' | '6M' | '12M' | 'ALL' | 'CUSTOM';
+  startDate?: string;
+  endDate?: string;
+  toCurrency: string;
+  samplingStrategy?: 'daily' | 'weekly' | 'monthly' | 'adaptive';
+  maxDataPoints?: number;
+  includeAccountBreakdown?: boolean;
+}
+
+interface AccountData {
+  account_id: string;
+  account_name: string;
+  account_type: 'asset' | 'liability';
+  currency: string;
+  category: string;
+  institution: string;
+  include_in_net_worth: boolean;
+  balance: number;
+}
+
+interface NetWorthDataPoint {
+  date: string;
+  net_worth: number;
+  total_assets: number;
+  total_liabilities: number;
+  accounts?: AccountData[];
+}
+
+const CONFIG = {
+  RATE_CACHE_TTL: 60 * 60 * 1000, // 1 hour - only for exchange rates
+  DEFAULT_MAX_POINTS: {
+    '1M': 31,
+    '3M': 90,
+    '6M': 26,
+    '12M': 52,
+    'ALL': 120
+  },
+  FALLBACK_SAMPLING: {
+    '1M': 'daily',
+    '3M': 'adaptive',
+    '6M': 'weekly',
+    '12M': 'weekly',
+    'ALL': 'monthly'
+  },
+  FETCH_TIMEOUT: 5000, // 5 seconds
+  RATE_LIMIT: 100, // requests per hour
+  RATE_LIMIT_WINDOW: 60 * 60 * 1000 // 1 hour
+};
+
+// Structured logging function
+function logEvent(requestId: string, event: string, metadata: Record<string, any> = {}) {
+  console.log(JSON.stringify({
+    requestId,
+    timestamp: new Date().toISOString(),
+    event,
+    ...metadata
+  }));
+}
+
+// Get supported currencies from your database enum
+async function getSupportedCurrencies(supabaseClient: any): Promise<string[]> {
+  try {
+    const { data, error } = await supabaseClient.rpc('get_supported_currencies');
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.warn('Failed to fetch supported currencies from enum, using fallback');
+    // Fallback list in case of database issues
+    return ['AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 
+    'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK', 
+    'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 
+    'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'];
+  }
+}
+
+// Input validation with dynamic currency check
+async function validateNetWorthParams(params: NetWorthHistoryParams, supabaseClient: any) {
+  const validPeriods: string[] = ['1M', '3M', '6M', '12M', 'ALL', 'CUSTOM'];
+  const validSamplingStrategies: string[] = ['daily', 'weekly', 'monthly', 'adaptive'];
+
+  if (!validPeriods.includes(params.period)) {
+    throw new ApiError(400, `Invalid period. Must be one of: ${validPeriods.join(', ')}`, ApiErrorType.BAD_REQUEST);
+  }
+
+  if (params.samplingStrategy && !validSamplingStrategies.includes(params.samplingStrategy)) {
+    throw new ApiError(400, `Invalid sampling strategy. Must be one of: ${validSamplingStrategies.join(', ')}`, ApiErrorType.BAD_REQUEST);
+  }
+
+  if (!params.toCurrency) {
+    throw new ApiError(400, 'toCurrency is required', ApiErrorType.BAD_REQUEST);
+  }
+
+  // Get supported currencies from your database enum
+  const supportedCurrencies = await getSupportedCurrencies(supabaseClient);
+  if (!supportedCurrencies.includes(params.toCurrency)) {
+    throw new ApiError(400, `Unsupported currency: ${params.toCurrency}. Supported: ${supportedCurrencies.join(', ')}`, ApiErrorType.BAD_REQUEST);
+  }
+}
+
+// Rate limiting with cleanup
+const requestCounts = new Map<string, { count: number, resetTime: number }>();
+
+// Cleanup old entries every hour
+setInterval(() => {
+  const now = Date.now();
+  for (const [userId, data] of requestCounts.entries()) {
+    if (now > data.resetTime) {
+      requestCounts.delete(userId);
+    }
+  }
+}, CONFIG.RATE_LIMIT_WINDOW);
+
+function checkRateLimit(userId: string) {
+  const now = Date.now();
+  const userRequestData = requestCounts.get(userId) || { count: 0, resetTime: now + CONFIG.RATE_LIMIT_WINDOW };
+
+  if (now > userRequestData.resetTime) {
+    userRequestData.count = 0;
+    userRequestData.resetTime = now + CONFIG.RATE_LIMIT_WINDOW;
+  }
+
+  if (userRequestData.count >= CONFIG.RATE_LIMIT) {
+    throw new ApiError(429, 'Too many requests', ApiErrorType.RATE_LIMIT);
+  }
+
+  userRequestData.count++;
+  requestCounts.set(userId, userRequestData);
+}
+
+// Exchange rate caching (ONLY cache exchange rates, not financial data)
+const rateCache = new Map<string, { 
+  rates: Record<string, number>; 
+  timestamp: number; 
+}>();
+
+async function getLiveRates(fromCurrencies: string[], toCurrency: string, retries = 2): Promise<Record<string, number>> {
+  const fromSymbols = fromCurrencies.filter(c => c !== toCurrency).sort();
+  
+  if (fromSymbols.length === 0) return {};
+
+  // Check cache with consistent key
+  const cacheKey = `${toCurrency}-${fromSymbols.join(',')}`;
+  const cachedEntry = rateCache.get(cacheKey);
+
+  if (cachedEntry && Date.now() - cachedEntry.timestamp < CONFIG.RATE_CACHE_TTL) {
+    return cachedEntry.rates;
+  }
+  
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), CONFIG.FETCH_TIMEOUT);
+    const apiUrl = `https://api.frankfurter.app/latest?from=${toCurrency}&to=${fromSymbols.join(',')}`;
+    
+    const response = await fetch(apiUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) throw new Error('Failed to fetch exchange rates');
+    
+    const data = await response.json();
+    const invertedRates: Record<string, number> = {};
+    
+    for (const [currency, rate] of Object.entries(data.rates)) {
+      invertedRates[currency] = 1 / (rate as number);
+    }
+    
+    // Cache with consistent key
+    rateCache.set(cacheKey, { 
+      rates: invertedRates, 
+      timestamp: Date.now()
+    });
+
+    return invertedRates;
+  } catch (error) {
+    if (retries > 0) {
+      console.warn(`Rate fetch failed, retrying. Attempts left: ${retries}`);
+      return getLiveRates(fromCurrencies, toCurrency, retries - 1);
+    }
+    throw new ApiError(500, 'Could not fetch exchange rates', ApiErrorType.SERVER_ERROR);
+  }
+}
+
+// Dynamic earliest date fetching for ALL period
+async function getEarliestBalanceDate(supabaseClient: any): Promise<Date> {
+  try {
+    const { data, error } = await supabaseClient.rpc('get_earliest_balance_date');
+    if (error) throw error;
+    return new Date(data);
+  } catch (error) {
+    console.warn('Error fetching earliest balance date:', error);
+    const fallbackDate = new Date();
+    fallbackDate.setFullYear(fallbackDate.getFullYear() - 1);
+    return fallbackDate;
+  }
+}
+
+// Dynamic date range calculation with smart earliest balance date fallback
+async function calculateDateRange(period: string, supabaseClient: any) {
+  if (period === 'ALL') {
+    // For ALL, always use the earliest balance date
+    const earliestDate = await getEarliestBalanceDate(supabaseClient);
+    return { 
+      startDate: earliestDate, 
+      defaultSampling: CONFIG.FALLBACK_SAMPLING['ALL'], 
+      defaultMaxPoints: CONFIG.DEFAULT_MAX_POINTS['ALL'] 
+    };
+  }
+
+  // Calculate the intended start date based on period
+  const months = parseInt(period.replace('M', ''));
+  const calculatedStartDate = new Date();
+  calculatedStartDate.setMonth(calculatedStartDate.getMonth() - months);
+
+  // Get the user's earliest balance date
+  const earliestBalanceDate = await getEarliestBalanceDate(supabaseClient);
+
+  // Use the later date (more recent) between calculated start date and earliest balance date
+  const actualStartDate = calculatedStartDate > earliestBalanceDate 
+    ? calculatedStartDate  // User has data going back further than the requested period
+    : earliestBalanceDate; // User doesn't have data going back that far, use earliest available
+
+  const periodKey = period as keyof typeof CONFIG.DEFAULT_MAX_POINTS;
+  return { 
+    startDate: actualStartDate, 
+    defaultSampling: CONFIG.FALLBACK_SAMPLING[periodKey], 
+    defaultMaxPoints: CONFIG.DEFAULT_MAX_POINTS[periodKey] 
+  };
+}
+
+// Data processing utility
+function processHistoricalData(
+  historicalData: any[], 
+  rates: Record<string, number>, 
+  toCurrency: string,
+  includeAccountBreakdown: boolean = false
+): NetWorthDataPoint[] {
+  return historicalData.map(day => {
+    let totalNetWorth = 0;
+    let totalAssets = 0;
+    let totalLiabilities = 0;
+    const processedAccounts: AccountData[] = [];
+
+    day.accounts_data.forEach((account: AccountData) => {
+      if (!account.include_in_net_worth) return;
+
+      const rate = account.currency === toCurrency ? 1 : rates[account.currency] || 1;
+      const convertedBalance = account.balance * rate;
+
+      if (account.account_type === 'asset') {
+        totalNetWorth += convertedBalance;
+        totalAssets += convertedBalance;
+      } else if (account.account_type === 'liability') {
+        totalNetWorth -= convertedBalance;
+        totalLiabilities += convertedBalance;
+      }
+
+      if (includeAccountBreakdown) {
+        processedAccounts.push({
+          ...account,
+          balance: Math.round(convertedBalance * 100) / 100
+        });
+      }
+    });
+
+    const result: NetWorthDataPoint = {
+      date: day.date,
+      net_worth: Math.round(totalNetWorth * 100) / 100,
+      total_assets: Math.round(totalAssets * 100) / 100,
+      total_liabilities: Math.round(totalLiabilities * 100) / 100,
+    };
+
+    if (includeAccountBreakdown) {
+      result.accounts = processedAccounts;
+    }
+
+    return result;
+  });
+}
+
+// JSON response utility - always return fresh financial data
+function jsonResponse(data: any, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { 
+      'Content-Type': 'application/json',
+      // Always return fresh financial data - no caching
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    }
+  });
+}
+
+Deno.serve(async (req) => {
+  // Generate unique request ID for tracing
+  const requestId = crypto.randomUUID();
+
+  try {
+    if (req.method !== 'POST') {
+      throw new ApiError(405, 'Method Not Allowed', ApiErrorType.BAD_REQUEST);
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: req.headers.get('Authorization') ?? '' }
+        }
+      }
+    );
+
+    const params: NetWorthHistoryParams = await req.json();
+    
+    // Validate input parameters (includes currency validation against your enum)
+    await validateNetWorthParams(params, supabaseClient);
+
+    // Clerk authentication - use get_user_id() function
+    let userId: string;
+    try {
+      const { data: userIdData, error } = await supabaseClient.rpc('get_user_id');
+      if (error || !userIdData) {
+        throw new ApiError(401, 'Authentication required', ApiErrorType.UNAUTHORIZED);
+      }
+      userId = userIdData;
+    } catch (error) {
+      throw new ApiError(401, 'Invalid authentication token', ApiErrorType.UNAUTHORIZED);
+    }
+
+    // Rate limiting with Clerk userId
+    checkRateLimit(userId);
+
+    // Log the request
+    logEvent(requestId, 'net_worth_request', {
+      period: params.period,
+      toCurrency: params.toCurrency,
+      userId: userId
+    });
+
+    let startDate: Date, endDate: Date, defaultSampling: string, defaultMaxPoints: number;
+    
+    if (params.period === 'CUSTOM') {
+      if (!params.startDate || !params.endDate) {
+        throw new ApiError(400, 'Start and end dates required for custom period', ApiErrorType.BAD_REQUEST);
+      }
+      startDate = new Date(params.startDate);
+      endDate = new Date(params.endDate);
+      defaultSampling = 'adaptive';
+      defaultMaxPoints = 100;
+    } else {
+      const dateRange = await calculateDateRange(params.period, supabaseClient);
+      startDate = dateRange.startDate;
+      endDate = new Date();
+      defaultSampling = dateRange.defaultSampling;
+      defaultMaxPoints = dateRange.defaultMaxPoints;
+    }
+
+    const samplingStrategy = params.samplingStrategy || defaultSampling;
+    const maxDataPoints = params.maxDataPoints || defaultMaxPoints;
+
+    const startTime = Date.now();
+    
+    // Always fetch fresh data from database (no result caching)
+    const { data: historicalData, error } = await supabaseClient.rpc(
+      'get_net_worth_history',
+      {
+        start_date: startDate.toISOString().split('T')[0],
+        end_date: endDate.toISOString().split('T')[0],
+        sampling_strategy: samplingStrategy,
+        max_points: maxDataPoints,
+      }
+    );
+
+    if (error) {
+      throw new ApiError(500, `Database error: ${error.message}`, ApiErrorType.SERVER_ERROR);
+    }
+
+    if (!historicalData?.length) {
+      return jsonResponse({
+        period: params.period,
+        startDate: startDate.toISOString().split('T')[0],
+        endDate: endDate.toISOString().split('T')[0],
+        currency: params.toCurrency,
+        samplingStrategy,
+        maxDataPoints,
+        data: [],
+        dataPoints: 0,
+        message: 'No historical data found'
+      });
+    }
+
+    // Get unique currencies for exchange rate fetching
+    const allCurrencies = new Set<string>();
+    historicalData.forEach(day => {
+      day.accounts_data.forEach((account: AccountData) => {
+        if (account.currency && account.include_in_net_worth) {
+          allCurrencies.add(account.currency);
+        }
+      });
+    });
+
+    const rateStartTime = Date.now();
+    const uniqueCurrencies = Array.from(allCurrencies).filter(c => c !== params.toCurrency);
+    const rates = await getLiveRates(uniqueCurrencies, params.toCurrency);
+    const rateQueryTime = Date.now() - rateStartTime;
+
+    // Process historical data and calculate net worth
+    const processStartTime = Date.now();
+    const processedData = processHistoricalData(
+      historicalData, 
+      rates, 
+      params.toCurrency,
+      params.includeAccountBreakdown
+    );
+    const processingTime = Date.now() - processStartTime;
+
+    const totalTime = Date.now() - startTime;
+
+    return jsonResponse({
+      period: params.period,
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
+      currency: params.toCurrency,
+      samplingStrategy,
+      maxDataPoints,
+      actualDataPoints: processedData.length,
+      calculatedAt: new Date().toISOString(),
+      data: processedData,
+      performance: {
+        dbQueryTime: totalTime - rateQueryTime - processingTime,
+        rateQueryTime,
+        processingTime,
+        totalProcessingTime: totalTime,
+        cacheHitRate: rateCache.has(`${params.toCurrency}-${uniqueCurrencies.sort().join(',')}`),
+        requestId: requestId
+      },
+      metadata: {
+        includeAccountBreakdown: params.includeAccountBreakdown || false,
+        uniqueCurrencies: uniqueCurrencies.length,
+        totalAccounts: historicalData[0]?.accounts_data?.length || 0,
+      },
+      note: 'Calculated using current exchange rates'
+    });
+
+  } catch (error) {
+    console.error('Net Worth History Error:', error);
+    
+    // Log error events
+    logEvent(requestId, 'net_worth_error', {
+      errorMessage: error.message,
+      errorType: error instanceof ApiError ? error.type : 'UNKNOWN'
+    });
+
+    return jsonResponse({
+      error: error.message || 'Internal server error',
+      type: error instanceof ApiError ? error.type : ApiErrorType.SERVER_ERROR,
+      requestId: requestId,
+      details: error instanceof Error ? error.stack : undefined,
+    }, error instanceof ApiError ? error.status : 500);
+  }
+});
