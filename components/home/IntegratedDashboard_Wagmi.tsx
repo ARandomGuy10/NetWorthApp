@@ -1,12 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Image, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LineChart } from 'react-native-wagmi-charts';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { useProfile } from '@/hooks/useProfile';
 import { useNetWorthHistory } from '@/hooks/useNetWorthHistory';
 import { formatCurrency } from '@/utils/utils';
 import * as Haptics from 'expo-haptics';
@@ -30,8 +28,7 @@ const makeGradientColors = (theme: any): [string, string, string] => {
 
 const IntegratedDashboard_Wagmi: React.FC = () => {
   const router = useRouter();
-  const { theme } = useTheme();
-  const { data: profile } = useProfile();
+  const { theme } = useTheme() || {};
   const [range, setRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
   const { data, isLoading, error } = useNetWorthHistory({ period: range });
 
@@ -44,18 +41,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     y: number;
   } | null>(null);
 
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning!';
-    if (hour < 18) return 'Good Afternoon!';
-    return 'Good Evening!';
-  };
 
-  const getInitials = () => {
-    const firstName = profile?.first_name?.charAt(0)?.toUpperCase() || '';
-    const lastName = profile?.last_name?.charAt(0)?.toUpperCase() || '';
-    return firstName + lastName || 'U';
-  };
 
   const invokeHaptic = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -63,7 +49,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
 
 
   const prepared = useMemo(() => {
-    console.log(data);
     const empty = { chartData: [], latest: 0, first: 0, delta: 0, pct: 0, currency: 'EUR' };
     if (!data || !data.data || !data.data.length) return empty;
 
@@ -144,35 +129,13 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   if (isLoading || error || prepared.chartData.length === 0) {
     return (
       <LinearGradient colors={makeGradientColors(theme)} style={styles.loadingContainer}>
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => router.push('/profile')} style={styles.avatarContainer}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary }]}> 
-                <Text style={styles.avatarText}>{getInitials()}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-          <View style={styles.greetingContainer}>
-            <Text style={[styles.greetingText, { color: theme.colors.text.secondary }]}>
-              {getGreeting()}
-            </Text>
-            <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-              {profile?.first_name ?? 'User'} 👋
-            </Text>
-          </View>
-          <TouchableOpacity 
-            style={[styles.notificationButton, { backgroundColor: theme.colors.background.secondary }]} 
-            onPress={() => console.log('Notifications pressed')}
-          >
-            <Ionicons name="notifications-outline" size={22} color={theme.colors.text.primary} />
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
-        </View>
-        <Text style={[styles.placeholderText, { color: theme.colors.text.primary }]}>
-          {error ? 'Unable to load data' : 'Add assets to start tracking'}
-        </Text>
+        {isLoading ? (
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        ) : (
+          <Text style={[styles.placeholderText, { color: theme.colors.text.primary }]}>
+            {error ? 'Unable to load data' : 'Add assets to start tracking'}
+          </Text>
+        )}
       </LinearGradient>
     );
   }
@@ -185,36 +148,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
         start={{ x: 0, y: 0 }} 
         end={{ x: 1, y: 1 }}
       >
-        {/* Header Section */}
-        <View style={styles.headerContainer}>
-          <TouchableOpacity onPress={() => router.push('/profile')} style={styles.avatarContainer}>
-            {profile?.avatar_url ? (
-              <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
-            ) : (
-              <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.primary }]}> 
-                <Text style={styles.avatarText}>{getInitials()}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-
-          <View style={styles.greetingContainer}>
-            <Text style={[styles.greetingText, { color: theme.colors.text.secondary }]}>
-              {getGreeting()}
-            </Text>
-            <Text style={[styles.userName, { color: theme.colors.text.primary }]}>
-              {profile?.first_name ?? 'User'} 👋
-            </Text>
-          </View>
-
-          <TouchableOpacity 
-            style={[styles.notificationButton, { backgroundColor: theme.colors.background.secondary }]} 
-            onPress={() => console.log('Notifications pressed')}
-          >
-            <Ionicons name="notifications-outline" size={22} color={theme.colors.text.primary} />
-            <View style={styles.notificationBadge} />
-          </TouchableOpacity>
-        </View>
-
         {/* Centered Net Worth Display */}
         <View style={styles.netWorthContainer}>
           <LineChart.Provider data={prepared.chartData} onCurrentIndexChange={onCurrentIndexChange}>

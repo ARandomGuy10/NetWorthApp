@@ -10,34 +10,33 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDashboardData } from '@/hooks/useDashboard';
 import { useProfile } from '@/hooks/useProfile';
 import type { Theme } from '@/lib/supabase';
-
-// Import both versions to test
-// Comment out the one you don't want to use
-//import IntegratedDashboard_Victory from '@/components/home/IntegratedDashboard_Victory';
 import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
-
 import AssetsLiabilitiesSection from '@/components/home/AssetsLiabilitiesSection';
 import AccountsList from '@/components/home/AccountsList';
 import ModernFAB from '@/components/home/ModernFAB';
+import EmptyDashboardState from '@/components/home/EmptyDashboardState';
+import StickyHeader from '@/components/home/StickyHeader'; // Add this import
 import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { router } from 'expo-router';
 
 function DashboardScreen() {
   console.log('DashboardScreen rendered');
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, insets);
 
   // Get both profile and dashboard data
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const { 
-    data: dashboardData, 
-    isLoading: dashboardLoading, 
-    error, 
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    error,
     refetch,
-    isFetching 
+    isFetching
   } = useDashboardData();
 
   const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
+
   const onRefresh = useCallback(async () => {
     setIsManualRefreshing(true);
     try {
@@ -46,6 +45,11 @@ function DashboardScreen() {
       setIsManualRefreshing(false);
     }
   }, [refetch]);
+
+  const handleAddFirstAccount = () => {
+    console.log('Navigate to add account screen');
+    router.push('accounts/add-account');
+  };
 
   const showLoadingSpinner = dashboardLoading && !dashboardData;
 
@@ -57,27 +61,35 @@ function DashboardScreen() {
     );
   }
 
+  // Show empty state when dashboard data is null/undefined
+  if (!dashboardData || dashboardData.accounts.length === 0) {
+    return (
+      <EmptyDashboardState onAddFirstAccount={handleAddFirstAccount} />
+    );
+  }
+
   const netWorthData = {
-    totalAssets: dashboardData?.totalAssets || 0,
-    totalLiabilities: dashboardData?.totalLiabilities || 0,
-    totalNetWorth: dashboardData?.totalNetWorth || 0,
+    totalAssets: dashboardData.totalAssets || 0,
+    totalLiabilities: dashboardData.totalLiabilities || 0,
+    totalNetWorth: dashboardData.totalNetWorth || 0,
     currency: profile?.preferred_currency || 'EUR'
   };
 
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
+      <StickyHeader />
       <ScrollView
         style={styles.scrollView}
+        contentContainerStyle={styles.contentContainer}
+        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isManualRefreshing}
+            refreshing={isManualRefreshing || isFetching}
             onRefresh={onRefresh}
             tintColor={theme.colors.primary}
             progressViewOffset={0}
           />
         }
-        showsVerticalScrollIndicator={false}
       >
         <IntegratedDashboard_Wagmi />
 
@@ -90,13 +102,12 @@ function DashboardScreen() {
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
-
       <ModernFAB />
     </View>
   );
 }
 
-const getStyles = (theme: Theme) => StyleSheet.create({
+const getStyles = (theme: Theme, insets: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
@@ -107,6 +118,12 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  contentContainer: {
+    paddingTop: insets.top + 50, // Add padding for sticky header
+  },
+  sectionsContainer: {
+    paddingHorizontal: 16,
   },
   bottomSpacing: {
     height: 120,

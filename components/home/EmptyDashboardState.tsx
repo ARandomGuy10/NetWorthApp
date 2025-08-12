@@ -23,20 +23,21 @@ const EmptyDashboardState: React.FC<EmptyDashboardStateProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        {/* Illustration placeholder - you can replace with your desired illustration */}
+        {/* Illustration */}
         <View style={styles.illustrationContainer}>
-          <View style={styles.illustrationPlaceholder}>
-            <Text style={styles.illustrationEmoji}>💰</Text>
-          </View>
+          <Image
+            source={require('@/assets/images/empty_dashboard_illustration.png')}
+            style={styles.illustrationImage}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Welcome message */}
         <View style={styles.textContainer}>
-          <Text style={styles.welcomeTitle}>Welcome to Your Financial Dashboard</Text>
+          <Text style={styles.welcomeTitle}>Your Wealth Journey Starts Here</Text>
           <Text style={styles.welcomeSubtitle}>
-            Start tracking your financial journey by adding your first account. 
-            Connect your bank accounts, credit cards, or investments to get a complete 
-            view of your finances.
+          Add your first account to see your complete financial picture.
+          Track your progress, grow your assets, and take control of your future.
           </Text>
         </View>
 
@@ -67,19 +68,12 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   },
   illustrationContainer: {
     marginBottom: 32,
-  },
-  illustrationPlaceholder: {
-    width: 120,
-    height: 120,
-    backgroundColor: theme.colors.background.secondary,
-    borderRadius: 60,
-    justifyContent: 'center',
+    width: '100%',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: theme.colors.border.primary,
   },
-  illustrationEmoji: {
-    fontSize: 48,
+  illustrationImage: {
+    width: 240,
+    height: 200,
   },
   textContainer: {
     alignItems: 'center',
