@@ -47,11 +47,10 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
-
   const prepared = useMemo(() => {
-    const empty = { chartData: [], latest: 0, first: 0, delta: 0, pct: 0, currency: 'EUR' };
+    const empty = { chartData: [], latest: 0, first: 0, delta: 0, pct: 0, currency: 'EUR', calculatedAt: '' };
     if (!data || !data.data || !data.data.length) return empty;
-
+  
     let raw = [];
     const all = data.data;
     const slice = (n: number) => n === -1 ? all : all.slice(-n);
@@ -62,29 +61,30 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
       case '6M': raw = slice(180); break;
       case '12M': raw = slice(365); break;
       case 'ALL': raw = slice(-1); break;
-      default: raw = slice(30);
-    }
-
+      default: raw = slice(30); break;
+    } 
+  
     // Filter consecutive duplicates
     const filtered = [];
     for (let i = 0; i < raw.length; i++) {
       if (i === 0 || raw[i].net_worth !== raw[i - 1].net_worth) {
         filtered.push(raw[i]);
       }
-    }
-
-    // Ensure minimum data points for full width
+    } 
+  
     let chartData = filtered.map((d) => ({
       timestamp: new Date(d.date).getTime(),
       value: d.net_worth,
     }));
-
+  
+    if (chartData.length === 0) return empty;
+  
     const values = chartData.map(d => d.value);
     const latestVal = values[values.length - 1];
     const firstVal = values[0];
     const delta = latestVal - firstVal;
     const pct = firstVal !== 0 ? (delta / Math.abs(firstVal)) * 100 : 0;
-
+  
     return {
       chartData,
       latest: latestVal,
@@ -92,6 +92,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
       delta,
       pct,
       currency: data.currency || 'EUR',
+      calculatedAt: data.calculatedAt,
     };
   }, [data, range]);
 
@@ -150,7 +151,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
       >
         {/* Centered Net Worth Display */}
         <View style={styles.netWorthContainer}>
-          <LineChart.Provider data={prepared.chartData} onCurrentIndexChange={onCurrentIndexChange}>
             <Text style={[styles.netWorthText, { color: theme.colors.text.primary }]}>
               {formatCurrency(prepared.latest, prepared.currency)}
             </Text>
@@ -166,12 +166,11 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
                 {prepared.delta >= 0 ? '+' : ''}{formatCurrency(prepared.delta, prepared.currency)} ({prepared.pct.toFixed(1)}%)
               </Text>
             </View>
-          </LineChart.Provider>
         </View>
 
         {/* Interactive Chart Section with Custom Tooltip */}
         <View style={styles.chartContainer}>
-          <LineChart.Provider data={prepared.chartData} onCurrentIndexChange={onCurrentIndexChange}>
+        <LineChart.Provider data={prepared.chartData} onCurrentIndexChange={onCurrentIndexChange} key={`${range}-${prepared.chartData.length}-${prepared.latest}-${prepared.calculatedAt}`}>
             <LineChart width={screenWidth} height={220}>
               <LineChart.Path color={lineColor} width={3} />
               <LineChart.CursorCrosshair 

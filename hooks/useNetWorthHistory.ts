@@ -47,6 +47,7 @@ interface UseNetWorthHistoryOptions {
   maxDataPoints?: number;
   includeAccountBreakdown?: boolean;
   enabled?: boolean;
+  calculatedAt?: string;
 }
 
 export const useNetWorthHistory = (options: UseNetWorthHistoryOptions) => {

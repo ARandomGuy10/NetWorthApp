@@ -84,7 +84,7 @@ export default function AddAccountScreen() {
           currency: parsedData.currency || 'EUR',
           institution: parsedData.institution || '',
           initial_balance: '',
-          include_in_net_worth: parsedData.include_in_net_worth !== false,
+          include_in_net_worth: parsedData.include_in_net_worth,
         });
         
         didPrefillRef.current = true;
