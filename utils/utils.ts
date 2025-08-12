@@ -15,27 +15,18 @@ export const formatCurrency = (value: number | string, currency: string = 'EUR')
   }).format(numericValue);
 };
 
-  
-
-  /* export const formatCurrency = (amount: number | string, currency: string = 'EUR'): string => {
-    const currencySymbols: { [key: string]: string } = {
-      EUR: '€',
-      USD: '$',
-      GBP: '£',
-      JPY: '¥',
-      INR: '₹',
-      CAD: 'C$',
-      AUD: 'A$',
-      CHF: 'CHF',
-      CNY: '¥',
-      SEK: 'kr'
-    };
-  
-    const symbol = currencySymbols[currency] || currency;
+  export const makeGradientColors = (theme: any): [string, string, string] => {
+    // Use theme's specific gradient colors if available
+    if (theme.gradient && theme.gradient.colors) {
+      const { colors } = theme.gradient;
+      return [colors[0], colors[1], colors[2] || colors[1]];
+    }
     
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Math.abs(amount)).replace(/^/, symbol);
-  }; */
+    // Fallback for themes without gradient property
+    return [
+      theme.colors.background.primary,
+      theme.colors.background.tertiary,
+      theme.colors.primary + '30'
+    ];
+  };
+  
