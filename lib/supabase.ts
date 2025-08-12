@@ -58,6 +58,7 @@ export type Database = {
           category: string;
           institution: string | null;
           include_in_net_worth: boolean | null;
+          is_archived: boolean | null;
           created_at: string | null;
           updated_at: string | null;
         };
@@ -78,6 +79,7 @@ export type Database = {
           category?: string;
           institution?: string | null;
           include_in_net_worth?: boolean | null;
+          is_archived?: boolean | null;
         };
       };
       balance_entries: {
@@ -114,6 +116,8 @@ export type Database = {
           category: string;
           institution: string | null;
           currency: string;
+          include_in_net_worth: boolean | null;
+          is_archived: boolean | null;
           latest_balance: number | null;
           latest_balance_date: string | null;
         }[];

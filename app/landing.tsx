@@ -170,7 +170,7 @@ export default function LandingPage() {
 
         <View style={styles.featureItem}>
           <View style={styles.featureIcon}>
-            <Ionicons name="target" size={32} color={theme.colors.primary} />
+            <Ionicons name="analytics" size={32} color={theme.colors.primary} />
           </View>
           <Text style={styles.featureTitle}>Goal Tracking{'\n'}& Progress</Text>
         </View>

@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS public.accounts (
   category TEXT NOT NULL,
   institution TEXT DEFAULT '',
   include_in_net_worth BOOLEAN DEFAULT TRUE,
+  is_archived BOOLEAN DEFAULT FALSE,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now()
 );
@@ -199,8 +200,7 @@ CREATE TRIGGER trg_balance_entries_updated_at
 
 -- 11.  Improved accounts with balances function
 -- Function to get accounts balances for the current authenticated user
-CREATE OR REPLACE FUNCTION public.get_accounts_with_balances(
-)
+CREATE OR REPLACE FUNCTION public.get_accounts_with_balances()
 RETURNS TABLE(
     account_id uuid,
     account_name text,
@@ -208,40 +208,29 @@ RETURNS TABLE(
     category text,
     institution text,
     currency public.currency_code,
+    include_in_net_worth boolean,
+    is_archived boolean,
     latest_balance decimal,
     latest_balance_date date
 ) AS $$
 BEGIN
     RETURN QUERY
-    WITH ranked_balances AS (
-        SELECT 
-            a.id AS account_id,
-            a.name AS account_name,
-            a.type AS account_type,
-            a.category,
-            a.institution,
-            a.currency,
-            be.amount AS latest_balance,
-            be.date AS latest_balance_date,
-            ROW_NUMBER() OVER (
-                PARTITION BY a.id 
-                ORDER BY be.date DESC NULLS LAST
-            ) AS balance_rank
-        FROM public.accounts AS a
-        LEFT JOIN public.balance_entries AS be ON a.id = be.account_id
-        WHERE a.user_id = get_user_id()
-    )
-    SELECT 
-        ranked_balances.account_id,
-        ranked_balances.account_name,
-        ranked_balances.account_type,
-        ranked_balances.category,
-        ranked_balances.institution,
-        ranked_balances.currency,
-        ranked_balances.latest_balance,
-        ranked_balances.latest_balance_date
-    FROM ranked_balances
-    WHERE ranked_balances.balance_rank = 1;
+    SELECT DISTINCT ON (a.id)
+        a.id AS account_id,
+        a.name AS account_name,
+        a.type AS account_type,
+        a.category,
+        a.institution,
+        a.currency,
+        a.include_in_net_worth,
+        a.is_archived,
+        be.amount AS latest_balance,
+        be.date AS latest_balance_date
+    FROM public.accounts a
+    LEFT JOIN public.balance_entries be 
+        ON a.id = be.account_id
+    WHERE a.user_id = get_user_id()
+    ORDER BY a.id, be.date DESC NULLS LAST;
 END;
 $$ LANGUAGE plpgsql STABLE PARALLEL SAFE SECURITY DEFINER;
 
