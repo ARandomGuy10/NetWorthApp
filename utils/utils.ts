@@ -15,7 +15,7 @@ export const formatCurrency = (value: number | string, currency: string = 'EUR')
   }).format(numericValue);
 };
 
-  export const makeGradientColors = (theme: any): [string, string, string] => {
+export const makeGradientColors = (theme: any): [string, string, string] => {
     // Use theme's specific gradient colors if available
     if (theme.gradient && theme.gradient.colors) {
       const { colors } = theme.gradient;

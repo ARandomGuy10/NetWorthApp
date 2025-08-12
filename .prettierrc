@@ -1,6 +1,27 @@
 {
-  "useTabs": false,
-  "bracketSpacing": true,
+  "semi": true,
   "singleQuote": true,
-  "tabWidth": 2
+  "trailingComma": "es5",
+  "printWidth": 120,
+  "tabWidth": 2,
+  "bracketSameLine": true,
+  "jsxSingleQuote": false,
+  "arrowParens": "avoid",
+  "endOfLine": "auto",
+  "bracketSpacing": true,
+  "jsxBracketSameLine": true,
+  "overrides": [
+    {
+      "files": ["*.tsx", "*.ts", "*.js", "*.jsx"],
+      "options": {
+        "printWidth": 120,
+        "singleQuote": true,
+        "bracketSameLine": true,
+        "jsxBracketSameLine": true,
+        "proseWrap": "preserve",
+        "singleAttributePerLine": false,
+        "bracketSpacing": true
+      }
+    }
+  ]
 }
