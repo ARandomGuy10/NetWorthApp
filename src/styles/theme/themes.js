@@ -1,4 +1,3 @@
-
 const createTheme = (colors, name) => ({
   name,
   colors,
@@ -43,11 +42,17 @@ const createTheme = (colors, name) => ({
   },
 });
 
-// Your existing DARK theme (current implementation)
-export const DARK_THEME = createTheme({ // Added export
+// DARK theme with prominent gradient
+export const DARK_THEME = createTheme({
   primary: '#20E3B2',
   primaryDark: '#1BC49A',
   primaryLight: '#4AE8C2',
+  
+  gradient: {
+    colors: ['#0B0F2B', '#1A1F3F', '#2D3A6B'],
+    locations: [0, 0.5, 1.0]
+  },
+  
   background: {
     primary: '#0B0F2B',
     secondary: '#0F1435',
@@ -81,11 +86,17 @@ export const DARK_THEME = createTheme({ // Added export
   },
 }, 'DARK');
 
-// LIGHT theme - Clean, professional light interface
-export const LIGHT_THEME = createTheme({ // Added export
+// LIGHT theme with subtle light gradient
+export const LIGHT_THEME = createTheme({
   primary: '#20E3B2',
   primaryDark: '#1BC49A',
   primaryLight: '#4AE8C2',
+  
+  gradient: {
+    colors: ['#FFFFFF', '#F1F5F9', '#E2E8F0'],
+    locations: [0, 0.6, 1.0]
+  },
+  
   background: {
     primary: '#FFFFFF',
     secondary: '#F8FAFC',
@@ -119,11 +130,17 @@ export const LIGHT_THEME = createTheme({ // Added export
   },
 }, 'LIGHT');
 
-// MODERN_FINANCE theme - Sleek, professional financial interface
-export const MODERN_FINANCE_THEME = createTheme({ // Added export
+// MODERN_FINANCE theme with professional gradient
+export const MODERN_FINANCE_THEME = createTheme({
   primary: '#6366F1',
   primaryDark: '#4F46E5',
   primaryLight: '#818CF8',
+  
+  gradient: {
+    colors: ['#0F172A', '#334155', '#4F46E5'],
+    locations: [0, 0.7, 1.0]
+  },
+  
   background: {
     primary: '#0F172A',
     secondary: '#1E293B',
@@ -157,11 +174,17 @@ export const MODERN_FINANCE_THEME = createTheme({ // Added export
   },
 }, 'MODERN_FINANCE');
 
-// WARM_LUXURY theme - Rich, premium feel with warm tones
-export const WARM_LUXURY_THEME = createTheme({ // Added export
+// WARM_LUXURY theme with rich gradient
+export const WARM_LUXURY_THEME = createTheme({
   primary: '#D97706',
   primaryDark: '#B45309',
   primaryLight: '#F59E0B',
+  
+  gradient: {
+    colors: ['#1C1917', '#44403C', '#D97706'],
+    locations: [0, 0.6, 1.0]
+  },
+  
   background: {
     primary: '#1C1917',
     secondary: '#292524',
@@ -195,11 +218,17 @@ export const WARM_LUXURY_THEME = createTheme({ // Added export
   },
 }, 'WARM_LUXURY');
 
-// NEO_BANKING theme - Modern, tech-forward banking aesthetic
-export const NEO_BANKING_THEME = createTheme({ // Added export
+// NEO_BANKING theme with tech-forward gradient
+export const NEO_BANKING_THEME = createTheme({
   primary: '#06B6D4',
   primaryDark: '#0891B2',
   primaryLight: '#22D3EE',
+  
+  gradient: {
+    colors: ['#020617', '#1E293B', '#06B6D4'],
+    locations: [0, 0.5, 1.0]
+  },
+  
   background: {
     primary: '#020617',
     secondary: '#0F172A',
@@ -233,11 +262,17 @@ export const NEO_BANKING_THEME = createTheme({ // Added export
   },
 }, 'NEO_BANKING');
 
-// DARK_MODE_FOCUSED theme - Enhanced dark mode with better contrast
-export const DARK_MODE_FOCUSED_THEME = createTheme({ // Added export
+// DARK_MODE_FOCUSED theme with enhanced contrast gradient
+export const DARK_MODE_FOCUSED_THEME = createTheme({
   primary: '#A855F7',
   primaryDark: '#9333EA',
   primaryLight: '#C084FC',
+  
+  gradient: {
+    colors: ['#000000', '#1A1A1A', '#A855F7'],
+    locations: [0, 0.8, 1.0]
+  },
+  
   background: {
     primary: '#000000',
     secondary: '#111111',
@@ -271,11 +306,17 @@ export const DARK_MODE_FOCUSED_THEME = createTheme({ // Added export
   },
 }, 'DARK_MODE_FOCUSED');
 
-// EARTHY_CALM theme - Natural, calming colors for reduced eye strain
-export const EARTHY_CALM_THEME = createTheme({ // Added export
+// EARTHY_CALM theme with natural gradient
+export const EARTHY_CALM_THEME = createTheme({
   primary: '#059669',
   primaryDark: '#047857',
   primaryLight: '#10B981',
+  
+  gradient: {
+    colors: ['#1F2937', '#4B5563', '#059669'],
+    locations: [0, 0.6, 1.0]
+  },
+  
   background: {
     primary: '#1F2937',
     secondary: '#374151',
