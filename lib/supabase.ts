@@ -1,6 +1,6 @@
 // lib/supabase.ts
 
-import { createClient } from '@supabase/supabase-js';
+import {createClient} from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
@@ -143,6 +143,8 @@ export interface DashboardAccount {
   category: string;
   converted_balance: number;
   currency: string;
+  include_in_net_worth: boolean | null;
+  is_archived: boolean | null;
   institution: string;
   latest_balance: number;
   latest_balance_date: string;
