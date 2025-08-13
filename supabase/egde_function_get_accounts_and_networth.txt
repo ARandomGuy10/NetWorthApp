@@ -7,6 +7,8 @@ interface AccountData {
   category: string;
   institution: string;
   currency: string;
+  include_in_net_worth: boolean,
+  is_archived: boolean,
   latest_balance: number | null;
   latest_balance_date: string;
 }
@@ -94,7 +96,7 @@ Deno.serve(async (req)=>{
     let totalAssets = 0;
     let totalLiabilities = 0;
 
-    const accountsWithConvertedBalance = accounts.map((account)=>{
+    const accountsWithConvertedBalance = accounts.map((account: AccountData)=>{
       if (account.latest_balance === null) {
         return {
           ...account,
@@ -104,12 +106,14 @@ Deno.serve(async (req)=>{
       const rate = account.currency === toCurrency ? 1 : rates[account.currency] || 1;
       const converted_balance = account.latest_balance * rate;
 
-      if (account.account_type === 'asset') {
-        totalNetWorth += converted_balance;
-        totalAssets += converted_balance;
-      } else {
-        totalNetWorth -= converted_balance;
-        totalLiabilities += converted_balance;
+      if (account?.include_in_net_worth && !account?.is_archived) {
+        if (account.account_type === 'asset') {
+          totalNetWorth += converted_balance;
+          totalAssets += converted_balance;
+        } else {
+          totalNetWorth -= converted_balance;
+          totalLiabilities += converted_balance;
+        }
       }
       return {
         ...account,
