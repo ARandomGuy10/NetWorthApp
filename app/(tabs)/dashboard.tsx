@@ -1,11 +1,5 @@
 import React, { useCallback, memo } from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDashboardData } from '@/hooks/useDashboard';
 import { useProfile } from '@/hooks/useProfile';
@@ -27,13 +21,7 @@ function DashboardScreen() {
 
   // Get both profile and dashboard data
   const { data: profile, isLoading: profileLoading } = useProfile();
-  const {
-    data: dashboardData,
-    isLoading: dashboardLoading,
-    error,
-    refetch,
-    isFetching
-  } = useDashboardData();
+  const { data: dashboardData, isLoading: dashboardLoading, error, refetch, isFetching } = useDashboardData();
 
   const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
 
@@ -63,16 +51,14 @@ function DashboardScreen() {
 
   // Show empty state when dashboard data is null/undefined
   if (!dashboardData || dashboardData.accounts.length === 0) {
-    return (
-      <EmptyDashboardState onAddFirstAccount={handleAddFirstAccount} />
-    );
+    return <EmptyDashboardState onAddFirstAccount={handleAddFirstAccount} />;
   }
 
   const netWorthData = {
     totalAssets: dashboardData.totalAssets || 0,
     totalLiabilities: dashboardData.totalLiabilities || 0,
     totalNetWorth: dashboardData.totalNetWorth || 0,
-    currency: profile?.preferred_currency || 'EUR'
+    currency: profile?.preferred_currency || 'EUR',
   };
 
   return (
@@ -89,8 +75,7 @@ function DashboardScreen() {
             tintColor={theme.colors.primary}
             progressViewOffset={insets.top + 100}
           />
-        }
-      >
+        }>
         <IntegratedDashboard_Wagmi />
 
         {/* Other sections with padding */}
@@ -98,7 +83,7 @@ function DashboardScreen() {
           <AssetsLiabilitiesSection netWorthData={netWorthData} />
           <AccountsList accounts={dashboardData?.accounts || []} />
         </View>
-        
+
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -107,27 +92,28 @@ function DashboardScreen() {
   );
 }
 
-const getStyles = (theme: Theme, insets: any) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingTop: insets.top + 50, // Add padding for sticky header
-  },
-  sectionsContainer: {
-    paddingHorizontal: 16,
-  },
-  bottomSpacing: {
-    height: 120,
-  },
-});
+const getStyles = (theme: Theme, insets: any) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background.primary,
+    },
+    centered: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    scrollView: {
+      flex: 1,
+    },
+    contentContainer: {
+      paddingTop: insets.top + 40, // Add padding for sticky header
+    },
+    sectionsContainer: {
+      paddingHorizontal: 16,
+    },
+    bottomSpacing: {
+      height: 120,
+    },
+  });
 
 export default memo(DashboardScreen);

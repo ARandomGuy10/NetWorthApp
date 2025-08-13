@@ -41,7 +41,16 @@ function AccountsScreen() {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const onRefresh = () => refetch();
+  const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setIsManualRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsManualRefreshing(false);
+    }
+  };
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
   const handleAccountMenu = (account: DashboardAccount, event: any) => {
@@ -191,7 +200,7 @@ function AccountsScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isFetching && isLoading}
+            refreshing={isManualRefreshing}
             onRefresh={onRefresh} 
             colors={[theme.colors.primary]}
             tintColor={theme.colors.primary}
