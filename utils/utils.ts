@@ -3,6 +3,27 @@ export const formatDate = (dateString: string | null): string => {
     return new Date(dateString).toLocaleDateString();
   };
 
+// ✅ Fixed: Smart number formatting that only abbreviates when necessary
+export const formatSmartNumber = (value: number, currency: string = 'EUR'): string => {
+  const absValue = Math.abs(value);
+  
+  // Only abbreviate if 6+ digits (100,000+) since 5 digits fit in the UI
+  if (absValue >= 100000000) { // 100M+
+    const abbreviated = value / 1000000;
+    // Use minimal decimal places, remove if it's a whole number
+    const formatted = abbreviated % 1 === 0 ? abbreviated.toString() : abbreviated.toFixed(1);
+    return formatCurrency(abbreviated, currency).replace(abbreviated.toString(), formatted) + 'M';
+  } else if (absValue >= 100000) { // 100K+
+    const abbreviated = value / 1000;
+    // Use minimal decimal places, remove if it's a whole number  
+    const formatted = abbreviated % 1 === 0 ? abbreviated.toString() : abbreviated.toFixed(1);
+    return formatCurrency(abbreviated, currency).replace(abbreviated.toString(), formatted) + 'K';
+  } else {
+    // Show full number for anything under 100,000 (5 digits or less)
+    return formatCurrency(value, currency);
+  }
+};
+
 
 export const formatCurrency = (value: number | string, currency: string = 'EUR'): string => {
   const numericValue = typeof value === 'number' ? value : parseFloat(value.toString()) || 0;

@@ -47,11 +47,9 @@ export const DARK_THEME = createTheme({
   primary: '#20E3B2',
   primaryDark: '#1BC49A',
   primaryLight: '#4AE8C2',
-  
   gradient: {
     colors: ['#0A0E28', '#1A1F3F', '#2D3A6B'],
   },
-  
   background: {
     primary: '#0A0E28',
     secondary: '#0F1435',
@@ -66,13 +64,19 @@ export const DARK_THEME = createTheme({
     tertiary: '#9CA3AF',
     disabled: '#636366',
     inverse: '#000000',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#FFFFFF',
+    onCard: '#FDFDFD',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#22C55E',        // Traditional green
+  success: '#22C55E',
   warning: '#F59E0B',
-  error: '#F87171',          // Traditional red
-  info: '#20E3B2',           // Use primary teal
-  asset: '#22C55E',          // Green for assets
-  liability: '#F87171',      // Red for liabilities
+  error: '#F87171',
+  info: '#20E3B2',
+  asset: '#22C55E',
+  liability: '#F87171',
   border: {
     primary: '#1F2449',
     secondary: '#2A3052',
@@ -90,11 +94,9 @@ export const LIGHT_THEME = createTheme({
   primary: '#059669',
   primaryDark: '#047857',
   primaryLight: '#10B981',
-  
   gradient: {
     colors: ['#FFFFFF', '#F1F5F9', '#E2E8F0'],
   },
-  
   background: {
     primary: '#FFFFFF',
     secondary: '#F8FAFC',
@@ -109,13 +111,19 @@ export const LIGHT_THEME = createTheme({
     tertiary: '#64748B',
     disabled: '#CBD5E1',
     inverse: '#FFFFFF',
+    // New explicit contrast colors
+    onGradient: '#111827',
+    onPrimary: '#FFFFFF',
+    onCard: '#111827',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#059669',        // Sage green (matches primary)
+  success: '#059669',
   warning: '#D97706',
-  error: '#DC2626',          // Traditional red
+  error: '#DC2626',
   info: '#2563EB',
-  asset: '#059669',          // Sage green for assets
-  liability: '#DC2626',      // Red for liabilities
+  asset: '#059669',
+  liability: '#DC2626',
   border: {
     primary: '#E2E8F0',
     secondary: '#CBD5E1',
@@ -133,11 +141,9 @@ export const MODERN_FINANCE_THEME = createTheme({
   primary: '#7C3AED',
   primaryDark: '#6D28D9',
   primaryLight: '#8B5CF6',
-  
   gradient: {
     colors: ['#0F172A', '#1E1B4B', '#7C3AED'],
   },
-  
   background: {
     primary: '#0F172A',
     secondary: '#1E1B4B',
@@ -152,13 +158,19 @@ export const MODERN_FINANCE_THEME = createTheme({
     tertiary: '#94A3B8',
     disabled: '#64748B',
     inverse: '#0F172A',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#FFFFFF',
+    onCard: '#F8FAFC',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#3B82F6',        // UNIQUE: Blue for success
+  success: '#3B82F6',
   warning: '#F59E0B',
-  error: '#F97316',          // UNIQUE: Orange for error
+  error: '#F97316',
   info: '#7C3AED',
-  asset: '#3B82F6',          // Blue for assets
-  liability: '#F97316',      // Orange for liabilities
+  asset: '#3B82F6',
+  liability: '#F97316',
   border: {
     primary: '#312E81',
     secondary: '#475569',
@@ -176,11 +188,9 @@ export const WARM_LUXURY_THEME = createTheme({
   primary: '#EA580C',
   primaryDark: '#C2410C',
   primaryLight: '#FB923C',
-  
   gradient: {
     colors: ['#1C1917', '#44403C', '#EA580C'],
   },
-  
   background: {
     primary: '#1C1917',
     secondary: '#2C2420',
@@ -195,13 +205,19 @@ export const WARM_LUXURY_THEME = createTheme({
     tertiary: '#FDBA74',
     disabled: '#78716C',
     inverse: '#1C1917',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#FFFFFF',
+    onCard: '#FEF7ED',
+    onSuccess: '#1C1917',
+    onError: '#FFFFFF',
   },
-  success: '#F59E0B',        // UNIQUE: Gold/amber for success
+  success: '#F59E0B',
   warning: '#EA580C',
-  error: '#7C2D12',          // UNIQUE: Deep brown for error
+  error: '#7C2D12',
   info: '#EA580C',
-  asset: '#F59E0B',          // Gold for assets
-  liability: '#7C2D12',      // Brown for liabilities
+  asset: '#F59E0B',
+  liability: '#7C2D12',
   border: {
     primary: '#44403C',
     secondary: '#57534E',
@@ -219,11 +235,9 @@ export const NEO_BANKING_THEME = createTheme({
   primary: '#0EA5E9',
   primaryDark: '#0284C7',
   primaryLight: '#38BDF8',
-  
   gradient: {
     colors: ['#030712', '#0F172A', '#0EA5E9'],
   },
-  
   background: {
     primary: '#030712',
     secondary: '#0F172A',
@@ -238,13 +252,19 @@ export const NEO_BANKING_THEME = createTheme({
     tertiary: '#BAE6FD',
     disabled: '#64748B',
     inverse: '#030712',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#FFFFFF',
+    onCard: '#F0F9FF',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#06B6D4',        // UNIQUE: Cyan for success
+  success: '#06B6D4',
   warning: '#F59E0B',
-  error: '#A855F7',          // UNIQUE: Purple for error
+  error: '#A855F7',
   info: '#0EA5E9',
-  asset: '#06B6D4',          // Cyan for assets
-  liability: '#A855F7',      // Purple for liabilities
+  asset: '#06B6D4',
+  liability: '#A855F7',
   border: {
     primary: '#1E293B',
     secondary: '#334155',
@@ -262,11 +282,9 @@ export const DARK_MODE_FOCUSED_THEME = createTheme({
   primary: '#A855F7',
   primaryDark: '#9333EA',
   primaryLight: '#C084FC',
-  
   gradient: {
     colors: ['#0A0A0A', '#1A1A1A', '#A855F7'],
   },
-  
   background: {
     primary: '#0A0A0A',
     secondary: '#171717',
@@ -281,13 +299,19 @@ export const DARK_MODE_FOCUSED_THEME = createTheme({
     tertiary: '#D4D4D8',
     disabled: '#71717A',
     inverse: '#0A0A0A',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#FFFFFF',
+    onCard: '#FAFAFA',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#A855F7',        // UNIQUE: Purple for success
+  success: '#A855F7',
   warning: '#FBBF24',
-  error: '#F43F5E',          // UNIQUE: Pink/rose for error
+  error: '#F43F5E',
   info: '#A855F7',
-  asset: '#A855F7',          // Purple for assets
-  liability: '#F43F5E',      // Pink for liabilities
+  asset: '#A855F7',
+  liability: '#F43F5E',
   border: {
     primary: '#262626',
     secondary: '#404040',
@@ -305,11 +329,9 @@ export const EARTHY_CALM_THEME = createTheme({
   primary: '#16A34A',
   primaryDark: '#15803D',
   primaryLight: '#22C55E',
-  
   gradient: {
     colors: ['#1F2937', '#374151', '#16A34A'],
   },
-  
   background: {
     primary: '#1F2937',
     secondary: '#2D3748',
@@ -324,13 +346,19 @@ export const EARTHY_CALM_THEME = createTheme({
     tertiary: '#D1D5DB',
     disabled: '#9CA3AF',
     inverse: '#1F2937',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#FFFFFF',
+    onCard: '#F9FAFB',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#16A34A',        // Forest green (matches primary)
+  success: '#16A34A',
   warning: '#D97706',
-  error: '#B91C1C',          // Deep red
+  error: '#B91C1C',
   info: '#0369A1',
-  asset: '#16A34A',          // Forest green for assets
-  liability: '#B91C1C',      // Deep red for liabilities
+  asset: '#16A34A',
+  liability: '#B91C1C',
   border: {
     primary: '#4A5568',
     secondary: '#6B7280',
@@ -343,16 +371,14 @@ export const EARTHY_CALM_THEME = createTheme({
   },
 }, 'EARTHY_CALM');
 
-// NEW: MINIMAL_MONOCHROME_THEME - Black/white/gray focused
+// MINIMAL_MONOCHROME_THEME - Black/white/gray focused
 export const MINIMAL_MONOCHROME_THEME = createTheme({
   primary: '#000000',
   primaryDark: '#000000',
   primaryLight: '#404040',
-  
   gradient: {
     colors: ['#FFFFFF', '#F5F5F5', '#000000'],
   },
-  
   background: {
     primary: '#FFFFFF',
     secondary: '#FAFAFA',
@@ -367,13 +393,19 @@ export const MINIMAL_MONOCHROME_THEME = createTheme({
     tertiary: '#737373',
     disabled: '#A3A3A3',
     inverse: '#FFFFFF',
+    // New explicit contrast colors
+    onGradient: '#000000',
+    onPrimary: '#FFFFFF',
+    onCard: '#000000',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#000000',        // UNIQUE: Black for success
-  warning: '#525252',        // Gray for warning
-  error: '#737373',          // UNIQUE: Darker gray for error
+  success: '#000000',
+  warning: '#525252',
+  error: '#737373',
   info: '#000000',
-  asset: '#000000',          // Black for assets
-  liability: '#737373',      // Gray for liabilities
+  asset: '#000000',
+  liability: '#737373',
   border: {
     primary: '#E5E5E5',
     secondary: '#D4D4D4',
@@ -386,16 +418,14 @@ export const MINIMAL_MONOCHROME_THEME = createTheme({
   },
 }, 'MINIMAL_MONOCHROME');
 
-// NEW: SUNSET_VIBES_THEME - Warm oranges and pinks
+// SUNSET_VIBES_THEME - Warm oranges and pinks
 export const SUNSET_VIBES_THEME = createTheme({
   primary: '#F97316',
   primaryDark: '#EA580C',
   primaryLight: '#FB923C',
-  
   gradient: {
     colors: ['#FFF7ED', '#FFEDD5', '#F97316'],
   },
-  
   background: {
     primary: '#FFF7ED',
     secondary: '#FFEDD5',
@@ -410,13 +440,19 @@ export const SUNSET_VIBES_THEME = createTheme({
     tertiary: '#EA580C',
     disabled: '#FDBA74',
     inverse: '#FFF7ED',
+    // New explicit contrast colors
+    onGradient: '#9A3412',
+    onPrimary: '#FFF7ED',
+    onCard: '#9A3412',
+    onSuccess: '#9A3412',
+    onError: '#FFF7ED',
   },
-  success: '#F59E0B',        // UNIQUE: Warm amber for success
+  success: '#F59E0B',
   warning: '#F97316',
-  error: '#EC4899',          // UNIQUE: Pink for error
+  error: '#EC4899',
   info: '#F97316',
-  asset: '#F59E0B',          // Amber for assets
-  liability: '#EC4899',      // Pink for liabilities
+  asset: '#F59E0B',
+  liability: '#EC4899',
   border: {
     primary: '#FED7AA',
     secondary: '#FDBA74',
@@ -429,16 +465,14 @@ export const SUNSET_VIBES_THEME = createTheme({
   },
 }, 'SUNSET_VIBES');
 
-// NEW: OCEAN_DEPTHS_THEME - Deep blues and teals
+// OCEAN_DEPTHS_THEME - Deep blues and teals
 export const OCEAN_DEPTHS_THEME = createTheme({
   primary: '#0F766E',
   primaryDark: '#0D9488',
   primaryLight: '#14B8A6',
-  
   gradient: {
     colors: ['#042F2E', '#0F766E', '#14B8A6'],
   },
-  
   background: {
     primary: '#042F2E',
     secondary: '#134E4A',
@@ -453,13 +487,19 @@ export const OCEAN_DEPTHS_THEME = createTheme({
     tertiary: '#99F6E4',
     disabled: '#5EEAD4',
     inverse: '#042F2E',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#FFFFFF',
+    onCard: '#F0FDFA',
+    onSuccess: '#FFFFFF',
+    onError: '#FFFFFF',
   },
-  success: '#14B8A6',        // UNIQUE: Teal for success
+  success: '#14B8A6',
   warning: '#F59E0B',
-  error: '#1E40AF',          // UNIQUE: Deep blue for error
+  error: '#1E40AF',
   info: '#0F766E',
-  asset: '#14B8A6',          // Teal for assets
-  liability: '#1E40AF',      // Deep blue for liabilities
+  asset: '#14B8A6',
+  liability: '#1E40AF',
   border: {
     primary: '#0F766E',
     secondary: '#134E4A',
@@ -472,50 +512,53 @@ export const OCEAN_DEPTHS_THEME = createTheme({
   },
 }, 'OCEAN_DEPTHS');
 
-// NEW: PLATINUM_ELEGANCE_THEME - Sophisticated black, silver, and gold
+// PLATINUM_ELEGANCE_THEME - Sophisticated black, silver, and gold
 export const PLATINUM_ELEGANCE_THEME = createTheme({
-  primary: '#FFD700',          // Pure gold
-  primaryDark: '#DAA520',      // Darker gold
-  primaryLight: '#FFF700',     // Brighter gold
-  
+  primary: '#FFD700',
+  primaryDark: '#DAA520',
+  primaryLight: '#FFF700',
   gradient: {
-    colors: ['#000000', '#1C1C1E', '#FFD700'],  // Black to charcoal to gold
+    colors: ['#000000', '#1C1C1E', '#FFD700'],
     locations: [0, 0.8, 1.0]
   },
-  
   background: {
-    primary: '#000000',        // Pure black
-    secondary: '#1C1C1E',      // Charcoal
-    tertiary: '#2C2C2E',       // Dark gray
-    card: '#1C1C1E',           
-    elevated: '#2C2C2E',       
+    primary: '#000000',
+    secondary: '#1C1C1E',
+    tertiary: '#2C2C2E',
+    card: '#1C1C1E',
+    elevated: '#2C2C2E',
     navBarBackground: '#000000',
   },
   text: {
-    primary: '#FFFFFF',        // Pure white
-    secondary: '#E5E5E7',      // Light silver
-    tertiary: '#C7C7CC',       // Medium silver
-    disabled: '#8E8E93',       // Dark silver
+    primary: '#FFFFFF',
+    secondary: '#E5E5E7',
+    tertiary: '#C7C7CC',
+    disabled: '#8E8E93',
     inverse: '#000000',
+    // New explicit contrast colors
+    onGradient: '#FFFFFF',
+    onPrimary: '#000000',
+    onCard: '#FFFFFF',
+    onSuccess: '#000000',
+    onError: '#FFFFFF',
   },
-  success: '#FFD700',          // UNIQUE: Gold for success/assets
-  warning: '#FF9500',          // Amber warning
-  error: '#C7C7CC',            // UNIQUE: Silver for error/liabilities
-  info: '#FFD700',             // Gold for info
-  asset: '#FFD700',            // Gold for assets
-  liability: '#C7C7CC',        // Silver for liabilities
+  success: '#FFD700',
+  warning: '#FF9500',
+  error: '#C7C7CC',
+  info: '#FFD700',
+  asset: '#FFD700',
+  liability: '#C7C7CC',
   border: {
-    primary: '#2C2C2E',        // Dark gray
-    secondary: '#3A3A3C',      // Medium gray
-    focus: '#FFD700',          // Gold focus
+    primary: '#2C2C2E',
+    secondary: '#3A3A3C',
+    focus: '#FFD700',
   },
   interactive: {
-    hover: 'rgba(255, 215, 0, 0.1)',    // Gold hover
-    pressed: 'rgba(255, 215, 0, 0.2)',  // Gold pressed
+    hover: 'rgba(255, 215, 0, 0.1)',
+    pressed: 'rgba(255, 215, 0, 0.2)',
     disabled: 'rgba(255, 255, 255, 0.1)',
   },
 }, 'PLATINUM_ELEGANCE');
-
 
 export const themes = {
   DARK_THEME,

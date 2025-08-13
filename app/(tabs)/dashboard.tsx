@@ -78,9 +78,10 @@ function DashboardScreen() {
         }>
         <IntegratedDashboard_Wagmi />
 
+        <AssetsLiabilitiesSection netWorthData={netWorthData} />
+
         {/* Other sections with padding */}
         <View style={{ marginTop: 16, paddingHorizontal: 16 }}>
-          <AssetsLiabilitiesSection netWorthData={netWorthData} />
           <AccountsList accounts={dashboardData?.accounts || []} />
         </View>
 
