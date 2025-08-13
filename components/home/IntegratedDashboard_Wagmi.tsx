@@ -6,7 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
-import {formatSmartNumber, makeGradientColors} from '@/utils/utils';
+import {formatSmartNumber, getGradientColors} from '@/utils/utils';
 import * as Haptics from 'expo-haptics';
 
 const {width: screenWidth} = Dimensions.get('window');
@@ -145,7 +145,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   return (
     <GestureHandlerRootView style={styles.container}>
       <LinearGradient
-        colors={makeGradientColors(theme)}
+        colors={getGradientColors(theme, 'header')}
         locations={[0, 0.5, 1]}
         style={styles.container}
         start={{x: 0, y: 0}}
@@ -242,7 +242,7 @@ const getStyles = (theme: any) =>
     container: {
       width: screenWidth,
       paddingTop: 30,
-      paddingBottom: 32,
+      paddingBottom: theme.spacing.xxl,
     },
     netWorthContainer: {
       alignItems: 'center',

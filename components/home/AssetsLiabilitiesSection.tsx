@@ -6,7 +6,7 @@ import {AnimatedCircularProgress} from 'react-native-circular-progress';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useTheme} from '../../src/styles/theme/ThemeContext';
 import {Theme} from '@/lib/supabase';
-import {formatSmartNumber, makeGradientColors} from '@/utils/utils';
+import {formatSmartNumber, getGradientColors} from '@/utils/utils';
 import * as Haptics from 'expo-haptics';
 
 const {width: screenWidth} = Dimensions.get('window');
@@ -45,9 +45,6 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
   const totalValue = (netWorthData?.totalAssets || 0) + (netWorthData?.totalLiabilities || 0);
   const assetsPercentage = totalValue > 0 ? ((netWorthData?.totalAssets || 0) / totalValue) * 100 : 0;
   const liabilitiesPercentage = totalValue > 0 ? ((netWorthData?.totalLiabilities || 0) / totalValue) * 100 : 0;
-
-  // Get gradient colors using your utility function
-  const gradientColors = makeGradientColors(theme);
 
   // Auto-hide with glassmorphic animations
   useEffect(() => {
@@ -124,7 +121,11 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={gradientColors} start={{x: 0, y: 0}} end={{x: 1, y: 1}} style={styles.gradientBackground}>
+      <LinearGradient
+        colors={getGradientColors(theme, 'card')}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}
+        style={styles.gradientBackground}>
         {/* Info icon in top right */}
         <TouchableOpacity style={styles.infoIcon} onPress={handleInfoPress} activeOpacity={0.7}>
           <View style={styles.infoIconCircle}>
@@ -167,8 +168,7 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
                   backgroundColor="rgba(255, 255, 255, 0.2)"
                   rotation={0}
                   lineCap="round"
-                  duration={2000}
-                  >
+                  duration={2000}>
                   {() => (
                     <View style={styles.chartCenter}>
                       <Text style={styles.chartValue}>
@@ -199,8 +199,7 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
                   backgroundColor="rgba(255, 255, 255, 0.2)"
                   rotation={0}
                   lineCap="round"
-                  duration={2000}
-                  >
+                  duration={2000}>
                   {() => (
                     <View style={styles.chartCenter}>
                       <Text style={styles.chartValue}>
@@ -225,9 +224,8 @@ const getStyles = (theme: Theme) =>
   StyleSheet.create({
     container: {
       width: screenWidth,
-      marginBottom: theme.spacing.lg,
+      paddingBottom: theme.spacing.xxl,
       overflow: 'hidden',
-      ...theme.shadows.lg,
     },
     gradientBackground: {
       paddingVertical: theme.spacing.xl,
