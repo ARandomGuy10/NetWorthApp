@@ -49,32 +49,32 @@ export const DARK_THEME = createTheme({
   primaryLight: '#4AE8C2',
   
   gradient: {
-    // Main app background gradient
+    // ✅ Improved: Deep ocean blues with teal progression
     primary: ['#0A0E28', '#1A1F3F', '#2D3A6B'],
     
-    // Card backgrounds - slightly lighter with teal accent
-    card: ['#151A3A', '#1F2449', '#2D3A6B'],
+    // ✅ Improved: Card backgrounds with better contrast
+    card: ['#151A3A', '#1F2449', '#2A3354'],
     
-    // Button gradients - teal primary colors
-    button: ['#20E3B2', '#1BC49A', '#18A085'],
+    // ✅ Improved: Vibrant teal gradient for buttons
+    button: ['#20E3B2', '#1BC49A', '#16A085'],
     
-    // Header/dashboard sections - ✅ UPDATED: smoother blend
-    header: ['#0A0E28', '#1A1F3F', 'rgba(32, 227, 178, 0.3)'],
+    // ✅ Improved: Smooth background to accent transition
+    header: ['#0A0E28', '#1A1F3F', 'rgba(32, 227, 178, 0.25)'],
     
-    // Success/positive elements - green gradients
+    // ✅ Improved: Natural green progression
     success: ['#22C55E', '#16A34A', '#15803D'],
     
-    // Warning elements - amber gradients
+    // ✅ Improved: Warm amber gradient
     warning: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Error/liability elements - red gradients
+    // ✅ Improved: Coral to deep red
     error: ['#F87171', '#EF4444', '#DC2626'],
     
-    // Subtle background variations - very dark
+    // ✅ Improved: Very subtle dark variations
     subtle: ['#0A0E28', '#0F1435', '#151A3A'],
     
-    // Accent overlays - transparent teal
-    accent: ['rgba(32, 227, 178, 0.12)', 'rgba(32, 227, 178, 0.06)', 'rgba(32, 227, 178, 0.0)'],
+    // ✅ Improved: Ethereal teal overlay
+    accent: ['rgba(32, 227, 178, 0.10)', 'rgba(32, 227, 178, 0.05)', 'rgba(32, 227, 178, 0.02)'],
   },
 
   background: {
@@ -122,32 +122,32 @@ export const LIGHT_THEME = createTheme({
   primaryLight: '#10B981',
   
   gradient: {
-    // Main background - white to very light gray
-    primary: ['#FFFFFF', '#F1F5F9', '#E2E8F0'],
+    // ✅ Improved: Clean white to soft gray progression
+    primary: ['#FFFFFF', '#F8FAFC', '#E2E8F0'],
     
-    // Card backgrounds - pure white to light gray
-    card: ['#FFFFFF', '#F8FAFC', '#E2E8F0'],
+    // ✅ Improved: Elevated card feeling
+    card: ['#FFFFFF', '#F1F5F9', '#E2E8F0'],
     
-    // Button gradients - sage green variations
-    button: ['#059669', '#047857', '#065F46'],
+    // ✅ Improved: Rich emerald button gradient
+    button: ['#10B981', '#059669', '#047857'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#FFFFFF', '#E2E8F0', 'rgba(5, 150, 105, 0.3)'],
+    // ✅ Improved: Light to sage accent
+    header: ['#FFFFFF', '#E2E8F0', 'rgba(5, 150, 105, 0.20)'],
     
-    // Success - emerald gradients
+    // ✅ Improved: Vibrant success gradient
     success: ['#10B981', '#059669', '#047857'],
     
-    // Warning - orange gradients
+    // ✅ Improved: Warm orange progression
     warning: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Error - red gradients
+    // ✅ Improved: Clean error gradient
     error: ['#F87171', '#EF4444', '#DC2626'],
     
-    // Subtle - very light variations
+    // ✅ Improved: Barely-there light variations
     subtle: ['#FFFFFF', '#F8FAFC', '#F1F5F9'],
     
-    // Accent - transparent sage green
-    accent: ['rgba(5, 150, 105, 0.08)', 'rgba(5, 150, 105, 0.04)', 'rgba(5, 150, 105, 0.0)'],
+    // ✅ Improved: Whisper-light sage overlay
+    accent: ['rgba(5, 150, 105, 0.06)', 'rgba(5, 150, 105, 0.03)', 'rgba(5, 150, 105, 0.01)'],
   },
 
   background: {
@@ -195,32 +195,32 @@ export const MODERN_FINANCE_THEME = createTheme({
   primaryLight: '#8B5CF6',
   
   gradient: {
-    // Primary - dark to purple accent
-    primary: ['#0F172A', '#1E1B4B', '#7C3AED'],
+    // ✅ Improved: Professional dark slate progression
+    primary: ['#0F172A', '#1E1B4B', '#312E81'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#0F172A', '#312E81', 'rgba(124, 58, 237, 0.3)'],
-    
-    // Card backgrounds - darker purples
+    // ✅ Improved: Business card depth
     card: ['#1E1B4B', '#312E81', '#4C1D95'],
     
-    // Button gradients - purple variations
-    button: ['#7C3AED', '#6D28D9', '#5B21B6'],
+    // ✅ Improved: Sophisticated purple gradient
+    button: ['#8B5CF6', '#7C3AED', '#6D28D9'],
     
-    // Success - blue gradients (professional)
+    // ✅ Improved: Executive header gradient
+    header: ['#0F172A', '#312E81', 'rgba(124, 58, 237, 0.25)'],
+    
+    // ✅ Improved: Professional blue success
     success: ['#3B82F6', '#2563EB', '#1D4ED8'],
     
-    // Warning - amber
+    // ✅ Improved: Business warning amber
     warning: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Error - orange (professional alternative to red)
+    // ✅ Improved: Professional orange (not harsh red)
     error: ['#F97316', '#EA580C', '#C2410C'],
     
-    // Subtle - very dark variations
+    // ✅ Improved: Corporate subtle grays
     subtle: ['#0F172A', '#1E1B4B', '#312E81'],
     
-    // Accent - transparent purple
-    accent: ['rgba(124, 58, 237, 0.15)', 'rgba(124, 58, 237, 0.08)', 'rgba(124, 58, 237, 0.0)'],
+    // ✅ Improved: Executive purple accent
+    accent: ['rgba(124, 58, 237, 0.12)', 'rgba(124, 58, 237, 0.06)', 'rgba(124, 58, 237, 0.02)'],
   },
 
   background: {
@@ -268,32 +268,32 @@ export const WARM_LUXURY_THEME = createTheme({
   primaryLight: '#FB923C',
   
   gradient: {
-    // Warm dark browns to orange
+    // ✅ Improved: Rich chocolate to caramel progression
     primary: ['#1C1917', '#44403C', '#78716C'],
     
-    // Card backgrounds - warm brown variations
-    card: ['#2C2420', '#44403C', '#57534E'],
+    // ✅ Improved: Luxurious warm card background
+    card: ['#2C2420', '#44403C', '#6B5B4C'],
     
-    // Button gradients - orange/amber luxury
-    button: ['#EA580C', '#C2410C', '#9A3412'],
+    // ✅ Improved: Premium amber button gradient
+    button: ['#FB923C', '#EA580C', '#C2410C'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#1C1917', '#44403C', 'rgba(234, 88, 12, 0.3)'],
+    // ✅ Improved: Sophisticated warm header
+    header: ['#1C1917', '#44403C', 'rgba(234, 88, 12, 0.30)'],
     
-    // Success - luxury gold
+    // ✅ Improved: Luxury gold success
     success: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Warning - bright orange
+    // ✅ Improved: Vibrant luxury orange
     warning: ['#FB923C', '#EA580C', '#C2410C'],
     
-    // Error - deep brown (elegant alternative)
-    error: ['#7C2D12', '#92400E', '#B45309'],
+    // ✅ Improved: Deep brown elegance
+    error: ['#92400E', '#7C2D12', '#451A03'],
     
-    // Subtle - rich dark browns
+    // ✅ Improved: Rich earth tones
     subtle: ['#1C1917', '#2C2420', '#44403C'],
     
-    // Accent - warm orange overlay
-    accent: ['rgba(234, 88, 12, 0.12)', 'rgba(234, 88, 12, 0.06)', 'rgba(234, 88, 12, 0.0)'],
+    // ✅ Improved: Warm luxury glow
+    accent: ['rgba(234, 88, 12, 0.15)', 'rgba(234, 88, 12, 0.08)', 'rgba(234, 88, 12, 0.03)'],
   },
 
   background: {
@@ -341,32 +341,32 @@ export const NEO_BANKING_THEME = createTheme({
   primaryLight: '#38BDF8',
   
   gradient: {
-    // Deep space to cyan
+    // ✅ Improved: Deep space progression
     primary: ['#030712', '#0F172A', '#1E293B'],
     
-    // Card backgrounds - slate variations
+    // ✅ Improved: Tech card with better contrast
     card: ['#0F172A', '#1E293B', '#334155'],
     
-    // Button gradients - cyan/blue tech
-    button: ['#0EA5E9', '#0284C7', '#0369A1'],
+    // ✅ Improved: Futuristic cyan button
+    button: ['#38BDF8', '#0EA5E9', '#0284C7'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#030712', '#1E293B', 'rgba(14, 165, 233, 0.3)'],
+    // ✅ Improved: Tech header with glow
+    header: ['#030712', '#1E293B', 'rgba(14, 165, 233, 0.30)'],
     
-    // Success - bright cyan
+    // ✅ Improved: Bright tech cyan success
     success: ['#06B6D4', '#0891B2', '#0E7490'],
     
-    // Warning - amber tech
+    // ✅ Improved: Tech amber warning
     warning: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Error - tech purple
+    // ✅ Improved: Electric purple error
     error: ['#A855F7', '#9333EA', '#7C3AED'],
     
-    // Subtle - deep tech grays
+    // ✅ Improved: Deep tech subtle grays
     subtle: ['#030712', '#0F172A', '#1E293B'],
     
-    // Accent - cyan glow
-    accent: ['rgba(14, 165, 233, 0.15)', 'rgba(14, 165, 233, 0.08)', 'rgba(14, 165, 233, 0.0)'],
+    // ✅ Improved: Cyan tech glow
+    accent: ['rgba(14, 165, 233, 0.18)', 'rgba(14, 165, 233, 0.10)', 'rgba(14, 165, 233, 0.03)'],
   },
 
   background: {
@@ -414,32 +414,32 @@ export const DARK_MODE_FOCUSED_THEME = createTheme({
   primaryLight: '#C084FC',
   
   gradient: {
-    // Pure black to purple
+    // ✅ Improved: Pure black to deep gray progression
     primary: ['#0A0A0A', '#171717', '#262626'],
     
-    // Card backgrounds - dark gray to purple hint
+    // ✅ Improved: Dark card with purple hint
     card: ['#171717', '#262626', '#404040'],
     
-    // Button gradients - purple variations
-    button: ['#A855F7', '#9333EA', '#7C3AED'],
+    // ✅ Improved: Vibrant purple button
+    button: ['#C084FC', '#A855F7', '#9333EA'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#0A0A0A', '#262626', 'rgba(168, 85, 247, 0.3)'],
+    // ✅ Improved: Dark header with purple glow
+    header: ['#0A0A0A', '#262626', 'rgba(168, 85, 247, 0.25)'],
     
-    // Success - purple (consistent with theme)
+    // ✅ Improved: Consistent purple success
     success: ['#A855F7', '#9333EA', '#7C3AED'],
     
-    // Warning - warm yellow
+    // ✅ Improved: Bright yellow warning
     warning: ['#FBBF24', '#F59E0B', '#D97706'],
     
-    // Error - pink/red
+    // ✅ Improved: Pink error gradient
     error: ['#F43F5E', '#E11D48', '#BE123C'],
     
-    // Subtle - very dark grays
+    // ✅ Improved: Very dark subtle grays
     subtle: ['#0A0A0A', '#171717', '#262626'],
     
-    // Accent - purple glow
-    accent: ['rgba(168, 85, 247, 0.12)', 'rgba(168, 85, 247, 0.06)', 'rgba(168, 85, 247, 0.0)'],
+    // ✅ Improved: Purple glow accent
+    accent: ['rgba(168, 85, 247, 0.15)', 'rgba(168, 85, 247, 0.08)', 'rgba(168, 85, 247, 0.03)'],
   },
 
   background: {
@@ -487,32 +487,32 @@ export const EARTHY_CALM_THEME = createTheme({
   primaryLight: '#22C55E',
   
   gradient: {
-    // Natural earth tones
+    // ✅ Improved: Natural earth progression
     primary: ['#1F2937', '#374151', '#4A5568'],
     
-    // Card backgrounds - warmer earth tones
-    card: ['#2D3748', '#4A5568', '#718096'],
+    // ✅ Improved: Warmer earth card tones
+    card: ['#2D3748', '#4A5568', '#6B7280'],
     
-    // Button gradients - forest greens
-    button: ['#16A34A', '#15803D', '#14532D'],
+    // ✅ Improved: Forest green button
+    button: ['#22C55E', '#16A34A', '#15803D'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#1F2937', '#4A5568', 'rgba(22, 163, 74, 0.3)'],
+    // ✅ Improved: Natural header with green accent
+    header: ['#1F2937', '#4A5568', 'rgba(22, 163, 74, 0.25)'],
     
-    // Success - vibrant greens
+    // ✅ Improved: Vibrant forest success
     success: ['#22C55E', '#16A34A', '#15803D'],
     
-    // Warning - earthy orange
-    warning: ['#D97706', '#B45309', '#92400E'],
+    // ✅ Improved: Earthy orange warning
+    warning: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Error - natural red
+    // ✅ Improved: Natural red error
     error: ['#DC2626', '#B91C1C', '#991B1B'],
     
-    // Subtle - muted earth tones
+    // ✅ Improved: Muted earth subtle tones
     subtle: ['#1F2937', '#2D3748', '#374151'],
     
-    // Accent - natural green overlay
-    accent: ['rgba(22, 163, 74, 0.10)', 'rgba(22, 163, 74, 0.05)', 'rgba(22, 163, 74, 0.0)'],
+    // ✅ Improved: Natural green overlay
+    accent: ['rgba(22, 163, 74, 0.12)', 'rgba(22, 163, 74, 0.06)', 'rgba(22, 163, 74, 0.02)'],
   },
 
   background: {
@@ -560,32 +560,32 @@ export const MINIMAL_MONOCHROME_THEME = createTheme({
   primaryLight: '#404040',
   
   gradient: {
-    // White to light gray
+    // ✅ Improved: Clean white to gray progression
     primary: ['#FFFFFF', '#F5F5F5', '#E5E5E5'],
     
-    // Card backgrounds - pure whites to gray
+    // ✅ Improved: Pure minimalist card
     card: ['#FFFFFF', '#FAFAFA', '#F0F0F0'],
     
-    // Button gradients - black variations
+    // ✅ Improved: Bold black button
     button: ['#000000', '#171717', '#404040'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#FFFFFF', '#F0F0F0', 'rgba(0, 0, 0, 0.3)'],
+    // ✅ Improved: Minimalist header with subtle accent
+    header: ['#FFFFFF', '#F0F0F0', 'rgba(0, 0, 0, 0.15)'],
     
-    // Success - black (minimal)
-    success: ['#000000', '#171717', '#404040'],
+    // ✅ Improved: Monochrome success
+    success: ['#404040', '#262626', '#000000'],
     
-    // Warning - dark gray
-    warning: ['#525252', '#404040', '#262626'],
+    // ✅ Improved: Dark gray warning
+    warning: ['#737373', '#525252', '#404040'],
     
-    // Error - medium gray
+    // ✅ Improved: Medium gray error
     error: ['#737373', '#525252', '#404040'],
     
-    // Subtle - very light grays
+    // ✅ Improved: Very light minimal grays
     subtle: ['#FFFFFF', '#FAFAFA', '#F5F5F5'],
     
-    // Accent - subtle black overlay
-    accent: ['rgba(0, 0, 0, 0.05)', 'rgba(0, 0, 0, 0.03)', 'rgba(0, 0, 0, 0.0)'],
+    // ✅ Improved: Barely-there black overlay
+    accent: ['rgba(0, 0, 0, 0.04)', 'rgba(0, 0, 0, 0.02)', 'rgba(0, 0, 0, 0.01)'],
   },
 
   background: {
@@ -633,32 +633,32 @@ export const SUNSET_VIBES_THEME = createTheme({
   primaryLight: '#FB923C',
   
   gradient: {
-    // Sunset progression - cream to orange
+    // ✅ Improved: Sunset cream progression
     primary: ['#FFF7ED', '#FFEDD5', '#FED7AA'],
     
-    // Card backgrounds - warm cream tones
+    // ✅ Improved: Warm sunset card tones
     card: ['#FFEDD5', '#FED7AA', '#FDBA74'],
     
-    // Button gradients - sunset orange
-    button: ['#F97316', '#EA580C', '#C2410C'],
+    // ✅ Improved: Vibrant sunset button
+    button: ['#FB923C', '#F97316', '#EA580C'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#FFF7ED', '#FED7AA', 'rgba(249, 115, 22, 0.3)'],
+    // ✅ Improved: Warm sunset header
+    header: ['#FFF7ED', '#FED7AA', 'rgba(249, 115, 22, 0.30)'],
     
-    // Success - warm amber
+    // ✅ Improved: Golden sunset success
     success: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Warning - bright orange
+    // ✅ Improved: Bright sunset warning
     warning: ['#FB923C', '#F97316', '#EA580C'],
     
-    // Error - sunset pink
+    // ✅ Improved: Sunset pink error
     error: ['#EC4899', '#DB2777', '#BE185D'],
     
-    // Subtle - very warm lights
+    // ✅ Improved: Very warm light subtles
     subtle: ['#FFF7ED', '#FFEDD5', '#FED7AA'],
     
-    // Accent - warm orange glow
-    accent: ['rgba(249, 115, 22, 0.10)', 'rgba(249, 115, 22, 0.05)', 'rgba(249, 115, 22, 0.0)'],
+    // ✅ Improved: Warm sunset glow
+    accent: ['rgba(249, 115, 22, 0.12)', 'rgba(249, 115, 22, 0.06)', 'rgba(249, 115, 22, 0.03)'],
   },
 
   background: {
@@ -706,32 +706,32 @@ export const OCEAN_DEPTHS_THEME = createTheme({
   primaryLight: '#14B8A6',
   
   gradient: {
-    // Deep ocean progression
+    // ✅ Improved: Deep ocean progression
     primary: ['#042F2E', '#134E4A', '#0F766E'],
     
-    // Card backgrounds - ocean depths
+    // ✅ Improved: Ocean depth cards
     card: ['#134E4A', '#0F766E', '#14B8A6'],
     
-    // Button gradients - teal variations
-    button: ['#0D9488', '#0F766E', '#115E59'],
+    // ✅ Improved: Bright teal button
+    button: ['#14B8A6', '#0D9488', '#0F766E'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#042F2E', '#0F766E', 'rgba(15, 118, 110, 0.3)'],
+    // ✅ Improved: Ocean header with aqua glow
+    header: ['#042F2E', '#0F766E', 'rgba(15, 118, 110, 0.30)'],
     
-    // Success - bright aqua
+    // ✅ Improved: Bright aqua success
     success: ['#14B8A6', '#0D9488', '#0F766E'],
     
-    // Warning - ocean amber
+    // ✅ Improved: Ocean amber warning
     warning: ['#F59E0B', '#D97706', '#B45309'],
     
-    // Error - deep blue (ocean alternative)
-    error: ['#1E40AF', '#1D4ED8', '#2563EB'],
+    // ✅ Improved: Deep blue ocean error
+    error: ['#2563EB', '#1E40AF', '#1D4ED8'],
     
-    // Subtle - very deep ocean tones
+    // ✅ Improved: Very deep ocean subtles
     subtle: ['#042F2E', '#134E4A', '#0F766E'],
     
-    // Accent - aqua glow
-    accent: ['rgba(15, 118, 110, 0.12)', 'rgba(15, 118, 110, 0.06)', 'rgba(15, 118, 110, 0.0)'],
+    // ✅ Improved: Aqua ocean glow
+    accent: ['rgba(15, 118, 110, 0.15)', 'rgba(15, 118, 110, 0.08)', 'rgba(15, 118, 110, 0.03)'],
   },
 
   background: {
@@ -772,39 +772,40 @@ export const OCEAN_DEPTHS_THEME = createTheme({
   },
 }, 'OCEAN_DEPTHS');
 
-// PLATINUM_ELEGANCE_THEME - Luxury black/gold
+// 🏆 PLATINUM_ELEGANCE_THEME - TRUE Luxury black/platinum/gold
 export const PLATINUM_ELEGANCE_THEME = createTheme({
-  primary: '#FFD700',
-  primaryDark: '#DAA520',
-  primaryLight: '#FFF700',
+  // ✅ FIXED: True refined gold, not bright yellow
+  primary: '#D4AF37', // Classic gold
+  primaryDark: '#B8860B', // Dark gold
+  primaryLight: '#DAA520', // Light gold
   
   gradient: {
-    // Pure black to gold - ultimate luxury
+    // ✅ FIXED: True luxury black to platinum progression
     primary: ['#000000', '#1C1C1E', '#2C2C2E'],
     
-    // Card backgrounds - rich blacks with gold hint
-    card: ['#1C1C1E', '#2C2C2E', '#3A3A3C'],
+    // ✅ FIXED: Platinum card backgrounds with cool gray tones
+    card: ['#1C1C1E', '#2C2C2E', '#E5E4E2'],
     
-    // Button gradients - gold luxury
-    button: ['#FFD700', '#DAA520', '#B8860B'],
+    // ✅ FIXED: Refined gold button gradient (not yellow)
+    button: ['#DAA520', '#D4AF37', '#B8860B'],
     
-    // Header - ✅ UPDATED: smoother blend
-    header: ['#000000', '#2C2C2E', 'rgba(255, 215, 0, 0.3)'],
+    // ✅ FIXED: Black to platinum to subtle gold accent
+    header: ['#000000', '#2C2C2E', 'rgba(212, 175, 55, 0.20)'],
     
-    // Success - pure gold
-    success: ['#FFD700', '#DAA520', '#B8860B'],
+    // ✅ FIXED: Elegant gold success (luxury feel)
+    success: ['#D4AF37', '#B8860B', '#9A7B0A'],
     
-    // Warning - luxury orange
-    warning: ['#FF9500', '#FF8C00', '#FF7F00'],
+    // ✅ FIXED: Refined warm gold warning
+    warning: ['#DAA520', '#D4AF37', '#B8860B'],
     
-    // Error - platinum silver
+    // ✅ FIXED: Cool platinum silver error (elegant alternative)
     error: ['#C7C7CC', '#AEAEB2', '#8E8E93'],
     
-    // Subtle - deepest blacks
+    // ✅ FIXED: Deep luxury blacks and platinums
     subtle: ['#000000', '#1C1C1E', '#2C2C2E'],
     
-    // Accent - golden glow
-    accent: ['rgba(255, 215, 0, 0.15)', 'rgba(255, 215, 0, 0.08)', 'rgba(255, 215, 0, 0.0)'],
+    // ✅ FIXED: Refined golden glow (not yellow)
+    accent: ['rgba(212, 175, 55, 0.12)', 'rgba(212, 175, 55, 0.06)', 'rgba(212, 175, 55, 0.02)'],
   },
 
   background: {
@@ -827,20 +828,21 @@ export const PLATINUM_ELEGANCE_THEME = createTheme({
     onSuccess: '#000000',
     onError: '#FFFFFF',
   },
-  success: '#FFD700',
-  warning: '#FF9500',
-  error: '#C7C7CC',
-  info: '#FFD700',
-  asset: '#FFD700',
-  liability: '#C7C7CC',
+  // ✅ FIXED: True luxury colors
+  success: '#D4AF37', // Classic gold instead of bright yellow
+  warning: '#DAA520', // Refined gold
+  error: '#C7C7CC', // Cool platinum silver
+  info: '#D4AF37', // Classic gold
+  asset: '#D4AF37', // Classic gold
+  liability: '#C7C7CC', // Cool platinum silver
   border: {
     primary: '#2C2C2E',
     secondary: '#3A3A3C',
-    focus: '#FFD700',
+    focus: '#D4AF37',
   },
   interactive: {
-    hover: 'rgba(255, 215, 0, 0.1)',
-    pressed: 'rgba(255, 215, 0, 0.2)',
+    hover: 'rgba(212, 175, 55, 0.1)',
+    pressed: 'rgba(212, 175, 55, 0.2)',
     disabled: 'rgba(255, 255, 255, 0.1)',
   },
 }, 'PLATINUM_ELEGANCE');

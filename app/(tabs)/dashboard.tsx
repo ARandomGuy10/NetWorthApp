@@ -12,6 +12,7 @@ import EmptyDashboardState from '@/components/home/EmptyDashboardState';
 import StickyHeader from '@/components/home/StickyHeader'; // Add this import
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { router } from 'expo-router';
+import AccountSummary from '@/components/home/AccountSummary';
 
 function DashboardScreen() {
   console.log('DashboardScreen rendered');
@@ -80,10 +81,8 @@ function DashboardScreen() {
 
         <AssetsLiabilitiesSection netWorthData={netWorthData} />
 
-        {/* Other sections with padding */}
-        <View style={{ marginTop: 16, paddingHorizontal: 16 }}>
-          <AccountsList accounts={dashboardData?.accounts || []} />
-        </View>
+       {/*  <AccountsList accounts={dashboardData?.accounts || []} /> */}
+       <AccountSummary accounts={dashboardData?.accounts || []} />
 
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />

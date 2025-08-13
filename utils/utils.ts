@@ -1,3 +1,5 @@
+import {Theme} from '@/lib/supabase';
+
 export const formatDate = (dateString: string | null): string => {
   if (!dateString) return 'Not available';
   return new Date(dateString).toLocaleDateString();
@@ -6,8 +8,9 @@ export const formatDate = (dateString: string | null): string => {
 // ✅ Final version: 4 digits precision (not counting M/K suffix)
 export const formatSmartNumber = (value: number, currency: string = 'EUR'): string => {
   const absValue = Math.abs(value);
-  
-  if (absValue >= 1000000) { // 1M+
+
+  if (absValue >= 1000000) {
+    // 1M+
     const abbreviated = value / 1000000;
     let formatted;
     if (abbreviated >= 1000) {
@@ -24,7 +27,8 @@ export const formatSmartNumber = (value: number, currency: string = 'EUR'): stri
       formatted = abbreviated.toFixed(3);
     }
     return formatCurrency(parseFloat(formatted), currency).replace(/[\d,.-]+/, formatted) + 'M';
-  } else if (absValue >= 100000) { // 100K+
+  } else if (absValue >= 100000) {
+    // 100K+
     const abbreviated = value / 1000;
     let formatted;
     if (abbreviated >= 100) {
@@ -41,7 +45,6 @@ export const formatSmartNumber = (value: number, currency: string = 'EUR'): stri
   }
 };
 
-
 export const formatCurrency = (value: number | string, currency: string = 'EUR'): string => {
   const numericValue = typeof value === 'number' ? value : parseFloat(value.toString()) || 0;
 
@@ -53,13 +56,10 @@ export const formatCurrency = (value: number | string, currency: string = 'EUR')
   }).format(numericValue);
 };
 
-export const makeGradientColors = (theme: any): [string, string, string] => {
-  // Use theme's specific gradient colors if available
-  if (theme.gradient && theme.gradient.colors) {
-    const {colors} = theme.gradient;
-    return [colors[0], colors[1], colors[2] || colors[1]];
+export const getGradientColors = (theme: any, type: string = 'primary'):[string, string, ...string[]] => {
+  
+  if (!theme.colors.gradient[type]) {
+    return theme.colors.gradient.primary;
   }
-
-  // Fallback for themes without gradient property
-  return [theme.colors.background.primary, theme.colors.background.tertiary, theme.colors.primary + '30'];
+  return theme.colors.gradient[type];
 };
