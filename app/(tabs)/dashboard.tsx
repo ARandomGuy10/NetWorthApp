@@ -84,10 +84,10 @@ function DashboardScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
-            refreshing={isManualRefreshing || isFetching}
+            refreshing={isManualRefreshing}
             onRefresh={onRefresh}
             tintColor={theme.colors.primary}
-            progressViewOffset={0}
+            progressViewOffset={insets.top + 100}
           />
         }
       >
