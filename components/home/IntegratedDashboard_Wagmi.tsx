@@ -1,29 +1,29 @@
-import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Image, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
-import { LineChart } from 'react-native-wagmi-charts';
-import { LinearGradient } from 'expo-linear-gradient';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { useNetWorthHistory } from '@/hooks/useNetWorthHistory';
-import { formatCurrency, makeGradientColors } from '@/utils/utils';
+import React, {useState, useMemo, useCallback} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Image, ActivityIndicator} from 'react-native';
+import {useRouter} from 'expo-router';
+import {LineChart} from 'react-native-wagmi-charts';
+import {LinearGradient} from 'expo-linear-gradient';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
+import {formatSmartNumber, makeGradientColors} from '@/utils/utils';
 import * as Haptics from 'expo-haptics';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 const ranges = [
-  { label: '1M', value: '1M' },
-  { label: '3M', value: '3M' },
-  { label: '6M', value: '6M' },
-  { label: '1Y', value: '12M' },
-  { label: 'All', value: 'ALL' },
+  {label: '1M', value: '1M'},
+  {label: '3M', value: '3M'},
+  {label: '6M', value: '6M'},
+  {label: '1Y', value: '12M'},
+  {label: 'All', value: 'ALL'},
 ];
 
 const IntegratedDashboard_Wagmi: React.FC = () => {
   const router = useRouter();
-  const { theme } = useTheme() || {};
+  const {theme} = useTheme() || {};
   const [range, setRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
-  const { data, isLoading, error } = useNetWorthHistory({ period: range });
+  const {data, isLoading, error} = useNetWorthHistory({period: range});
 
   // State for custom tooltip
   const [tooltipData, setTooltipData] = useState<{
@@ -148,13 +148,12 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
         colors={makeGradientColors(theme)}
         locations={[0, 0.5, 1]}
         style={styles.container}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}>
-          
+        start={{x: 0, y: 0}}
+        end={{x: 0, y: 1}}>
         {/* Centered Net Worth Display */}
         <View style={styles.netWorthContainer}>
-          <Text style={[styles.netWorthText, { color: theme.colors.text.primary }]}>
-            {formatCurrency(prepared.latest, prepared.currency)}
+          <Text style={[styles.netWorthText, {color: theme.colors.text.primary}]}>
+            {formatSmartNumber(prepared.latest, prepared.currency)}
           </Text>
 
           <LinearGradient
@@ -164,9 +163,9 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
                 : [`${liabilityColor}25`, `${liabilityColor}15`]
             }
             style={styles.netWorthChangeContainer}>
-            <Text style={[styles.netWorthChangeText, { color: prepared.delta >= 0 ? lineColor : liabilityColor }]}>
+            <Text style={[styles.netWorthChangeText, {color: prepared.delta >= 0 ? lineColor : liabilityColor}]}>
               {prepared.delta >= 0 ? '+' : ''}
-              {formatCurrency(prepared.delta, prepared.currency)} ({prepared.pct.toFixed(1)}%)
+              {formatSmartNumber(prepared.delta, prepared.currency)} ({prepared.pct.toFixed(1)}%)
             </Text>
           </LinearGradient>
         </View>
@@ -179,7 +178,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
             </View>
           ) : error || prepared.chartData.length === 0 ? (
             <View style={styles.loadingOverlay}>
-              <Text style={[styles.placeholderText, { color: theme.colors.text.primary }]}>
+              <Text style={[styles.placeholderText, {color: theme.colors.text.primary}]}>
                 {error ? 'Unable to load data' : 'Add assets to start tracking'}
               </Text>
             </View>
@@ -205,11 +204,11 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
                   borderColor: lineColor,
                 },
               ]}>
-              <Text style={[styles.tooltipValue, { color: theme.colors.text.primary }]}>
-                {formatCurrency(tooltipData.value, prepared.currency)}
+              <Text style={[styles.tooltipValue, {color: theme.colors.text.primary}]}>
+                {formatSmartNumber(tooltipData.value, prepared.currency)}
               </Text>
-              <Text style={[styles.tooltipDate, { color: theme.colors.text.secondary }]}>{tooltipData.date}</Text>
-              <View style={[styles.tooltipArrow, { borderTopColor: theme.colors.background.secondary }]} />
+              <Text style={[styles.tooltipDate, {color: theme.colors.text.secondary}]}>{tooltipData.date}</Text>
+              <View style={[styles.tooltipArrow, {borderTopColor: theme.colors.background.secondary}]} />
             </View>
           )}
         </View>
@@ -278,7 +277,7 @@ const getStyles = (theme: any) =>
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.text.primary,
-          shadowOffset: { width: 0, height: 4 },
+          shadowOffset: {width: 0, height: 4},
           shadowOpacity: 0.15,
           shadowRadius: 8,
         },
@@ -355,7 +354,7 @@ const getStyles = (theme: any) =>
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.primary,
-          shadowOffset: { width: 0, height: 2 },
+          shadowOffset: {width: 0, height: 2},
           shadowOpacity: 0.3,
           shadowRadius: 4,
         },
