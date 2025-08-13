@@ -1,12 +1,13 @@
 // components/home/AssetsLiabilitiesSection.tsx
 
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated} from 'react-native';
 import {AnimatedCircularProgress} from 'react-native-circular-progress';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useTheme} from '../../src/styles/theme/ThemeContext';
 import {Theme} from '@/lib/supabase';
 import {formatSmartNumber, makeGradientColors} from '@/utils/utils';
+import * as Haptics from 'expo-haptics';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -34,6 +35,11 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
   const [liabilitiesScale] = useState(new Animated.Value(1));
   const [infoOpacity] = useState(new Animated.Value(0));
   const [infoScale] = useState(new Animated.Value(0.8));
+
+  // Haptics callback
+  const invokeHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
 
   // Calculate percentages
   const totalValue = (netWorthData?.totalAssets || 0) + (netWorthData?.totalLiabilities || 0);
@@ -84,6 +90,9 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
   }, [showInfo, infoOpacity, infoScale]);
 
   const handleChartPress = (chartType: 'assets' | 'liabilities') => {
+    // Add haptic feedback
+    invokeHaptic();
+
     // Visual feedback animation
     const scaleValue = chartType === 'assets' ? assetsScale : liabilitiesScale;
 
@@ -105,6 +114,9 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
 
   // Show info with animation
   const handleInfoPress = () => {
+    // Add haptic feedback
+    invokeHaptic();
+
     if (!showInfo) {
       setShowInfo(true);
     }
@@ -132,7 +144,7 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
             ]}>
             <View style={styles.glassContainer}>
               <View style={styles.infoContent}>
-                <Text style={styles.infoEmoji}>💡</Text>
+                <Text style={styles.infoEmoji}>👆</Text>
                 <Text style={styles.infoText}>Tap to toggle values</Text>
               </View>
             </View>
@@ -142,23 +154,24 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
         <View style={styles.chartsContainer}>
           {/* Assets Chart */}
           <View style={styles.chartItem}>
-            <Animated.View style={[styles.chartWrapper, {transform: [{scale: assetsScale}]}]}>
-              <TouchableOpacity
-                onPress={() => handleChartPress('assets')}
-                activeOpacity={0.8}
-                style={styles.chartTouchable}>
+            <TouchableOpacity
+              onPress={() => handleChartPress('assets')}
+              activeOpacity={0.8}
+              style={styles.chartTouchable}>
+              <Animated.View style={[styles.chartWrapper, {transform: [{scale: assetsScale}]}]}>
                 <AnimatedCircularProgress
                   size={120}
-                  width={10}
+                  width={12}
                   fill={assetsPercentage}
                   tintColor={theme.colors.asset}
-                  backgroundColor={theme.colors.border?.primary || theme.colors.border}
+                  backgroundColor="rgba(255, 255, 255, 0.2)"
                   rotation={0}
                   lineCap="round"
-                  duration={1000}>
+                  duration={2000}
+                  >
                   {() => (
                     <View style={styles.chartCenter}>
-                      <Text style={styles.chartValue} numberOfLines={1} adjustsFontSizeToFit>
+                      <Text style={styles.chartValue}>
                         {showPercentage
                           ? `${Math.round(assetsPercentage)}%`
                           : formatSmartNumber(netWorthData?.totalAssets || 0, netWorthData?.currency)}
@@ -166,30 +179,31 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
                     </View>
                   )}
                 </AnimatedCircularProgress>
-              </TouchableOpacity>
-            </Animated.View>
+              </Animated.View>
+            </TouchableOpacity>
             <Text style={styles.chartLabel}>Assets</Text>
           </View>
 
           {/* Liabilities Chart */}
           <View style={styles.chartItem}>
-            <Animated.View style={[styles.chartWrapper, {transform: [{scale: liabilitiesScale}]}]}>
-              <TouchableOpacity
-                onPress={() => handleChartPress('liabilities')}
-                activeOpacity={0.8}
-                style={styles.chartTouchable}>
+            <TouchableOpacity
+              onPress={() => handleChartPress('liabilities')}
+              activeOpacity={0.8}
+              style={styles.chartTouchable}>
+              <Animated.View style={[styles.chartWrapper, {transform: [{scale: liabilitiesScale}]}]}>
                 <AnimatedCircularProgress
                   size={120}
-                  width={10}
+                  width={12}
                   fill={liabilitiesPercentage}
                   tintColor={theme.colors.liability}
-                  backgroundColor={theme.colors.border?.primary || theme.colors.border}
+                  backgroundColor="rgba(255, 255, 255, 0.2)"
                   rotation={0}
                   lineCap="round"
-                  duration={1000}>
+                  duration={2000}
+                  >
                   {() => (
                     <View style={styles.chartCenter}>
-                      <Text style={styles.chartValue} numberOfLines={2} adjustsFontSizeToFit>
+                      <Text style={styles.chartValue}>
                         {showPercentage
                           ? `${Math.round(liabilitiesPercentage)}%`
                           : formatSmartNumber(netWorthData?.totalLiabilities || 0, netWorthData?.currency)}
@@ -197,8 +211,8 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
                     </View>
                   )}
                 </AnimatedCircularProgress>
-              </TouchableOpacity>
-            </Animated.View>
+              </Animated.View>
+            </TouchableOpacity>
             <Text style={styles.chartLabel}>Liabilities</Text>
           </View>
         </View>
