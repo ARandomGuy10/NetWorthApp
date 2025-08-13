@@ -138,11 +138,11 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     [invokeHaptic, prepared.chartData]
   );
 
-  const lineColor = theme.colors.asset || theme.colors.primary || '#22c55e';
+  const lineColor = theme.colors.asset || theme.colors.primary;
+  const liabilityColor = theme.colors.liability || theme.colors.error;
   const styles = getStyles(theme);
 
   if (isLoading || error || prepared.chartData.length === 0) {
-    console.log('Loading IntegratedDashboard_Wagmi...');
     return (
       <LinearGradient colors={makeGradientColors(theme)} style={styles.loadingContainer}>
         {isLoading ? (
@@ -170,9 +170,13 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
           </Text>
 
           <LinearGradient
-            colors={[prepared.delta >= 0 ? '#22c55e25' : '#ef444425', prepared.delta >= 0 ? '#22c55e15' : '#ef444415']}
+            colors={
+              prepared.delta >= 0
+                ? [`${lineColor}25`, `${lineColor}15`]
+                : [`${liabilityColor}25`, `${liabilityColor}15`]
+            }
             style={styles.netWorthChangeContainer}>
-            <Text style={[styles.netWorthChangeText, { color: prepared.delta >= 0 ? lineColor : '#ef4444' }]}>
+            <Text style={[styles.netWorthChangeText, { color: prepared.delta >= 0 ? lineColor : liabilityColor }]}>
               {prepared.delta >= 0 ? '+' : ''}
               {formatCurrency(prepared.delta, prepared.currency)} ({prepared.pct.toFixed(1)}%)
             </Text>
@@ -236,73 +240,10 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
 
 const getStyles = (theme: any) =>
   StyleSheet.create({
-    // ... all your existing styles ...
     container: {
       width: screenWidth,
       paddingTop: 30,
       paddingBottom: 32,
-    },
-    headerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: 16,
-      justifyContent: 'space-between',
-      marginBottom: 8,
-    },
-    avatarContainer: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      overflow: 'hidden',
-      marginRight: 12,
-    },
-    avatar: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-    },
-    avatarPlaceholder: {
-      justifyContent: 'center',
-      alignItems: 'center',
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-    },
-    avatarText: {
-      color: 'white',
-      fontWeight: 'bold',
-      fontSize: 16,
-    },
-    greetingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-    },
-    greetingText: {
-      fontSize: 14,
-      fontWeight: '400',
-      marginBottom: 2,
-    },
-    userName: {
-      fontWeight: '700',
-      fontSize: 18,
-      letterSpacing: -0.3,
-    },
-    notificationButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'relative',
-    },
-    notificationBadge: {
-      position: 'absolute',
-      top: 7,
-      right: 7,
-      width: 7,
-      height: 7,
-      borderRadius: 3.5,
-      backgroundColor: '#FF3B30',
     },
     netWorthContainer: {
       alignItems: 'center',
@@ -323,12 +264,6 @@ const getStyles = (theme: any) =>
       fontSize: 14,
       fontWeight: '600',
     },
-    chartContainer: {
-      marginBottom: 16,
-      alignItems: 'center',
-      position: 'relative', // Important for tooltip positioning
-    },
-    // New Custom Tooltip Styles
     customTooltip: {
       position: 'absolute',
       top: 20,
@@ -342,7 +277,7 @@ const getStyles = (theme: any) =>
       zIndex: 1000,
       ...Platform.select({
         ios: {
-          shadowColor: '#000',
+          shadowColor: theme.colors.text.primary,
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.15,
           shadowRadius: 8,
@@ -376,27 +311,6 @@ const getStyles = (theme: any) =>
       borderLeftColor: 'transparent',
       borderRightColor: 'transparent',
     },
-    periodSelectorContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      paddingHorizontal: 12,
-    },
-    periodButton: {
-      flex: 1,
-      marginHorizontal: 4,
-      paddingVertical: 12,
-      borderRadius: 16,
-      alignItems: 'center',
-      ...Platform.select({
-        ios: {
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.08,
-          shadowRadius: 6,
-        },
-        android: { elevation: 2 },
-      }),
-    },
     periodButtonText: {
       fontWeight: '600',
       fontSize: 14,
@@ -414,34 +328,6 @@ const getStyles = (theme: any) =>
       textAlign: 'center',
       marginTop: 20,
     },
-    // Add these new styles to your existing getStyles function
-    chartCard: {
-      marginHorizontal: 0,
-      marginVertical: 20,
-      backgroundColor: 'rgba(255, 255, 255, 0.12)',
-      borderRadius: 24,
-      padding: 20,
-      ...Platform.select({
-        ios: {
-          shadowColor: theme.colors.text.primary,
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.12,
-          shadowRadius: 16,
-        },
-        android: {
-          elevation: 12,
-        },
-      }),
-      borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.15)',
-    },
-
-    enhancedNetWorthContainer: {
-      alignItems: 'center',
-      marginBottom: 20,
-      paddingTop: 0,
-    },
-
     improvedChartContainer: {
       marginBottom: 20,
       paddingHorizontal: 8,
