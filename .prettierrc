@@ -8,7 +8,7 @@
   "jsxSingleQuote": false,
   "arrowParens": "avoid",
   "endOfLine": "auto",
-  "bracketSpacing": true,
+  "bracketSpacing": false,
   "jsxBracketSameLine": true,
   "overrides": [
     {
@@ -20,7 +20,7 @@
         "jsxBracketSameLine": true,
         "proseWrap": "preserve",
         "singleAttributePerLine": false,
-        "bracketSpacing": true
+        "bracketSpacing": false
       }
     }
   ]

@@ -160,9 +160,10 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     <GestureHandlerRootView style={styles.container}>
       <LinearGradient
         colors={makeGradientColors(theme)}
+        locations={[0, 0.5, 1]}
         style={styles.container}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}>
+        end={{ x: 0, y: 1 }}>
         {/* Centered Net Worth Display */}
         <View style={styles.netWorthContainer}>
           <Text style={[styles.netWorthText, { color: theme.colors.text.primary }]}>
