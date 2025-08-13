@@ -7,8 +7,8 @@ interface AccountData {
   category: string;
   institution: string;
   currency: string;
-  include_in_net_worth: boolean,
-  is_archived: boolean,
+  include_in_net_worth: boolean;
+  is_archived: boolean;
   latest_balance: number | null;
   latest_balance_date: string;
 }
