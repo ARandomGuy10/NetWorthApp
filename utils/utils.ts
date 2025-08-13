@@ -1,25 +1,42 @@
 export const formatDate = (dateString: string | null): string => {
-    if (!dateString) return 'Not available';
-    return new Date(dateString).toLocaleDateString();
-  };
+  if (!dateString) return 'Not available';
+  return new Date(dateString).toLocaleDateString();
+};
 
-// ✅ Fixed: Smart number formatting that only abbreviates when necessary
+// ✅ Final version: 4 digits precision (not counting M/K suffix)
 export const formatSmartNumber = (value: number, currency: string = 'EUR'): string => {
   const absValue = Math.abs(value);
   
-  // Only abbreviate if 6+ digits (100,000+) since 5 digits fit in the UI
-  if (absValue >= 100000000) { // 100M+
+  if (absValue >= 1000000) { // 1M+
     const abbreviated = value / 1000000;
-    // Use minimal decimal places, remove if it's a whole number
-    const formatted = abbreviated % 1 === 0 ? abbreviated.toString() : abbreviated.toFixed(1);
-    return formatCurrency(abbreviated, currency).replace(abbreviated.toString(), formatted) + 'M';
+    let formatted;
+    if (abbreviated >= 1000) {
+      // 1000M+ → "1000M" (4 digits + M)
+      formatted = Math.round(abbreviated).toString();
+    } else if (abbreviated >= 100) {
+      // 100M-999M → "567M" (3 digits + M, but let's make it 4)
+      formatted = abbreviated.toFixed(1); // "567.8M" (4 digits + M)
+    } else if (abbreviated >= 10) {
+      // 10M-99.9M → "12.34M" (4 digits + M)
+      formatted = abbreviated.toFixed(2);
+    } else {
+      // 1M-9.999M → "1.234M" (4 digits + M)
+      formatted = abbreviated.toFixed(3);
+    }
+    return formatCurrency(parseFloat(formatted), currency).replace(/[\d,.-]+/, formatted) + 'M';
   } else if (absValue >= 100000) { // 100K+
     const abbreviated = value / 1000;
-    // Use minimal decimal places, remove if it's a whole number  
-    const formatted = abbreviated % 1 === 0 ? abbreviated.toString() : abbreviated.toFixed(1);
-    return formatCurrency(abbreviated, currency).replace(abbreviated.toString(), formatted) + 'K';
+    let formatted;
+    if (abbreviated >= 100) {
+      // 100K-999K → "567.8K" (4 digits + K)
+      formatted = abbreviated.toFixed(1);
+    } else {
+      // This shouldn't happen since we start at 100K
+      formatted = abbreviated.toFixed(2);
+    }
+    return formatCurrency(parseFloat(formatted), currency).replace(/[\d,.-]+/, formatted) + 'K';
   } else {
-    // Show full number for anything under 100,000 (5 digits or less)
+    // Show full number for anything under 100,000
     return formatCurrency(value, currency);
   }
 };
@@ -27,7 +44,7 @@ export const formatSmartNumber = (value: number, currency: string = 'EUR'): stri
 
 export const formatCurrency = (value: number | string, currency: string = 'EUR'): string => {
   const numericValue = typeof value === 'number' ? value : parseFloat(value.toString()) || 0;
-  
+
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
@@ -37,17 +54,12 @@ export const formatCurrency = (value: number | string, currency: string = 'EUR')
 };
 
 export const makeGradientColors = (theme: any): [string, string, string] => {
-    // Use theme's specific gradient colors if available
-    if (theme.gradient && theme.gradient.colors) {
-      const { colors } = theme.gradient;
-      return [colors[0], colors[1], colors[2] || colors[1]];
-    }
-    
-    // Fallback for themes without gradient property
-    return [
-      theme.colors.background.primary,
-      theme.colors.background.tertiary,
-      theme.colors.primary + '30'
-    ];
-  };
-  
+  // Use theme's specific gradient colors if available
+  if (theme.gradient && theme.gradient.colors) {
+    const {colors} = theme.gradient;
+    return [colors[0], colors[1], colors[2] || colors[1]];
+  }
+
+  // Fallback for themes without gradient property
+  return [theme.colors.background.primary, theme.colors.background.tertiary, theme.colors.primary + '30'];
+};
