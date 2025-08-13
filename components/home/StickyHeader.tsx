@@ -140,9 +140,6 @@ const getStyles = (theme: any, insets: any) => StyleSheet.create({
     fontSize: 18,
     letterSpacing: -0.3,
   },
-  contentContainer: {
-    paddingTop: insets.top + 50, // Add padding for sticky header
-  },
   sectionsContainer: {
     paddingHorizontal: 16,
   },

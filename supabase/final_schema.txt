@@ -18,7 +18,11 @@ CREATE TYPE public.theme AS ENUM (
   'WARM_LUXURY', 
   'NEO_BANKING', 
   'DARK_MODE_FOCUSED', 
-  'EARTHY_CALM'
+  'EARTHY_CALM',
+  'MINIMAL_MONOCHROME',
+  'SUNSET_VIBES',
+  'OCEAN_DEPTHS',
+  'PLATINUM_ELEGANCE'
 );
 CREATE TYPE public.account_type AS ENUM ('asset', 'liability');
 CREATE TYPE public.currency_code AS ENUM (

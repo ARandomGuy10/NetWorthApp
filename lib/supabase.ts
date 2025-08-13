@@ -173,33 +173,43 @@ export interface CreateAccountData {
   initial_balance?: number;
 }
 
-
 export const ACCOUNT_CATEGORIES = {
-  asset: [
-    'Cash',
-    'Checking',
-    'Savings',
-    'Investment',
-    'Retirement',
-    'Real Estate',
-    'Vehicle',
-    'Other Asset'
-  ],
-  liability: [
-    'Credit Card',
-    'Personal Loan',
-    'Mortgage',
-    'Auto Loan',
-    'Student Loan',
-    'Other Liability'
-  ]
+  asset: ['Cash', 'Checking', 'Savings', 'Investment', 'Retirement', 'Real Estate', 'Vehicle', 'Other Asset'],
+  liability: ['Credit Card', 'Personal Loan', 'Mortgage', 'Auto Loan', 'Student Loan', 'Other Liability'],
 };
 
 export const CURRENCIES = [
-  'AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK',
-  'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK',
-  'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN',
-  'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'
+  'AUD',
+  'BGN',
+  'BRL',
+  'CAD',
+  'CHF',
+  'CNY',
+  'CZK',
+  'DKK',
+  'EUR',
+  'GBP',
+  'HKD',
+  'HUF',
+  'IDR',
+  'ILS',
+  'INR',
+  'ISK',
+  'JPY',
+  'KRW',
+  'MXN',
+  'MYR',
+  'NOK',
+  'NZD',
+  'PHP',
+  'PLN',
+  'RON',
+  'SEK',
+  'SGD',
+  'THB',
+  'TRY',
+  'USD',
+  'ZAR',
 ];
 
 export const THEMES = [
@@ -210,9 +220,12 @@ export const THEMES = [
   'WARM_LUXURY',
   'NEO_BANKING',
   'DARK_MODE_FOCUSED',
-  'EARTHY_CALM'
+  'EARTHY_CALM',
+  'MINIMAL_MONOCHROME',
+  'SUNSET_VIBES',
+  'OCEAN_DEPTHS',
+  'PLATINUM_ELEGANCE',
 ];
-
 
 export type Theme = {
   name: string;
