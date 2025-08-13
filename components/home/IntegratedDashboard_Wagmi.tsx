@@ -142,20 +142,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   const liabilityColor = theme.colors.liability || theme.colors.error;
   const styles = getStyles(theme);
 
-  if (isLoading || error || prepared.chartData.length === 0) {
-    return (
-      <LinearGradient colors={makeGradientColors(theme)} style={styles.loadingContainer}>
-        {isLoading ? (
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        ) : (
-          <Text style={[styles.placeholderText, { color: theme.colors.text.primary }]}>
-            {error ? 'Unable to load data' : 'Add assets to start tracking'}
-          </Text>
-        )}
-      </LinearGradient>
-    );
-  }
-
   return (
     <GestureHandlerRootView style={styles.container}>
       <LinearGradient
@@ -164,6 +150,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
         style={styles.container}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}>
+          
         {/* Centered Net Worth Display */}
         <View style={styles.netWorthContainer}>
           <Text style={[styles.netWorthText, { color: theme.colors.text.primary }]}>
@@ -186,15 +173,27 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
 
         {/* Enhanced Chart Container */}
         <View style={styles.improvedChartContainer}>
-          <LineChart.Provider
-            data={prepared.chartData}
-            onCurrentIndexChange={onCurrentIndexChange}
-            key={`${range}-${prepared.chartData.length}-${prepared.latest}-${prepared.calculatedAt}`}>
-            <LineChart height={200} width={screenWidth}>
-              <LineChart.Path color={lineColor} width={3} />
-              <LineChart.CursorCrosshair color={lineColor} onActivated={invokeHaptic} onEnded={invokeHaptic} />
-            </LineChart>
-          </LineChart.Provider>
+          {isLoading ? (
+            <View style={styles.loadingOverlay}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+          ) : error || prepared.chartData.length === 0 ? (
+            <View style={styles.loadingOverlay}>
+              <Text style={[styles.placeholderText, { color: theme.colors.text.primary }]}>
+                {error ? 'Unable to load data' : 'Add assets to start tracking'}
+              </Text>
+            </View>
+          ) : (
+            <LineChart.Provider
+              data={prepared.chartData}
+              onCurrentIndexChange={onCurrentIndexChange}
+              key={`${range}-${prepared.chartData.length}-${prepared.latest}-${prepared.calculatedAt}`}>
+              <LineChart height={200} width={screenWidth}>
+                <LineChart.Path color={lineColor} width={3} />
+                <LineChart.CursorCrosshair color={lineColor} onActivated={invokeHaptic} onEnded={invokeHaptic} />
+              </LineChart>
+            </LineChart.Provider>
+          )}
 
           {/* Custom Tooltip - Safe Implementation */}
           {tooltipData && (
@@ -251,7 +250,7 @@ const getStyles = (theme: any) =>
       marginVertical: 20,
     },
     netWorthText: {
-      fontSize: 26,
+      fontSize: 30,
       fontWeight: '700',
       letterSpacing: -0.8,
       marginBottom: 8,
@@ -262,7 +261,7 @@ const getStyles = (theme: any) =>
       borderRadius: 20,
     },
     netWorthChangeText: {
-      fontSize: 14,
+      fontSize: 12,
       fontWeight: '600',
     },
     customTooltip: {
@@ -317,12 +316,6 @@ const getStyles = (theme: any) =>
       fontSize: 14,
       letterSpacing: -0.2,
     },
-    loadingContainer: {
-      width: screenWidth,
-      height: 200, // Match LineChart height
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
     placeholderText: {
       fontSize: 18,
       fontWeight: '600',
@@ -336,7 +329,12 @@ const getStyles = (theme: any) =>
       backgroundColor: 'transparent',
       paddingVertical: 16,
     },
-
+    // NEW STYLE - replaces loadingContainer
+    loadingOverlay: {
+      height: 200,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
     enhancedPeriodSelector: {
       flexDirection: 'row',
       backgroundColor: 'transparent',
@@ -352,7 +350,6 @@ const getStyles = (theme: any) =>
       alignItems: 'center',
       marginHorizontal: 2,
     },
-
     selectedPeriodButton: {
       backgroundColor: theme.colors.primary,
       ...Platform.select({
