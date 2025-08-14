@@ -3,41 +3,50 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
   Alert,
   RefreshControl,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { FlashList } from '@shopify/flash-list';
 
-import { useDashboardData } from '../../../hooks/useDashboard';
+import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'; // Updated hook
 import { useDeleteAccount } from '../../../hooks/useAccounts';
 import { formatCurrency } from '../../../utils/utils';
 import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
-import { DashboardAccount, Theme } from '../../../lib/supabase';
+import { AccountWithBalance, Theme } from '../../../lib/supabase'; // Updated type
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 
+
+import AccountsHeader from '../../../components/accounts/AccountsHeader'; // Import the new header
+
+// Define types for FlashList items
+interface FlashListItem {
+  type: 'header' | 'account' | 'emptyState' | 'footer';
+  id: string; // Unique ID for FlashList keyExtractor
+  data?: any; // Either section data, account data, or null for empty/footer
+}
 
 function AccountsScreen() {
   console.log('AccountsScreen rendered');
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { data: dashboardData, isLoading, refetch, isFetching } = useDashboardData();
+  // Use useAccountsWithBalances hook as per new requirement
+  const { data: accountsData, isLoading, refetch, isFetching } = useAccountsWithBalances();
   const deleteAccountMutation = useDeleteAccount();
 
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
   // Extract accounts with latest balances from dashboard data
-  const accounts = dashboardData?.accounts || [];
+  const accounts = accountsData || [];
 
   const [menuVisible, setMenuVisible] = useState(false);
-  const [selectedAccount, setSelectedAccount] = useState<DashboardAccount | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<AccountWithBalance | null>(null); // Updated type
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -53,7 +62,7 @@ function AccountsScreen() {
   };
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
-  const handleAccountMenu = (account: DashboardAccount, event: any) => {
+  const handleAccountMenu = (account: AccountWithBalance, event: any) => { // Updated type
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     const { pageY } = event.nativeEvent;
@@ -127,7 +136,7 @@ function AccountsScreen() {
   ];
 
    // Fixed: Better loading logic that accounts for cached data
-  const showLoadingSpinner = (isLoading || (!dashboardData && isFetching)) && !accounts.length;
+  const showLoadingSpinner = (isLoading || (!accountsData && isFetching)) && !accounts.length;
 
   if (showLoadingSpinner) {
     return (
@@ -138,20 +147,9 @@ function AccountsScreen() {
     );
   }
 
-  const groupedAccounts = accounts.reduce((groups: { [key: string]: DashboardAccount[] }, account: DashboardAccount) => {
-    const type = account.account_type;
-    if (!groups[type]) groups[type] = [];
-    groups[type].push(account);
-    return groups;
-  }, {});
-
-  const assetAccounts = groupedAccounts.asset || [];
-  const liabilityAccounts = groupedAccounts.liability || [];
-
-  // Calculate totals from the accounts
-  const totalAssets = dashboardData?.totalAssets || 0;
-  const totalLiabilities = dashboardData?.totalLiabilities || 0;
-  const currency = dashboardData?.currency || 'EUR';
+  // Group accounts by type
+  const assetAccounts = accounts.filter(acc => acc.account_type === 'asset');
+  const liabilityAccounts = accounts.filter(acc => acc.account_type === 'liability');
 
   const getAccountIcon = (category: string): keyof typeof Ionicons.glyphMap => {
     const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
@@ -173,170 +171,113 @@ function AccountsScreen() {
     return iconMap[category] || 'ellipse-outline';
   };
 
-  return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>My Accounts</Text>
-          <Text style={styles.headerSubtitle}>
-            {accounts.length} account{accounts.length !== 1 ? 's' : ''}
-          </Text>
-        </View>
-        <TouchableOpacity 
-          style={styles.addButton} 
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('accounts/add-account');
-          }}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="add" size={20} color={theme.colors.text.inverse} />
-        </TouchableOpacity>
-      </View>
+  // Prepare data for FlashList
+  const prepareFlashListData = (): FlashListItem[] => {
+    const data: FlashListItem[] = [];
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={isManualRefreshing}
-            onRefresh={onRefresh} 
-            colors={[theme.colors.primary]}
-            tintColor={theme.colors.primary}
-          />
-        }
-        keyboardShouldPersistTaps="handled"
-      >
-        {assetAccounts.length > 0 && (
+    if (assetAccounts.length > 0) {
+      data.push({
+        type: 'header',
+        id: 'header-assets',
+        data: { title: 'Assets', type: 'asset' },
+      });
+      assetAccounts.forEach(account => {
+        data.push({ type: 'account', id: account.account_id, data: account });
+      });
+    }
+
+    if (liabilityAccounts.length > 0) {
+      data.push({
+        type: 'header',
+        id: 'header-liabilities',
+        data: { title: 'Liabilities', type: 'liability' },
+      });
+      liabilityAccounts.forEach(account => {
+        data.push({ type: 'account', id: account.account_id, data: account });
+      });
+    }
+
+    if (accounts.length === 0 && !isLoading) {
+      data.push({ type: 'emptyState', id: 'empty-state' });
+    }
+
+    data.push({ type: 'footer', id: 'footer-add-button' }); // Add a footer item for the button
+
+    return data;
+  };
+
+  const flashListData = prepareFlashListData();
+
+  // Render function for FlashList items
+  const renderFlashListItem = ({ item }: { item: FlashListItem }) => {
+    switch (item.type) {
+      case 'header':
+        const headerData = item.data;
+        return (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
-                <View style={[styles.sectionIndicator, { backgroundColor: theme.colors.asset }]} />
-                <Text style={styles.sectionTitle}>Assets</Text>
+                <View style={[styles.sectionIndicator, { backgroundColor: headerData.type === 'asset' ? theme.colors.asset : theme.colors.liability }]} />
+                <Text style={styles.sectionTitle}>{headerData.title}</Text>
               </View>
-              <Text style={[styles.sectionTotal, { color: theme.colors.asset }]}>
-                {formatCurrency(totalAssets, currency)}
-              </Text>
+              {/* Removed total display as per user instruction */}
             </View>
-            {assetAccounts.map((account: DashboardAccount) => (
-              <TouchableOpacity
-                key={account.account_id}
-                style={styles.accountCard}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(`/accounts/${account.account_id}`);
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.accountInfo}>
-                  <View style={[styles.accountIcon, { backgroundColor: theme.colors.interactive.hover }]}>
-                    <Ionicons 
-                      name={getAccountIcon(account.category)} 
-                      size={20} 
-                      color={theme.colors.asset} 
-                    />
-                  </View>
-                  <View style={styles.accountDetails}>
-                    <Text style={styles.accountName}>{account.account_name}</Text>
-                    <View style={styles.accountMeta}>
-                      <Text style={styles.accountInstitution}>
-                        {account.institution || account.category}
-                      </Text>
-                      <Text style={styles.accountCurrency}>{account.currency}</Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.accountBalance}>
-                  <Text style={[styles.balanceAmount, { color: theme.colors.asset }]}>
-                    {formatCurrency(account.latest_balance, account.currency)}
-                  </Text>
-                  <TouchableOpacity 
-                    style={styles.moreButton} 
-                    onPress={(e) => { 
-                      e.stopPropagation(); 
-                      handleAccountMenu(account, e); 
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    activeOpacity={0.6}
-                  >
-                    <Ionicons 
-                      name="ellipsis-horizontal" 
-                      size={18} 
-                      color={theme.colors.text.secondary} 
-                    />
-                  </TouchableOpacity>
-                </View>
-              </TouchableOpacity>
-            ))}
           </View>
-        )}
-
-        {liabilityAccounts.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <View style={[styles.sectionIndicator, { backgroundColor: theme.colors.liability }]} />
-                <Text style={styles.sectionTitle}>Liabilities</Text>
+        );
+      case 'account':
+        const account: AccountWithBalance = item.data;
+        return (
+          <TouchableOpacity
+            key={account.account_id}
+            style={[styles.accountCard, { marginHorizontal: theme.spacing.xl }]} // Apply horizontal margin here
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/accounts/${account.account_id}`);
+            }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.accountInfo}>
+              <View style={[styles.accountIcon, { backgroundColor: theme.colors.interactive.hover }]}>
+                <Ionicons 
+                  name={getAccountIcon(account.category)} 
+                  size={20} 
+                  color={account.account_type === 'asset' ? theme.colors.asset : theme.colors.liability} 
+                />
               </View>
-              <Text style={[styles.sectionTotal, { color: theme.colors.liability }]}>
-                -{formatCurrency(totalLiabilities, currency)}
-              </Text>
-            </View>
-            {liabilityAccounts.map((account: DashboardAccount) => (
-              <TouchableOpacity
-                key={account.account_id}
-                style={styles.accountCard}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push(`/accounts/${account.account_id}`);
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={styles.accountInfo}>
-                  <View style={[styles.accountIcon, { backgroundColor: theme.colors.interactive.hover }]}>
-                    <Ionicons 
-                      name={getAccountIcon(account.category)} 
-                      size={20} 
-                      color={theme.colors.liability} 
-                    />
-                  </View>
-                  <View style={styles.accountDetails}>
-                    <Text style={styles.accountName}>{account.account_name}</Text>
-                    <View style={styles.accountMeta}>
-                      <Text style={styles.accountInstitution}>
-                        {account.institution || account.category}
-                      </Text>
-                      <Text style={styles.accountCurrency}>{account.currency}</Text>
-                    </View>
-                  </View>
-                </View>
-                <View style={styles.accountBalance}>
-                  <Text style={[styles.balanceAmount, { color: theme.colors.liability }]}>
-                    -{formatCurrency(account.latest_balance, account.currency)}
+              <View style={styles.accountDetails}>
+                <Text style={styles.accountName}>{account.account_name}</Text>
+                <View style={styles.accountMeta}>
+                  <Text style={styles.accountInstitution}>
+                    {account.institution || account.category}
                   </Text>
-                  <TouchableOpacity 
-                    style={styles.moreButton} 
-                    onPress={(e) => { 
-                      e.stopPropagation(); 
-                      handleAccountMenu(account, e); 
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    activeOpacity={0.6}
-                  >
-                    <Ionicons 
-                      name="ellipsis-horizontal" 
-                      size={18} 
-                      color={theme.colors.text.secondary} 
-                    />
-                  </TouchableOpacity>
+                  <Text style={styles.accountCurrency}>{account.currency}</Text>
                 </View>
+              </View>
+            </View>
+            <View style={styles.accountBalance}>
+              <Text style={[styles.balanceAmount, { color: account.account_type === 'asset' ? theme.colors.asset : theme.colors.liability }]}>
+                {account.account_type === 'liability' ? '-' : ''}{formatCurrency(account.latest_balance, account.currency)}
+              </Text>
+              <TouchableOpacity 
+                style={styles.moreButton} 
+                onPress={(e) => {
+                  e.stopPropagation(); 
+                  handleAccountMenu(account, e); 
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                activeOpacity={0.6}
+              >
+                <Ionicons 
+                  name="ellipsis-horizontal" 
+                  size={18} 
+                  color={theme.colors.text.secondary} 
+                />
               </TouchableOpacity>
-            ))}
-          </View>
-        )}
-
-        {accounts.length === 0 && !isLoading && (
+            </View>
+          </TouchableOpacity>
+        );
+      case 'emptyState':
+        return (
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
               <Ionicons name="wallet-outline" size={48} color={theme.colors.text.tertiary} />
@@ -346,33 +287,63 @@ function AccountsScreen() {
               Add your first account to start tracking your net worth
             </Text>
           </View>
-        )}
+        );
+      case 'footer':
+        return (
+          <TouchableOpacity 
+            style={[
+              styles.addAccountButton,
+              isDeleting && styles.addAccountButtonDisabled
+            ]} 
+            onPress={() => {
+              if (!isDeleting) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                router.push('accounts/add-account');
+              }
+            }} 
+            activeOpacity={0.8}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator size="small" color={theme.colors.text.inverse} />
+            ) : (
+              <Ionicons name="add" size={20} color={theme.colors.text.inverse} />
+            )}
+            <Text style={styles.addAccountText}>
+              {isDeleting ? 'Processing...' : 'Add New Account'}
+            </Text>
+          </TouchableOpacity>
+        );
+      default:
+        return null;
+    }
+  };
 
-        {/* Add New Account Button - Fixed positioning */}
-        <TouchableOpacity 
-          style={[
-            styles.addAccountButton,
-            isDeleting && styles.addAccountButtonDisabled
-          ]} 
-          onPress={() => {
-            if (!isDeleting) {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push('accounts/add-account');
-            }
-          }} 
-          activeOpacity={0.8}
-          disabled={isDeleting}
-        >
-          {isDeleting ? (
-            <ActivityIndicator size="small" color={theme.colors.text.inverse} />
-          ) : (
-            <Ionicons name="add" size={20} color={theme.colors.text.inverse} />
-          )}
-          <Text style={styles.addAccountText}>
-            {isDeleting ? 'Processing...' : 'Add New Account'}
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <AccountsHeader
+        onAdd={() => router.push('accounts/add-account')}
+        onFilter={() => console.log('Filter pressed')}
+        onMore={() => console.log('More pressed')}
+      />
+
+      <FlashList
+        data={flashListData}
+        renderItem={renderFlashListItem}
+        keyExtractor={(item) => item.id}
+        estimatedItemSize={100} // Adjust as needed for better performance
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isManualRefreshing}
+            onRefresh={onRefresh} 
+            colors={[theme.colors.primary]}
+            tintColor={theme.colors.primary}
+          />
+        }
+        contentContainerStyle={styles.flashListContent}
+        keyboardShouldPersistTaps="handled"
+      />
 
       <ActionMenu
         visible={menuVisible}
@@ -426,22 +397,19 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center', 
     ...theme.shadows.sm 
   },
-  scrollView: { 
-    flex: 1 
-  },
-  // Fixed: Simplified content container style
-  scrollContent: {
+  flashListContent: { // New style for FlashList content container
     paddingBottom: theme.spacing.xxxl + 80, // Extra padding to ensure button is always visible
   },
   section: { 
     marginTop: theme.spacing.xxl, 
-    paddingHorizontal: theme.spacing.xl 
+    // paddingHorizontal removed from here, applied to accountCard directly
   },
   sectionHeader: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    marginBottom: theme.spacing.lg 
+    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl, // Apply horizontal padding here
   },
   sectionTitleContainer: { 
     flexDirection: 'row', 
