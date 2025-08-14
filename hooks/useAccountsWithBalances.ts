@@ -13,7 +13,7 @@ export const useAccountsWithBalances = () => {
     queryKey: ['accountsWithBalances', user?.id],
     queryFn: async () => {
       console.log('🔥 CALLING DATABASE - get_accounts_with_balances function');
-      const { data, error } = await supabase.functions.invoke('get_accounts_with_balances');
+      const { data, error } = await supabase.rpc('get_accounts_with_balances');
       if (error) throw error;
       return data;
     },
