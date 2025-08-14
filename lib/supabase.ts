@@ -26,6 +26,7 @@ export type Database = {
           created_at: string | null;
           updated_at: string | null;
           theme: string;
+          remind_after_days: number;
         };
         Insert: {
           id: string;
@@ -37,6 +38,7 @@ export type Database = {
           date_format?: string | null;
           last_sign_in_at?: string | null;
           theme?: string;
+          remind_after_days?: number;
         };
         Update: {
           first_name?: string | null;
@@ -46,6 +48,7 @@ export type Database = {
           timezone?: string | null;
           date_format?: string | null;
           theme?: string;
+          remind_after_days?: number;
         };
       };
       accounts: {
