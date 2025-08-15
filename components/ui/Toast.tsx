@@ -66,7 +66,10 @@ export default function Toast({
   // Show/hide based on `visible` prop
   useEffect(() => {
     if (visible) {
-      setIsVisible(true);
+      // Defer setIsVisible to avoid useInsertionEffect warning
+      setTimeout(() => {
+        setIsVisible(true);
+      }, 0);
 
       // Trigger haptics
       const triggerHaptic = async () => {
