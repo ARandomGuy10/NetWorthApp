@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,17 +12,21 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { FlashList } from '@shopify/flash-list';
+import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'; // Updated hook
-import { useDeleteAccount } from '../../../hooks/useAccounts';
+import { useDeleteAccount, useUpdateAccount } from '../../../hooks/useAccounts';
+import { useProfile } from '../../../hooks/useProfile'; // Import useProfile hook
 import { formatCurrency } from '../../../utils/utils';
 import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
 import { AccountWithBalance, Theme } from '../../../lib/supabase'; // Updated type
 import { useTheme } from '@/src/styles/theme/ThemeContext';
-
-
 import AccountsHeader from '../../../components/accounts/AccountsHeader'; // Import the new header
+import FilterChipsRow, { FilterType } from '../../../components/accounts/FilterChipsRow'; // Import the new filter chips
+import StatusShelf from '../../../components/accounts/StatusShelf'; // Import the new status shelf
+import AccountSectionHeader from '../../../components/accounts/AccountSectionHeader';
+import AccountRow from '../../../components/accounts/AccountRow';
+
 
 // Define types for FlashList items
 interface FlashListItem {
@@ -35,9 +39,13 @@ function AccountsScreen() {
   console.log('AccountsScreen rendered');
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const flashListRef = useRef<FlashListRef<FlashListItem>>(null);
+
   // Use useAccountsWithBalances hook as per new requirement
   const { data: accountsData, isLoading, refetch, isFetching } = useAccountsWithBalances();
+  const { data: profile } = useProfile();
   const deleteAccountMutation = useDeleteAccount();
+  const updateAccountMutation = useUpdateAccount();
 
   const { theme } = useTheme();
   const styles = getStyles(theme);
@@ -45,12 +53,21 @@ function AccountsScreen() {
   // Extract accounts with latest balances from dashboard data
   const accounts = accountsData || [];
 
+  const [activeFilter, setActiveFilter] = useState<FilterType>('All');
+  const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<AccountWithBalance | null>(null); // Updated type
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
+
+  // Scroll to top when filter changes
+  useEffect(() => {
+    if (flashListRef.current) {
+      flashListRef.current.scrollToOffset({ animated: true, offset: 0 });
+    }
+  }, [activeFilter]);
 
   const onRefresh = async () => {
     setIsManualRefreshing(true);
@@ -59,6 +76,10 @@ function AccountsScreen() {
     } finally {
       setIsManualRefreshing(false);
     }
+  };
+
+  const handleToggleSection = (title: string) => {
+    setCollapsedSections(prev => ({ ...prev, [title]: !prev[title] }));
   };
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
@@ -138,6 +159,33 @@ function AccountsScreen() {
    // Fixed: Better loading logic that accounts for cached data
   const showLoadingSpinner = (isLoading || (!accountsData && isFetching)) && !accounts.length;
 
+  const outdatedAccounts = useMemo(() => {
+    const remindAfterDays = profile?.remind_after_days || 30;
+    return accounts.filter(acc => {
+      if (!acc.latest_balance_date) return true;
+      const daysSinceUpdate = (Date.now() - new Date(acc.latest_balance_date).getTime()) / (1000 * 60 * 60 * 24);
+      return daysSinceUpdate > remindAfterDays;
+    });
+  }, [accounts, profile]);
+
+  const hiddenAccounts = useMemo(() => accounts.filter(acc => acc.is_archived), [accounts]);
+
+  const filteredAccounts = useMemo(() => {
+    switch (activeFilter) {
+      case 'Assets':
+        return accounts.filter(acc => acc.account_type === 'asset');
+      case 'Liabilities':
+        return accounts.filter(acc => acc.account_type === 'liability');
+      case 'Hidden':
+        return hiddenAccounts;
+      case 'Outdated':
+        return outdatedAccounts;
+      case 'All':
+      default:
+        return accounts;
+    }
+  }, [accounts, activeFilter, outdatedAccounts, hiddenAccounts]);
+
   if (showLoadingSpinner) {
     return (
       <View style={[styles.container, styles.centered]}>
@@ -148,56 +196,42 @@ function AccountsScreen() {
   }
 
   // Group accounts by type
-  const assetAccounts = accounts.filter(acc => acc.account_type === 'asset');
-  const liabilityAccounts = accounts.filter(acc => acc.account_type === 'liability');
-
-  const getAccountIcon = (category: string): keyof typeof Ionicons.glyphMap => {
-    const iconMap: Record<string, keyof typeof Ionicons.glyphMap> = {
-      'Cash': 'cash-outline',
-      'Checking': 'card-outline',
-      'Savings': 'wallet-outline',
-      'Investment': 'trending-up-outline',
-      'Retirement': 'shield-outline',
-      'Real Estate': 'home-outline',
-      'Vehicle': 'car-outline',
-      'Credit Card': 'card-outline',
-      'Personal Loan': 'document-text-outline',
-      'Mortgage': 'home-outline',
-      'Auto Loan': 'car-outline',
-      'Student Loan': 'school-outline',
-      'Other Asset': 'ellipse-outline',
-      'Other Liability': 'ellipse-outline'
-    };
-    return iconMap[category] || 'ellipse-outline';
-  };
+  const assetAccounts = filteredAccounts.filter(acc => acc.account_type === 'asset');
+  const liabilityAccounts = filteredAccounts.filter(acc => acc.account_type === 'liability');
 
   // Prepare data for FlashList
   const prepareFlashListData = (): FlashListItem[] => {
     const data: FlashListItem[] = [];
 
     if (assetAccounts.length > 0) {
+      const isCollapsed = collapsedSections['Assets'];
       data.push({
         type: 'header',
         id: 'header-assets',
-        data: { title: 'Assets', type: 'asset' },
+        data: { title: 'Assets', count: assetAccounts.length, isCollapsed },
       });
-      assetAccounts.forEach(account => {
-        data.push({ type: 'account', id: account.account_id, data: account });
-      });
+      if (!isCollapsed) {
+        assetAccounts.forEach(account => {
+          data.push({ type: 'account', id: account.account_id, data: account });
+        });
+      }
     }
 
     if (liabilityAccounts.length > 0) {
+      const isCollapsed = collapsedSections['Liabilities'];
       data.push({
         type: 'header',
         id: 'header-liabilities',
-        data: { title: 'Liabilities', type: 'liability' },
+        data: { title: 'Liabilities', count: liabilityAccounts.length, isCollapsed },
       });
-      liabilityAccounts.forEach(account => {
-        data.push({ type: 'account', id: account.account_id, data: account });
-      });
+      if (!isCollapsed) {
+        liabilityAccounts.forEach(account => {
+          data.push({ type: 'account', id: account.account_id, data: account });
+        });
+      }
     }
 
-    if (accounts.length === 0 && !isLoading) {
+    if (filteredAccounts.length === 0 && !isLoading) {
       data.push({ type: 'emptyState', id: 'empty-state' });
     }
 
@@ -214,67 +248,26 @@ function AccountsScreen() {
       case 'header':
         const headerData = item.data;
         return (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <View style={[styles.sectionIndicator, { backgroundColor: headerData.type === 'asset' ? theme.colors.asset : theme.colors.liability }]} />
-                <Text style={styles.sectionTitle}>{headerData.title}</Text>
-              </View>
-              {/* Removed total display as per user instruction */}
-            </View>
-          </View>
+          <AccountSectionHeader
+            title={headerData.title}
+            count={headerData.count}
+            isCollapsed={headerData.isCollapsed}
+            onToggleCollapse={() => handleToggleSection(headerData.title)}
+            onAdd={() => console.log('Add from section')}
+            onSort={() => console.log('Sort section')}
+            onBulkEdit={() => console.log('Bulk edit section')}
+          />
         );
       case 'account':
         const account: AccountWithBalance = item.data;
         return (
-          <TouchableOpacity
-            key={account.account_id}
-            style={[styles.accountCard, { marginHorizontal: theme.spacing.xl }]} // Apply horizontal margin here
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(`/accounts/${account.account_id}`);
-            }}
-            activeOpacity={0.7}
-          >
-            <View style={styles.accountInfo}>
-              <View style={[styles.accountIcon, { backgroundColor: theme.colors.interactive.hover }]}>
-                <Ionicons 
-                  name={getAccountIcon(account.category)} 
-                  size={20} 
-                  color={account.account_type === 'asset' ? theme.colors.asset : theme.colors.liability} 
-                />
-              </View>
-              <View style={styles.accountDetails}>
-                <Text style={styles.accountName}>{account.account_name}</Text>
-                <View style={styles.accountMeta}>
-                  <Text style={styles.accountInstitution}>
-                    {account.institution || account.category}
-                  </Text>
-                  <Text style={styles.accountCurrency}>{account.currency}</Text>
-                </View>
-              </View>
-            </View>
-            <View style={styles.accountBalance}>
-              <Text style={[styles.balanceAmount, { color: account.account_type === 'asset' ? theme.colors.asset : theme.colors.liability }]}>
-                {account.account_type === 'liability' ? '-' : ''}{formatCurrency(account.latest_balance, account.currency)}
-              </Text>
-              <TouchableOpacity 
-                style={styles.moreButton} 
-                onPress={(e) => {
-                  e.stopPropagation(); 
-                  handleAccountMenu(account, e); 
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                activeOpacity={0.6}
-              >
-                <Ionicons 
-                  name="ellipsis-horizontal" 
-                  size={18} 
-                  color={theme.colors.text.secondary} 
-                />
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
+          <AccountRow 
+            account={account} 
+            onPress={() => router.push(`/accounts/${account.account_id}`)}
+            onEdit={() => router.push({ pathname: 'accounts/add-balance', params: { accountId: account.account_id } })}
+            onHide={() => updateAccountMutation.mutate({ id: account.account_id, updates: { include_in_net_worth: !account.include_in_net_worth } })}
+            onArchive={() => updateAccountMutation.mutate({ id: account.account_id, updates: { is_archived: !account.is_archived } })}
+          />
         );
       case 'emptyState':
         return (
@@ -326,12 +319,24 @@ function AccountsScreen() {
         onFilter={() => console.log('Filter pressed')}
         onMore={() => console.log('More pressed')}
       />
+      <FilterChipsRow 
+        activeFilter={activeFilter} 
+        onFilterChange={setActiveFilter} 
+        outdatedCount={outdatedAccounts.length}
+        hiddenCount={hiddenAccounts.length}
+      />
+      <StatusShelf 
+        outdatedCount={outdatedAccounts.length} 
+        remindAfterDays={profile?.remind_after_days || 30} 
+        onView={() => setActiveFilter('Outdated')} 
+      />
 
       <FlashList
+        ref={flashListRef}
         data={flashListData}
         renderItem={renderFlashListItem}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={100} // Adjust as needed for better performance
+        estimatedItemSize={100}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -369,132 +374,8 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     fontSize: 16, 
     color: theme.colors.text.secondary 
   },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: theme.spacing.xl, 
-    paddingVertical: theme.spacing.lg, 
-    borderBottomWidth: 1, 
-    borderBottomColor: theme.colors.border.primary 
-  },
-  headerTitle: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    color: theme.colors.text.primary 
-  },
-  headerSubtitle: { 
-    fontSize: 14, 
-    color: theme.colors.text.secondary, 
-    marginTop: 2 
-  },
-  addButton: { 
-    width: 36, 
-    height: 36, 
-    borderRadius: 18, 
-    backgroundColor: theme.colors.primary, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    ...theme.shadows.sm 
-  },
   flashListContent: { // New style for FlashList content container
     paddingBottom: theme.spacing.xxxl + 80, // Extra padding to ensure button is always visible
-  },
-  section: { 
-    marginTop: theme.spacing.xxl, 
-    // paddingHorizontal removed from here, applied to accountCard directly
-  },
-  sectionHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl, // Apply horizontal padding here
-  },
-  sectionTitleContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
-  },
-  sectionIndicator: { 
-    width: 4, 
-    height: 16, 
-    borderRadius: 2, 
-    marginRight: theme.spacing.sm 
-  },
-  sectionTitle: { 
-    fontSize: 18, 
-    fontWeight: '600', 
-    color: theme.colors.text.primary 
-  },
-  sectionTotal: { 
-    fontSize: 16, 
-    fontWeight: 'bold' 
-  },
-  accountCard: { 
-    backgroundColor: theme.colors.background.card, 
-    borderRadius: theme.borderRadius.md, 
-    padding: theme.spacing.lg, 
-    marginBottom: theme.spacing.sm, 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: theme.colors.border.primary, 
-    ...theme.shadows.sm 
-  },
-  accountInfo: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    flex: 1 
-  },
-  accountIcon: { 
-    width: 40, 
-    height: 40, 
-    borderRadius: 20, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    marginRight: theme.spacing.md 
-  },
-  accountDetails: { 
-    flex: 1 
-  },
-  accountName: { 
-    fontSize: 15, 
-    fontWeight: '600', 
-    color: theme.colors.text.primary, 
-    marginBottom: theme.spacing.xs 
-  },
-  accountMeta: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
-  },
-  accountInstitution: { 
-    fontSize: 13, 
-    color: theme.colors.text.secondary, 
-    flex: 1 
-  },
-  accountCurrency: { 
-    fontSize: 12, 
-    color: theme.colors.text.tertiary, 
-    backgroundColor: theme.colors.background.elevated, 
-    paddingHorizontal: theme.spacing.sm, 
-    paddingVertical: 2, 
-    borderRadius: 4, 
-    overflow: 'hidden' 
-  },
-  accountBalance: { 
-    alignItems: 'flex-end', 
-    flexDirection: 'row'
-  },
-  balanceAmount: { 
-    fontSize: 15, 
-    fontWeight: 'bold', 
-    marginRight: theme.spacing.sm 
-  },
-  moreButton: { 
-    padding: 12,
-    marginLeft: 8,
-    borderRadius: 8,
   },
   emptyState: { 
     padding: theme.spacing.xxxl, 
