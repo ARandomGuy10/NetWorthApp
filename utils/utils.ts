@@ -7,42 +7,67 @@ export const formatDate = (dateString: string | null): string => {
 
 // ✅ Final version: 4 digits precision (not counting M/K suffix)
 export const formatSmartNumber = (value: number, currency: string = 'EUR'): string => {
+  const isNegative = value < 0;
   const absValue = Math.abs(value);
 
+  let abbreviatedValue: number;
+  let suffix = '';
+
   if (absValue >= 1000000) {
-    // 1M+
-    const abbreviated = value / 1000000;
-    let formatted;
-    if (abbreviated >= 1000) {
-      // 1000M+ → "1000M" (4 digits + M)
-      formatted = Math.round(abbreviated).toString();
-    } else if (abbreviated >= 100) {
-      // 100M-999M → "567M" (3 digits + M, but let's make it 4)
-      formatted = abbreviated.toFixed(1); // "567.8M" (4 digits + M)
-    } else if (abbreviated >= 10) {
-      // 10M-99.9M → "12.34M" (4 digits + M)
-      formatted = abbreviated.toFixed(2);
-    } else {
-      // 1M-9.999M → "1.234M" (4 digits + M)
-      formatted = abbreviated.toFixed(3);
-    }
-    return formatCurrency(parseFloat(formatted), currency).replace(/[\d,.-]+/, formatted) + 'M';
+    abbreviatedValue = absValue / 1000000;
+    suffix = 'M';
   } else if (absValue >= 100000) {
-    // 100K+
-    const abbreviated = value / 1000;
-    let formatted;
-    if (abbreviated >= 100) {
-      // 100K-999K → "567.8K" (4 digits + K)
-      formatted = abbreviated.toFixed(1);
-    } else {
-      // This shouldn't happen since we start at 100K
-      formatted = abbreviated.toFixed(2);
-    }
-    return formatCurrency(parseFloat(formatted), currency).replace(/[\d,.-]+/, formatted) + 'K';
+    abbreviatedValue = absValue / 1000;
+    suffix = 'K';
   } else {
-    // Show full number for anything under 100,000
+    // For numbers under 100,000, let formatCurrency handle everything, including the sign.
     return formatCurrency(value, currency);
   }
+
+  // Determine precision for abbreviation
+  let formattedAbbr: string;
+  if (abbreviatedValue >= 1000) {
+    formattedAbbr = Math.round(abbreviatedValue).toString();
+  } else if (abbreviatedValue >= 100) {
+    formattedAbbr = abbreviatedValue.toFixed(1);
+  } else if (abbreviatedValue >= 10) {
+    formattedAbbr = abbreviatedValue.toFixed(2);
+  } else {
+    formattedAbbr = abbreviatedValue.toFixed(3);
+  }
+
+  // Use formatCurrency on the abbreviated value (positive) to get currency symbol and placement
+  let symbol = '';
+  let symbolIsPrefix = true; // Assume prefix by default
+
+  // Format a zero value to get the currency symbol and its placement
+  const zeroFormatted = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(0);
+
+  // Remove the '0' to isolate the symbol
+  symbol = zeroFormatted.replace('0', '').trim();
+
+  // Determine if symbol is prefix or suffix by checking its position relative to '0'
+  if (zeroFormatted.startsWith(symbol)) {
+    symbolIsPrefix = true;
+  } else {
+    symbolIsPrefix = false;
+  }
+
+  let finalString = formattedAbbr + suffix;
+  if (symbol) {
+    if (symbolIsPrefix) {
+      finalString = symbol + finalString;
+    } else {
+      finalString = finalString + symbol;
+    }
+  }
+
+  return isNegative ? `-${finalString}` : finalString;
 };
 
 export const formatCurrency = (value: number | string, currency: string = 'EUR'): string => {

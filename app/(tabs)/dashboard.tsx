@@ -6,7 +6,6 @@ import { useProfile } from '@/hooks/useProfile';
 import type { Theme } from '@/lib/supabase';
 import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
 import AssetsLiabilitiesSection from '@/components/home/AssetsLiabilitiesSection';
-import AccountsList from '@/components/home/AccountsList';
 import ModernFAB from '@/components/home/ModernFAB';
 import EmptyDashboardState from '@/components/home/EmptyDashboardState';
 import StickyHeader from '@/components/home/StickyHeader'; // Add this import
