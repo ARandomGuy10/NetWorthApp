@@ -13,9 +13,10 @@ const {width: screenWidth} = Dimensions.get('window');
 
 interface AccountSummaryProps {
   accounts?: DashboardAccount[];
+  remindAfterDays: number; // New prop
 }
 
-const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = []}) => {
+const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAfterDays}) => {
   const router = useRouter();
   const {theme} = useTheme();
   const styles = getStyles(theme);
@@ -42,7 +43,7 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = []}) => {
     if (!acc.latest_balance_date) return true;
     const lastUpdate = new Date(acc.latest_balance_date);
     const daysSinceUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSinceUpdate > 30;
+    return daysSinceUpdate > remindAfterDays;
   });
 
   const outdatedCount = outdatedAccounts.length;

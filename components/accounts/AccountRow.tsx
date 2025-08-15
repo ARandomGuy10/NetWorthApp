@@ -7,16 +7,19 @@ import { formatCurrency } from '@/utils/utils';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient'; // Add this import
+import { getGradientColors } from '@/utils/utils'; // Add this import
 
 interface AccountRowProps {
   account: AccountWithBalance;
   onPress: () => void;
   onEdit: () => void;
-  onHide: () => void;
+  onDelete: () => void; // New prop for delete
   onArchive: () => void;
+  isIncludedInNetWorth: boolean; // New prop for net worth inclusion
 }
 
-const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onHide, onArchive }) => {
+const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDelete, onArchive, isIncludedInNetWorth }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const translateX = useSharedValue(0);
@@ -58,22 +61,22 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onHid
     })
     .onEnd((e) => {
       if (e.translationX > SWIPE_THRESHOLD) { // Swiped right enough
-        translateX.value = withTiming(QUICK_EDIT_WIDTH + 2);
+        translateX.value = withTiming(QUICK_EDIT_WIDTH, { duration: 150 });
         runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
         runOnJS(startAutoCloseTimer)();
       } else if (e.translationX < -SWIPE_THRESHOLD) { // Swiped left enough
-        translateX.value = withTiming(-HIDE_ARCHIVE_WIDTH - 2);
+        translateX.value = withTiming(-HIDE_ARCHIVE_WIDTH, { duration: 150 });
         runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
         runOnJS(startAutoCloseTimer)();
       } else {
-        translateX.value = withTiming(0); // Snap back
+        translateX.value = withTiming(0, { duration: 150 }); // Snap back
         runOnJS(clearAutoCloseTimer)();
       }
     });
 
   const tapGesture = Gesture.Tap().onEnd(() => {
     if (translateX.value !== 0) {
-      translateX.value = withTiming(0); // Close swipe actions on tap outside
+      translateX.value = withTiming(0, { duration: 150 }); // Close swipe actions on tap outside
       runOnJS(clearAutoCloseTimer)();
     } else {
       runOnJS(onPress)(); // Only call onPress if not closing swipe actions
@@ -121,7 +124,7 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onHid
         {/* Quick Edit Button (Swipe Right) */}
         <TouchableOpacity 
           style={[styles.actionButton, styles.quickEditButton]} 
-          onPress={() => { runOnJS(onEdit)(); translateX.value = withTiming(0); runOnJS(clearAutoCloseTimer)(); }}
+          onPress={() => { runOnJS(onEdit)(); translateX.value = withTiming(0, { duration: 150 }); runOnJS(clearAutoCloseTimer)(); }}
         >
           <Ionicons name="pencil-outline" size={24} color={theme.colors.text.inverse} />
         </TouchableOpacity>
@@ -129,23 +132,28 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onHid
         {/* Hide and Archive Buttons (Swipe Left) */}
         <View style={styles.rightActions}>
           <TouchableOpacity 
-            style={[styles.actionButton, styles.hideButton]} 
-            onPress={() => { runOnJS(onHide)(); translateX.value = withTiming(0); runOnJS(clearAutoCloseTimer)(); }}
+            style={[styles.actionButton, { backgroundColor: theme.colors.error, width: 80 }]} 
+            onPress={() => { runOnJS(onDelete)(); translateX.value = withTiming(0, { duration: 150 }); runOnJS(clearAutoCloseTimer)(); }}
           >
-            <Ionicons name="eye-off-outline" size={24} color={theme.colors.text.inverse} />
+            <Ionicons name="trash-outline" size={24} color={theme.colors.text.inverse} />
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.actionButton, styles.archiveButton]} 
-            onPress={() => { runOnJS(onArchive)(); translateX.value = withTiming(0); runOnJS(clearAutoCloseTimer)(); }}
+            onPress={() => { runOnJS(onArchive)(); translateX.value = withTiming(0, { duration: 150 }); runOnJS(clearAutoCloseTimer)(); }}
           >
-            <Ionicons name="archive-outline" size={24} color={theme.colors.text.inverse} />
+            <Ionicons name={account.is_archived ? "arrow-undo-outline" : "archive-outline"} size={24} color={theme.colors.text.inverse} />
           </TouchableOpacity>
         </View>
       </View>
       <GestureDetector gesture={Gesture.Exclusive(panGesture, tapGesture)}>
-        <View> 
+        <View pointerEvents="box-none"> 
           <Animated.View style={[styles.animatedContainer, animatedStyle]}>
-          <View style={styles.rowContent}>
+          <LinearGradient
+            colors={getGradientColors(theme, 'card')}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.rowContent}
+          >
             <View style={styles.leftSection}>
               <View style={[styles.iconContainer, { backgroundColor: theme.colors.interactive.hover }]}>
                 <Ionicons 
@@ -154,6 +162,13 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onHid
                   color={account.account_type === 'asset' ? theme.colors.asset : theme.colors.liability} 
                 />
               </View>
+              {/* New Net Worth Inclusion Indicator */}
+              <Ionicons
+                name={isIncludedInNetWorth ? "checkmark-circle-outline" : "close-circle-outline"}
+                size={18}
+                color={theme.colors.text.tertiary} // Muted color
+                style={styles.netWorthIndicatorIcon} // New style for spacing
+              />
               <View>
                 <Text style={styles.accountName}>{account.account_name}</Text>
                 <Text style={styles.subtitle}>{account.institution || account.category}</Text>
@@ -168,7 +183,7 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onHid
               </View>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
             </View>
-          </View>
+          </LinearGradient>
         </Animated.View>
         </View>
       </GestureDetector>
@@ -207,16 +222,11 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     flexDirection: 'row',
     height: '100%',
   },
-  hideButton: {
+  archiveButton: {
     backgroundColor: theme.colors.warning,
     width: 80,
   },
-  archiveButton: {
-    backgroundColor: theme.colors.error,
-    width: 80,
-  },
   animatedContainer: {
-    backgroundColor: theme.colors.background.card, // Ensure animated view has a background
     // Add shadow/border if needed to match original row style
   },
   rowContent: {
@@ -225,7 +235,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.lg,
-    backgroundColor: theme.colors.background.card, // Ensure this matches animatedContainer background
     width: Dimensions.get('window').width, // Ensure it covers the full width
   },
   leftSection: {
@@ -249,6 +258,9 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     fontSize: 14,
     color: theme.colors.text.secondary,
     marginTop: 2,
+  },
+  netWorthIndicatorIcon: {
+    marginRight: theme.spacing.sm, // Adjust spacing as needed
   },
   rightSection: {
     flexDirection: 'row',

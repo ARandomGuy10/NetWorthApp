@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-nati
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 
-export type FilterType = 'All' | 'Assets' | 'Liabilities' | 'Hidden' | 'Outdated';
+export type FilterType = 'All' | 'Assets' | 'Liabilities' | 'Archived' | 'Outdated';
 
 const BASE_FILTERS: FilterType[] = ['All', 'Assets', 'Liabilities'];
 
@@ -24,7 +24,7 @@ const FilterChipsRow: React.FC<FilterChipsRowProps> = ({ activeFilter, onFilterC
 
   const filters = [...BASE_FILTERS];
   if (hiddenCount > 0) {
-    filters.push('Hidden');
+    filters.push('Archived');
   }
   if (outdatedCount > 0) {
     filters.push('Outdated');

@@ -79,6 +79,7 @@ export const useAddAccount = () => {
     },  
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       showToast('Account added successfully', 'success');
@@ -108,7 +109,7 @@ export const useUpdateAccount = () => {
       return data;
     },
     onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       queryClient.invalidateQueries({ queryKey: ['account', variables.id] });
@@ -140,6 +141,7 @@ export const useDeleteAccount = () => {
     
     onSuccess: (_d, accountId) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       showToast('Account deleted successfully', 'success');

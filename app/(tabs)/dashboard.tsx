@@ -81,7 +81,7 @@ function DashboardScreen() {
         <AssetsLiabilitiesSection netWorthData={netWorthData} />
 
        {/*  <AccountsList accounts={dashboardData?.accounts || []} /> */}
-       <AccountSummary accounts={dashboardData?.accounts || []} />
+       <AccountSummary accounts={dashboardData?.accounts || []} remindAfterDays={profile?.remind_after_days || 30} />
 
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />

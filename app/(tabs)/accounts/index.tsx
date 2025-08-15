@@ -17,7 +17,7 @@ import { FlashList, FlashListRef } from '@shopify/flash-list';
 import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'; // Updated hook
 import { useDeleteAccount, useUpdateAccount } from '../../../hooks/useAccounts';
 import { useProfile } from '../../../hooks/useProfile'; // Import useProfile hook
-import { formatCurrency } from '../../../utils/utils';
+import { useToast } from '../../../hooks/providers/ToastProvider'; // Add this import
 import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
 import { AccountWithBalance, Theme } from '../../../lib/supabase'; // Updated type
 import { useTheme } from '@/src/styles/theme/ThemeContext';
@@ -46,6 +46,44 @@ function AccountsScreen() {
   const { data: profile } = useProfile();
   const deleteAccountMutation = useDeleteAccount();
   const updateAccountMutation = useUpdateAccount();
+  const { showToast } = useToast(); // Get showToast from the hook
+
+  const handleArchiveAccount = async (account: AccountWithBalance) => {
+    try {
+      await updateAccountMutation.mutateAsync({ id: account.account_id, updates: { is_archived: !account.is_archived } });
+      showToast(`Account ${account.is_archived ? 'unarchived' : 'archived'} successfully!`, 'success');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      showToast(`Failed to ${account.is_archived ? 'unarchive' : 'archive'} account.`, 'error');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
+
+  // New function for swipe-to-delete with confirmation
+  const confirmAndDeleteAccount = (accountId: string, accountName: string) => {
+    Alert.alert(
+      'Delete Account',
+      `Are you sure you want to delete "${accountName}"? This will also delete all balance entries.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true); 
+            try {
+              await deleteAccountMutation.mutateAsync(accountId); 
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            } catch (error) {
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const { theme } = useTheme();
   const styles = getStyles(theme);
@@ -176,13 +214,14 @@ function AccountsScreen() {
         return accounts.filter(acc => acc.account_type === 'asset');
       case 'Liabilities':
         return accounts.filter(acc => acc.account_type === 'liability');
-      case 'Hidden':
+      case 'Archived':
         return hiddenAccounts;
       case 'Outdated':
         return outdatedAccounts;
       case 'All':
       default:
-        return accounts;
+        // Return all accounts EXCEPT archived ones
+        return accounts.filter(acc => !acc.is_archived);
     }
   }, [accounts, activeFilter, outdatedAccounts, hiddenAccounts]);
 
@@ -253,9 +292,9 @@ function AccountsScreen() {
             count={headerData.count}
             isCollapsed={headerData.isCollapsed}
             onToggleCollapse={() => handleToggleSection(headerData.title)}
-            onAdd={() => console.log('Add from section')}
-            onSort={() => console.log('Sort section')}
-            onBulkEdit={() => console.log('Bulk edit section')}
+            onAdd={() => { /* Add from section */ }}
+            onSort={() => { /* Sort section */ }}
+            onBulkEdit={() => { /* Bulk edit section */ }}
           />
         );
       case 'account':
@@ -265,8 +304,9 @@ function AccountsScreen() {
             account={account} 
             onPress={() => router.push(`/accounts/${account.account_id}`)}
             onEdit={() => router.push({ pathname: 'accounts/add-balance', params: { accountId: account.account_id } })}
-            onHide={() => updateAccountMutation.mutate({ id: account.account_id, updates: { include_in_net_worth: !account.include_in_net_worth } })}
-            onArchive={() => updateAccountMutation.mutate({ id: account.account_id, updates: { is_archived: !account.is_archived } })}
+            onDelete={() => confirmAndDeleteAccount(account.account_id, account.account_name)}
+            onArchive={() => handleArchiveAccount(account)}
+            isIncludedInNetWorth={account.include_in_net_worth ?? false}
           />
         );
       case 'emptyState':
@@ -316,8 +356,8 @@ function AccountsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <AccountsHeader
         onAdd={() => router.push('accounts/add-account')}
-        onFilter={() => console.log('Filter pressed')}
-        onMore={() => console.log('More pressed')}
+        onFilter={() => { /* Filter pressed */ }}
+        onMore={() => { /* More pressed */ }}
       />
       <FilterChipsRow 
         activeFilter={activeFilter} 

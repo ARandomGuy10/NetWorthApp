@@ -3,6 +3,22 @@ import {View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions} from 're
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const getGradientColorsForType = (type: ToastType): [string, string] => {
+  switch (type) {
+    case 'success':
+      return ['#218838', '#28a745']; // Darker green to original green
+    case 'error':
+      return ['#c82333', '#dc3545']; // Darker red to original red
+    case 'warning':
+      return ['#e0a800', '#ffc107']; // Darker yellow to original yellow
+    case 'info':
+      return ['#0062cc', '#17a2b8']; // Darker blue to original blue
+    default:
+      return ['#218838', '#28a745'];
+  }
+};
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -108,57 +124,57 @@ export default function Toast({
   if (!isVisible) return null;
 
   const toastStyle = getToastStyle();
-  const {width: screenWidth} = Dimensions.get('window');
 
   return (
     <Animated.View
       style={[
-        styles.container,
-        {
-          backgroundColor: toastStyle.backgroundColor,
-          opacity,
-          transform: [{translateY}, {scale}],
-          top: position === 'top' ? insets.top + 10 : undefined,
-          bottom: position === 'bottom' ? insets.bottom + 10 : undefined,
-          maxWidth: screenWidth - 32,
+        styles.animatedContainer,
+        { opacity, transform: [{ translateY }, { scale }],
+          top: position === 'top' ? insets.top : undefined, // Adjusted
+          bottom: position === 'bottom' ? insets.bottom : undefined, // Adjusted
         },
-      ]}>
-      <View style={styles.content}>
-        <Ionicons name={toastStyle.icon} size={24} color={toastStyle.textColor} style={styles.icon} />
-        <Text style={[styles.message, {color: toastStyle.textColor}]} numberOfLines={3}>
-          {message}
-        </Text>
-        {showCloseButton && (
-          <TouchableOpacity onPress={hideToast} style={styles.closeButton} activeOpacity={0.7}>
-            <Ionicons name="close" size={20} color={toastStyle.textColor} />
-          </TouchableOpacity>
-        )}
-      </View>
+      ]}
+    >
+      <LinearGradient
+        colors={getGradientColorsForType(type)}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        style={styles.gradientContainer}
+      >
+        <View style={styles.content}>
+          <Ionicons name={toastStyle.icon} size={24} color={staticColors.textInverse} style={styles.icon} />
+          <Text style={[styles.message, { color: staticColors.textInverse }]} numberOfLines={3}>
+            {message}
+          </Text>
+          {showCloseButton && (
+            <TouchableOpacity onPress={hideToast} style={styles.closeButton} activeOpacity={0.7}>
+              <Ionicons name="close" size={20} color={staticColors.textInverse} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
     </Animated.View>
   );
 }
 
 const getStyles = () =>
   StyleSheet.create({
-    container: {
+    animatedContainer: {
       position: 'absolute',
-      left: 16,
-      right: 16,
-      borderRadius: 12,
+      width: '100%',
       zIndex: 9999,
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 4},
-      shadowOpacity: 0.1,
-      shadowRadius: 8,
-      elevation: 8,
+    },
+    gradientContainer: {
+      borderRadius: 0, // Make it a bar
+      paddingVertical: 16,
     },
     content: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: 16,
+      paddingHorizontal: 16, // Use paddingHorizontal for full width
       minHeight: 56,
     },
     icon: {marginRight: 12, flexShrink: 0},
-    message: {flex: 1, fontSize: 15, fontWeight: '500', lineHeight: 20},
+    message: {flex: 1, fontSize: 15, fontWeight: '500', lineHeight: 22},
     closeButton: {marginLeft: 12, padding: 4, borderRadius: 12, flexShrink: 0},
   });
