@@ -41,6 +41,8 @@ export const useAddBalance = () => {
     },
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: ['balance', vars.account_id] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       showToast('Balance added successfully', 'success');

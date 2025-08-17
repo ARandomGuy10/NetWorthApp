@@ -17,9 +17,10 @@ interface AccountRowProps {
   onDelete: () => void; // New prop for delete
   onArchive: () => void;
   isIncludedInNetWorth: boolean; // New prop for net worth inclusion
+  isOutdated?: boolean;
 }
 
-const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDelete, onArchive, isIncludedInNetWorth }) => {
+const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDelete, onArchive, isIncludedInNetWorth, isOutdated }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const translateX = useSharedValue(0);
@@ -173,7 +174,17 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDel
                 style={styles.netWorthIndicatorIcon} // New style for spacing
               />
               <View>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                   <Text style={styles.accountName}>{account.account_name}</Text>
+                  {isOutdated && (
+                    <Ionicons
+                      name="alert-circle-outline"
+                      size={16}
+                      color={theme.colors.warning}
+                      style={{ marginLeft: theme.spacing.sm }}
+                    />
+                  )}
+                </View>
                 <Text style={styles.subtitle}>{account.institution || account.category}</Text>
               </View>
             </View>
@@ -182,7 +193,9 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDel
                 <Text style={styles.balanceAmount}>
                   {formatCurrency(account.latest_balance || 0, account.currency)}
                 </Text>
-                <Text style={styles.balanceDate}>{timeSinceUpdate(account.latest_balance_date)}</Text>
+                <Text style={[styles.balanceDate, isOutdated && styles.outdatedText]}>
+                  {timeSinceUpdate(account.latest_balance_date)}
+                </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
             </View>
@@ -282,6 +295,10 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     fontSize: 12,
     color: theme.colors.text.tertiary,
     marginTop: 2,
+  },
+  outdatedText: {
+    color: theme.colors.warning,
+    fontWeight: 'bold',
   },
 });
 

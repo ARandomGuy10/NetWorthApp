@@ -16,6 +16,7 @@ import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'; // Updated hook
 import { useDeleteAccount, useUpdateAccount } from '../../../hooks/useAccounts';
+import { useAddBalance } from '../../../hooks/useBalances';
 import { useProfile } from '../../../hooks/useProfile'; // Import useProfile hook
 import { useToast } from '../../../hooks/providers/ToastProvider'; // Add this import
 import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
@@ -26,6 +27,7 @@ import FilterChipsRow, { FilterType } from '../../../components/accounts/FilterC
 import StatusShelf from '../../../components/accounts/StatusShelf'; // Import the new status shelf
 import AccountSectionHeader from '../../../components/accounts/AccountSectionHeader';
 import AccountRow from '../../../components/accounts/AccountRow';
+import QuickEditSheet from '../../../components/accounts/QuickEditSheet';
 
 
 // Define types for FlashList items
@@ -46,6 +48,8 @@ function AccountsScreen() {
   const { data: profile } = useProfile();
   const deleteAccountMutation = useDeleteAccount();
   const updateAccountMutation = useUpdateAccount();
+  const addBalanceMutation = useAddBalance();
+
   const { showToast } = useToast(); // Get showToast from the hook
 
   const handleArchiveAccount = async (account: AccountWithBalance) => {
@@ -97,6 +101,7 @@ function AccountsScreen() {
   const [selectedAccount, setSelectedAccount] = useState<AccountWithBalance | null>(null); // Updated type
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isQuickEditVisible, setIsQuickEditVisible] = useState(false);
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
@@ -156,6 +161,24 @@ function AccountsScreen() {
         },
       ]
     );
+  };
+
+  const handleQuickEdit = (account: AccountWithBalance) => {
+    setSelectedAccount(account);
+    setIsQuickEditVisible(true);
+  };
+
+  const handleSaveBalance = async (newBalance: number, newDate: Date, notes: string) => {
+    if (!selectedAccount) return;
+
+    await addBalanceMutation.mutateAsync({
+      account_id: selectedAccount.account_id,
+      amount: newBalance,
+      date: newDate.toISOString().split('T')[0],
+      notes: notes,
+    });
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const accountMenuActions: Action[] = [
@@ -292,9 +315,9 @@ function AccountsScreen() {
             count={headerData.count}
             isCollapsed={headerData.isCollapsed}
             onToggleCollapse={() => handleToggleSection(headerData.title)}
-            onAdd={() => { /* Add from section */ }}
-            onSort={() => { /* Sort section */ }}
-            onBulkEdit={() => { /* Bulk edit section */ }}
+            onAdd={() => console.log('Add from section')}
+            onSort={() => console.log('Sort section')}
+            onBulkEdit={() => console.log('Bulk edit section')}
           />
         );
       case 'account':
@@ -303,10 +326,11 @@ function AccountsScreen() {
           <AccountRow 
             account={account} 
             onPress={() => router.push(`/accounts/${account.account_id}`)}
-            onEdit={() => router.push({ pathname: 'accounts/add-balance', params: { accountId: account.account_id } })}
+            onEdit={() => handleQuickEdit(account)}
             onDelete={() => confirmAndDeleteAccount(account.account_id, account.account_name)}
             onArchive={() => handleArchiveAccount(account)}
             isIncludedInNetWorth={account.include_in_net_worth ?? false}
+            isOutdated={outdatedAccounts.some(outdatedAcc => outdatedAcc.account_id === account.account_id)}
           />
         );
       case 'emptyState':
@@ -356,8 +380,8 @@ function AccountsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <AccountsHeader
         onAdd={() => router.push('accounts/add-account')}
-        onFilter={() => { /* Filter pressed */ }}
-        onMore={() => { /* More pressed */ }}
+        onFilter={() => console.log('Filter pressed')}
+        onMore={() => console.log('More pressed')}
       />
       <FilterChipsRow 
         activeFilter={activeFilter} 
@@ -395,6 +419,13 @@ function AccountsScreen() {
         onClose={() => setMenuVisible(false)}
         actions={accountMenuActions}
         anchorPosition={menuPosition}
+      />
+
+      <QuickEditSheet
+        isVisible={isQuickEditVisible}
+        onClose={() => setIsQuickEditVisible(false)}
+        account={selectedAccount}
+        onSave={handleSaveBalance}
       />
     </View>
   );
