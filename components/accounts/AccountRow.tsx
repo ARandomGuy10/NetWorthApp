@@ -47,7 +47,9 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDel
   const QUICK_EDIT_WIDTH = 80;
   const HIDE_ARCHIVE_WIDTH = 160; // 80 for hide, 80 for archive
 
+  // >>> Simple fix: Add activeOffsetX to make horizontal swipes more responsive
   const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10]) // Only activate for horizontal movement > 10 pixels
     .onUpdate((e) => {
       // Only allow horizontal pan
       if (Math.abs(e.translationX) > Math.abs(e.translationY)) {
@@ -118,12 +120,12 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDel
   };
 
   return (
-    <View style={styles.outerContainer}> 
+    <View style={styles.outerContainer}>
       {/* Actions Container - positioned absolutely behind the row */}
       <View style={styles.actionsContainer}>
         {/* Quick Edit Button (Swipe Right) */}
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.quickEditButton]} 
+        <TouchableOpacity
+          style={[styles.actionButton, styles.quickEditButton]}
           onPress={() => { runOnJS(onEdit)(); translateX.value = withTiming(0, { duration: 150 }); runOnJS(clearAutoCloseTimer)(); }}
         >
           <Ionicons name="pencil-outline" size={24} color={theme.colors.text.inverse} />
@@ -131,24 +133,25 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDel
 
         {/* Hide and Archive Buttons (Swipe Left) */}
         <View style={styles.rightActions}>
-          <TouchableOpacity 
-            style={[styles.actionButton, { backgroundColor: theme.colors.error, width: 80 }]} 
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: theme.colors.error, width: 80 }]}
             onPress={() => { runOnJS(onDelete)(); translateX.value = withTiming(0, { duration: 150 }); runOnJS(clearAutoCloseTimer)(); }}
           >
             <Ionicons name="trash-outline" size={24} color={theme.colors.text.inverse} />
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.archiveButton]} 
+          <TouchableOpacity
+            style={[styles.actionButton, styles.archiveButton]}
             onPress={() => { runOnJS(onArchive)(); translateX.value = withTiming(0, { duration: 150 }); runOnJS(clearAutoCloseTimer)(); }}
           >
             <Ionicons name={account.is_archived ? "arrow-undo-outline" : "archive-outline"} size={24} color={theme.colors.text.inverse} />
           </TouchableOpacity>
         </View>
       </View>
-      <GestureDetector gesture={Gesture.Exclusive(panGesture, tapGesture)}>
+
+      <GestureDetector gesture={Gesture.Race(panGesture, tapGesture)}>        
         <View pointerEvents="box-none"> 
-          <Animated.View style={[styles.animatedContainer, animatedStyle]}>
-          <LinearGradient
+        <Animated.View style={[styles.animatedContainer, animatedStyle]}>
+               <LinearGradient
             colors={getGradientColors(theme, 'card')}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
@@ -156,8 +159,8 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDel
           >
             <View style={styles.leftSection}>
               <View style={[styles.iconContainer, { backgroundColor: theme.colors.interactive.hover }]}>
-                <Ionicons 
-                  name={getAccountIcon(account.category)} 
+                <Ionicons
+                  name={getAccountIcon(account.category)}
                   size={22} 
                   color={account.account_type === 'asset' ? theme.colors.asset : theme.colors.liability} 
                 />
@@ -170,7 +173,7 @@ const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDel
                 style={styles.netWorthIndicatorIcon} // New style for spacing
               />
               <View>
-                <Text style={styles.accountName}>{account.account_name}</Text>
+                  <Text style={styles.accountName}>{account.account_name}</Text>
                 <Text style={styles.subtitle}>{account.institution || account.category}</Text>
               </View>
             </View>
