@@ -95,6 +95,7 @@ export const useUpdateProfile = () => {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+      queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
       queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       // Optimistically update the profile cache
       //queryClient.setQueryData(['profile', user?.id], data);
