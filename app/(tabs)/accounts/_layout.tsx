@@ -1,8 +1,10 @@
+import React from 'react';
 import { Stack } from 'expo-router';
 import { useAuth } from '@clerk/clerk-expo';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 export default function AccountsLayout() {
   const { isSignedIn, isLoaded } = useAuth();
@@ -29,28 +31,30 @@ export default function AccountsLayout() {
     return null; // Redirect is happening in useEffect
   }
 
+  const { theme } = useTheme();
+
   return (
-    <Stack>
+    <Stack
+      screenOptions={{
+        headerShown: false, // Each screen in this stack has its own custom header.
+        contentStyle: {
+          backgroundColor: theme.colors.background.primary,
+        },
+      }}
+    >
       <Stack.Screen 
         name="index" 
-        options={{ 
-          title: 'Accounts',
-          headerShown: false, // You're handling the header in the component
-        }} 
+        options={{ title: 'Accounts' }} 
       />
       <Stack.Screen 
         name="[id]" 
-        options={{ 
-          title: 'Account Details',
-          headerShown: false, // You're handling the header in the component
-        }} 
+        options={{ title: 'Account Details' }} 
       />
       <Stack.Screen 
         name="add-account" 
         options={{ 
           presentation: 'modal',
           title: 'Add Account',
-          headerShown: false, // You're handling the header in the component
         }} 
       />
       <Stack.Screen 
@@ -58,9 +62,9 @@ export default function AccountsLayout() {
         options={{ 
           presentation: 'modal',
           title: 'Add Balance',
-          headerShown: false, // You're handling the header in the component
         }} 
       />
     </Stack>
   );
 }
+
