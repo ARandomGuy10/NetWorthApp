@@ -36,11 +36,18 @@ export default function AddBalanceScreen() {
   const addBalanceMutation = useAddBalance();
   const updateBalanceMutation = useUpdateBalance();
 
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [formData, setFormData] = useState({
     account_id: (accountId as string) || '',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getLocalDateString(new Date()),
     notes: '',
   });
 
@@ -114,6 +121,16 @@ export default function AddBalanceScreen() {
       return;
     }
 
+    // New validation: Prevent future dates
+    const selectedDate = new Date(`${formData.date}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Normalize to midnight for accurate comparison
+
+    if (selectedDate > today) {
+      showToast('Cannot record a balance for a future date.', 'error');
+      return;
+    }
+
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const balancePayload: Omit<Balance, 'id' | 'created_at' | 'updated_at'> = {
@@ -164,14 +181,14 @@ export default function AddBalanceScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => {
+        <TouchableOpacity style={styles.headerButton} onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.back();
-        }} activeOpacity={0.7}>
-          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
+        }} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="close" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditMode ? 'Edit Balance' : 'Record Balance'}</Text>
-        <View style={styles.placeholder} />
+        <View style={styles.headerButton} />
       </View>
 
       <KeyboardAvoidingView
@@ -308,9 +325,9 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
-  backButton: {
-    width: 32,
-    height: 32,
+  headerButton: {
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -322,9 +339,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: theme.colors.text.primary,
-  },
-  placeholder: {
-    width: 32,
   },
   scrollView: {
     flex: 1,

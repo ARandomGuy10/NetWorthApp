@@ -212,6 +212,7 @@ export default function AddAccountScreen() {
             router.back();
           }}          style={styles.headerButton}
           activeOpacity={0.7}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
           <Ionicons name="close" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
@@ -258,7 +259,9 @@ export default function AddAccountScreen() {
               <TouchableOpacity
                 style={[
                   styles.typeButton,
-                  formData.type === 'asset' ? styles.typeButtonActive : styles.typeButtonInactive
+                  formData.type === 'asset'
+                    ? { backgroundColor: theme.colors.asset, ...theme.shadows.sm }
+                    : styles.typeButtonInactive,
                 ]}
                 onPress={() => handleTypeChange('asset')}
                 disabled={isLoading}
@@ -273,7 +276,9 @@ export default function AddAccountScreen() {
                 <Text
                   style={[
                     styles.typeButtonText,
-                    formData.type === 'asset' ? styles.typeButtonTextActive : styles.typeButtonTextInactive
+                    formData.type === 'asset' 
+                      ? styles.typeButtonTextActive 
+                      : { color: theme.colors.asset }
                   ]}
                 >
                   Asset
@@ -283,7 +288,9 @@ export default function AddAccountScreen() {
               <TouchableOpacity
                 style={[
                   styles.typeButton,
-                  formData.type === 'liability' ? styles.typeButtonActive : styles.typeButtonInactive
+                  formData.type === 'liability'
+                    ? { backgroundColor: theme.colors.liability, ...theme.shadows.sm }
+                    : styles.typeButtonInactive,
                 ]}
                 onPress={() => handleTypeChange('liability')}
                 disabled={isLoading}
@@ -298,7 +305,9 @@ export default function AddAccountScreen() {
                 <Text
                   style={[
                     styles.typeButtonText,
-                    formData.type === 'liability' ? styles.typeButtonTextActive : styles.typeButtonTextInactive
+                    formData.type === 'liability' 
+                      ? styles.typeButtonTextActive 
+                      : { color: theme.colors.liability }
                   ]}
                 >
                   Liability
@@ -461,8 +470,8 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     minHeight: 44,
   },
   headerButton: {
-    width: 32,
-    height: 32,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -474,9 +483,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
     color: theme.colors.text.primary,
-  },
-  placeholder: {
-    width: 32,
   },
   scrollView: {
     flex: 1,
@@ -535,10 +541,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     justifyContent: 'center',
     minHeight: 44,
   },
-  typeButtonActive: {
-    backgroundColor: theme.colors.primary,
-    ...theme.shadows.sm,
-  },
   typeButtonInactive: {
     backgroundColor: 'transparent',
   },
@@ -548,9 +550,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   },
   typeButtonTextActive: {
     color: theme.colors.text.inverse,
-  },
-  typeButtonTextInactive: {
-    color: theme.colors.text.secondary,
   },
   iconSpacing: {
     marginRight: theme.spacing.sm,

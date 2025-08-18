@@ -101,7 +101,7 @@ export const DARK_THEME = createTheme({
   warning: '#F59E0B',
   error: '#F87171',
   info: '#20E3B2',
-  asset: '#22C55E',
+  asset: '#20E3B2',
   liability: '#F87171',
   border: {
     primary: '#1F2449',

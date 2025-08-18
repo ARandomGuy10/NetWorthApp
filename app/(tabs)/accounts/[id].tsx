@@ -149,7 +149,7 @@ import { Theme } from '@/lib/supabase';
         <TouchableOpacity style={styles.hBtn} onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.back();
-        }}>
+        }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={22} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.hTitle} numberOfLines={1}>{account.name}</Text>
@@ -161,8 +161,7 @@ import { Theme } from '@/lib/supabase';
               pathname: 'accounts/add-account',
               params: { accountId: id, mode: 'edit', accountData: JSON.stringify(account) },
             })
-          }
-        }>
+          }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="create-outline" size={20} color={theme.colors.text.primary} />
         </TouchableOpacity>
       </View>
@@ -170,7 +169,7 @@ import { Theme } from '@/lib/supabase';
       {/* ───── Body ───── */}
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scContent}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={Boolean(isFetching && !balLoading)}
@@ -181,7 +180,11 @@ import { Theme } from '@/lib/supabase';
       >
         {/* Summary card */}
         <Animated.View style={[styles.cardWrapper, { opacity: fade }]}>
-          <LinearGradient colors={[theme.colors.background.card, theme.colors.background.elevated]} style={styles.card}>
+          <LinearGradient 
+            colors={[`${theme.colors.primary}1A`, theme.colors.background.card]} 
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.card}>
             <View style={styles.cardRow}>
               <View style={styles.iconWrap}>
                 <Ionicons name={iconFor(account.category)} size={24} color={theme.colors.text.inverse} />
@@ -298,17 +301,21 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
-  hBtn:   { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
+  hBtn:   { 
+    width: 44, 
+    height: 44, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
   hTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: theme.colors.text.primary },
 
   /* ScrollView */
-  scContent: { paddingBottom: theme.spacing.xxxl },
+  scrollContent: { paddingBottom: theme.spacing.xxxl },
 
   /* Summary card */
   cardWrapper: {
     marginHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.lg,
-    ...theme.shadows.lg,
   },
   card: {
     borderRadius: theme.borderRadius.lg,

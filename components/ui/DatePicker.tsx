@@ -26,13 +26,27 @@ export default function DatePicker({
   placeholder = "Select date"
 }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState<boolean>(false);
-  const [tempDate, setTempDate] = useState<Date>(value ? new Date(value) : new Date());
+  // Correctly parse the date string as local time, not UTC, by appending T00:00:00
+  const [tempDate, setTempDate] = useState<Date>(value ? new Date(`${value}T00:00:00`) : new Date());
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
+  // Define the maximum selectable date as the current date.
+  // This ensures users cannot select a future date, and it correctly
+  // respects the user's local timezone.
+  const maxDate = new Date();
+
+  const toLocalDateString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const formatDateForDisplay = (dateString?: string): string => {
     if (!dateString) return placeholder;
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // Correctly parse the date string as local time for display
+    return new Date(`${dateString}T00:00:00`).toLocaleDateString('en-US', {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
@@ -45,7 +59,7 @@ export default function DatePicker({
       setShowPicker(false);
       
       if (selectedDate) {
-        const dateString = selectedDate.toISOString().split('T')[0];
+        const dateString = toLocalDateString(selectedDate);
         setTempDate(selectedDate);
         onChange(dateString);
       }
@@ -57,13 +71,13 @@ export default function DatePicker({
   };
 
   const handleConfirm = (): void => {
-    const dateString = tempDate.toISOString().split('T')[0];
+    const dateString = toLocalDateString(tempDate);
     onChange(dateString);
     setShowPicker(false);
   };
 
   const handleCancel = (): void => {
-    setTempDate(value ? new Date(value) : new Date());
+    setTempDate(value ? new Date(`${value}T00:00:00`) : new Date());
     setShowPicker(false);
   };
 
@@ -120,6 +134,7 @@ export default function DatePicker({
                 display="spinner"
                 onChange={handleDateChange}
                 style={styles.picker}
+                maximumDate={maxDate}
               />
             </View>
           </TouchableOpacity>
@@ -131,6 +146,7 @@ export default function DatePicker({
             mode="date"
             display="default"
             onChange={handleDateChange}
+            maximumDate={maxDate}
           />
         )
       )}
