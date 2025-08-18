@@ -164,7 +164,10 @@ export default function AddBalanceScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.backButton} onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.back();
+        }} activeOpacity={0.7}>
           <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isEditMode ? 'Edit Balance' : 'Record Balance'}</Text>
@@ -259,7 +262,10 @@ export default function AddBalanceScreen() {
 
               <TouchableOpacity
                 style={styles.cancelButton}
-                onPress={() => router.back()}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.back();
+                }}
                 disabled={loading}
                 activeOpacity={0.7}
               >

@@ -207,11 +207,11 @@ export default function AddAccountScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
-          style={styles.backButton}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}
+          style={styles.backButton}
           activeOpacity={0.7}
         >
           <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />

@@ -120,10 +120,19 @@ const AccountRow: React.FC<AccountRowProps> = ({
 
   const timeSinceUpdate = (date: string | null): string => {
     if (!date) return 'Never updated';
-    const lastUpdate = new Date(date);
-    const daysSince = Math.floor((Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+    // By appending T00:00:00, we ensure the date is parsed in the user's local timezone, not UTC.
+    // This prevents issues where a date might be considered "yesterday" or "tomorrow" due to timezone differences.
+    const lastUpdate = new Date(`${date}T00:00:00`);
+    const today = new Date();
+    
+    // Set today's time to 00:00:00 to compare just the date part.
+    today.setHours(0, 0, 0, 0);
 
-    if (daysSince === 0) return 'Updated today';
+    const diffTime = today.getTime() - lastUpdate.getTime();
+    // Use Math.round to handle daylight saving transitions gracefully.
+    const daysSince = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (daysSince <= 0) return 'Updated today';
     if (daysSince === 1) return '1 day ago';
     return `${daysSince} days ago`;
   };

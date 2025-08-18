@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { useAccountDetails } from '@/hooks/useAccounts';
@@ -81,6 +82,7 @@ import { Theme } from '@/lib/supabase';
 
   /* ───────── menu placement (clamped) ───────── */
   const handleBalanceMenu = (balance: Balance, e: any) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const { pageY } = e.nativeEvent;
     setSelectedBal(balance);
     setMenuPos({ x: 0, y: pageY });   // that’s it
@@ -131,6 +133,7 @@ import { Theme } from '@/lib/supabase';
       destructive: true,
       onPress: async () => {
         if (!selectedBal) return;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         await deleteBalance.mutate({ id: selectedBal.id, account_id: id as string });
         setMenuVisible(false);
       },
@@ -142,19 +145,23 @@ import { Theme } from '@/lib/supabase';
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* ───── Header ───── */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.hBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.hBtn} onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.back();
+        }}>
           <Ionicons name="arrow-back" size={22} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <Text style={styles.hTitle} numberOfLines={1}>{account.name}</Text>
         <TouchableOpacity
           style={styles.hBtn}
-          onPress={() =>
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push({
               pathname: 'accounts/add-account',
               params: { accountId: id, mode: 'edit', accountData: JSON.stringify(account) },
             })
           }
-        >
+        }>
           <Ionicons name="create-outline" size={20} color={theme.colors.text.primary} />
         </TouchableOpacity>
       </View>
@@ -203,9 +210,10 @@ import { Theme } from '@/lib/supabase';
         <TouchableOpacity
           style={styles.cta}
           activeOpacity={0.85}
-          onPress={() =>
-            router.push({ pathname: 'accounts/add-balance', params: { accountId: id } })
-          }
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push({ pathname: 'accounts/add-balance', params: { accountId: id } });
+          }}
         >
           <Ionicons name="add" size={18} color={theme.colors.text.inverse} />
           <Text style={styles.ctaTxt}>Record New Balance</Text>
@@ -361,4 +369,3 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   itemRight: { flexDirection: 'row', alignItems: 'center' },
   itemAmt:   { fontSize: 15, fontWeight: 'bold', color: theme.colors.text.primary, marginRight: theme.spacing.sm },
 });
-

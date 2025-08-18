@@ -219,7 +219,10 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
             <TouchableOpacity
               key={option.value}
               style={[styles.enhancedPeriodButton, option.value === range && styles.selectedPeriodButton]}
-              onPress={() => setRange(option.value as any)}>
+              onPress={() => {
+                invokeHaptic();
+                setRange(option.value as any);
+              }}>
               <Text
                 style={[
                   styles.periodButtonText,

@@ -136,20 +136,34 @@ function AccountsScreen() {
   };
 
   const handleToggleSection = (title: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCollapsedSections(prev => ({ ...prev, [title]: !prev[title] }));
   };
 
   const handleSort = (option: SortOption) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSortOption(option);
   };
 
   const handleShowSearch = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsSearchVisible(true);
   };
 
   const handleCloseSearch = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsSearchVisible(false);
     setSearchQuery('');
+  };
+
+  const handleFilterChange = (filter: FilterType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setActiveFilter(filter);
+  };
+
+  const handleViewOutdated = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setActiveFilter('Outdated');
   };
 
   // Group search props for the header to keep the component API clean
@@ -200,6 +214,7 @@ function AccountsScreen() {
   };
 
   const handleQuickEdit = (account: AccountWithBalance) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedAccount(account);
     setIsQuickEditVisible(true);
   };
@@ -207,10 +222,16 @@ function AccountsScreen() {
   const handleSaveBalance = async (newBalance: number, newDate: Date, notes: string) => {
     if (!selectedAccount) return;
 
+    // Correctly format the date to 'YYYY-MM-DD' without timezone shifts.
+    // Using toISOString() can result in the previous or next day in some timezones.
+    const year = newDate.getFullYear();
+    const month = String(newDate.getMonth() + 1).padStart(2, '0'); // JS months are 0-indexed.
+    const day = String(newDate.getDate()).padStart(2, '0');
+
     await addBalanceMutation.mutateAsync({
       account_id: selectedAccount.account_id,
       amount: newBalance,
-      date: newDate.toISOString().split('T')[0],
+      date: `${year}-${month}-${day}`,
       notes: notes,
     });
 
@@ -380,6 +401,7 @@ function AccountsScreen() {
             isCollapsed={headerData.isCollapsed}
             onToggleCollapse={() => handleToggleSection(headerData.title)}
             onAdd={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               const type = headerData.title === 'Assets' ? 'asset' : 'liability';
               router.push({
                 pathname: 'accounts/add-account',
@@ -393,9 +415,15 @@ function AccountsScreen() {
         return (
           <AccountRow 
             account={account} 
-            onPress={() => router.push(`/accounts/${account.account_id}`)}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(`/accounts/${account.account_id}`);
+            }}
             onEdit={() => handleQuickEdit(account)}
-            onDelete={() => confirmAndDeleteAccount(account.account_id, account.account_name)}
+            onDelete={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              confirmAndDeleteAccount(account.account_id, account.account_name);
+            }}
             onArchive={() => handleArchiveAccount(account)}
             isIncludedInNetWorth={account.include_in_net_worth ?? false}
             isOutdated={outdatedAccounts.some(outdatedAcc => outdatedAcc.account_id === account.account_id)}
@@ -447,20 +475,26 @@ function AccountsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <AccountsHeader
-        onAdd={() => router.push('accounts/add-account')}
-        onSort={() => setIsSortSheetVisible(true)}
+        onAdd={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          router.push('accounts/add-account');
+        }}
+        onSort={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          setIsSortSheetVisible(true);
+        }}
         search={searchProps}
       />
       <FilterChipsRow 
         activeFilter={activeFilter} 
-        onFilterChange={setActiveFilter} 
+        onFilterChange={handleFilterChange} 
         outdatedCount={outdatedAccounts.length}
         hiddenCount={hiddenAccounts.length}
       />
       <StatusShelf 
         outdatedCount={outdatedAccounts.length} 
         remindAfterDays={profile?.remind_after_days || 30} 
-        onView={() => setActiveFilter('Outdated')} 
+        onView={handleViewOutdated} 
       />
 
       <FlashList
@@ -468,7 +502,6 @@ function AccountsScreen() {
         data={flashListData}
         renderItem={renderFlashListItem}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={100}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl

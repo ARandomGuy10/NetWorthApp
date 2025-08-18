@@ -76,10 +76,15 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
   // Format time since last update
   const getTimeSinceUpdate = (date: string | null): string => {
     if (!date) return 'Never updated';
-    const lastUpdate = new Date(date);
-    const daysSince = Math.floor((Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24));
+    // By appending T00:00:00, we ensure the date is parsed in the user's local timezone, not UTC.
+    const lastUpdate = new Date(`${date}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    if (daysSince === 0) return 'Updated today';
+    const diffTime = today.getTime() - lastUpdate.getTime();
+    const daysSince = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+    if (daysSince <= 0) return 'Updated today';
     if (daysSince === 1) return '1 day ago';
     if (daysSince < 30) return `${daysSince} days ago`;
     if (daysSince < 60) return '1 month ago';
@@ -125,8 +130,11 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
     return (
       <View style={styles.container}>
         <TouchableOpacity
-          style={styles.emptyCard}
-          onPress={() => router.push('/accounts/add-account' as any)}
+          style={styles.emptyCard} 
+          onPress={() => {
+            invokeHaptic();
+            router.push('/accounts/add-account' as any);
+          }}
           activeOpacity={0.8}>
           <LinearGradient colors={getGradientColors(theme, 'accent')} style={styles.emptyCardGradient}>
             <View style={styles.emptyContent}>
