@@ -16,14 +16,12 @@ interface SearchProps {
 interface AccountsHeaderProps {
   onAdd: () => void;
   onSort: () => void;
-  onMore: () => void;
   search: SearchProps;
 }
 
 const AccountsHeader: React.FC<AccountsHeaderProps> = ({
   onAdd,
   onSort,
-  onMore,
   search,
 }) => {
   const { theme } = useTheme();
@@ -61,9 +59,6 @@ const AccountsHeader: React.FC<AccountsHeaderProps> = ({
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton} onPress={search.onOpen} activeOpacity={0.7}>
               <Ionicons name="search" size={22} color={theme.colors.text.primary} />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton} onPress={onMore} activeOpacity={0.7}>
-              <Ionicons name="ellipsis-horizontal" size={22} color={theme.colors.text.primary} />
             </TouchableOpacity>
           </>
         )}

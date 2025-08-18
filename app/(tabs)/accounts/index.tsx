@@ -449,7 +449,6 @@ function AccountsScreen() {
       <AccountsHeader
         onAdd={() => router.push('accounts/add-account')}
         onSort={() => setIsSortSheetVisible(true)}
-        onMore={() => console.log('More pressed')}
         search={searchProps}
       />
       <FilterChipsRow 
