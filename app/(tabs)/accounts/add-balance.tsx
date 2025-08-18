@@ -330,6 +330,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1, // Ensure button is tappable over the absolute positioned title
   },
   headerTitle: {
     position: 'absolute',

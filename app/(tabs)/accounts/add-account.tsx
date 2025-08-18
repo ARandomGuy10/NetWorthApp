@@ -21,8 +21,9 @@ import { useAddAccount, useUpdateAccount } from '@/hooks/useAccounts';
 import { ACCOUNT_CATEGORIES, CURRENCIES } from '@/lib/supabase';
 import { useToast } from '@/hooks/providers/ToastProvider';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
-import CustomPicker from '@/components/ui/CustomPicker';
 import Switch from '@/components/ui/Switch';
+import CustomPicker from '@/components/ui/CustomPicker';
+import CategoryInput from '@/components/accounts/CategoryInput';
 import { Theme } from '@/lib/supabase';
 
 export default function AddAccountScreen() {
@@ -113,12 +114,12 @@ export default function AddAccountScreen() {
       return false;
     }
     
-    if (!formData.category) {
-      showToast('Please select a category', 'error');
+    if (!formData.category.trim()) {
+      showToast('Please select or enter a category', 'error');
       return false;
     }
     
-    if (!isEditMode && formData.initial_balance && isNaN(parseFloat(formData.initial_balance))) {
+    if (!isEditMode && formData.initial_balance && (isNaN(parseFloat(formData.initial_balance)) || parseFloat(formData.initial_balance) < 0)) {
       showToast('Please enter a valid initial balance', 'error');
       return false;
     }
@@ -136,7 +137,7 @@ export default function AddAccountScreen() {
         const saveData = {
           name: formData.name.trim(),
           type: formData.type,
-          category: formData.category,
+          category: formData.category.trim(),
           currency: formData.currency,
           institution: formData.institution.trim() || null,
           include_in_net_worth: formData.include_in_net_worth,
@@ -153,7 +154,7 @@ export default function AddAccountScreen() {
         const accountWithBalance = {
           name: formData.name.trim(),
           type: formData.type,
-          category: formData.category,
+          category: formData.category.trim(),
           currency: formData.currency,
           institution: formData.institution.trim() || null,
           include_in_net_worth: formData.include_in_net_worth,
@@ -178,10 +179,7 @@ export default function AddAccountScreen() {
     setFormData({ ...formData, type, category: '' });
   };
 
-  const availableCategories = (ACCOUNT_CATEGORIES[formData.type] || []).map(cat => ({
-    label: cat,
-    value: cat
-  }));
+  const availableCategories = ACCOUNT_CATEGORIES[formData.type] || [];
 
   const currencyOptions = CURRENCIES.map(currency => ({
     label: currency,
@@ -319,15 +317,12 @@ export default function AddAccountScreen() {
           {/* Category */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Category *</Text>
-            <CustomPicker
+            <CategoryInput
               value={formData.category}
-              onValueChange={(value) => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setFormData({ ...formData, category: value });
-              }}
-              items={availableCategories}
-              placeholder="Select a category"
+              onChangeText={(text) => setFormData({ ...formData, category: text })}
+              suggestions={availableCategories}
               disabled={isLoading}
+              accountType={formData.type}
             />
           </View>
 
@@ -474,6 +469,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     height: 44,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 1, // Ensure button is tappable over the absolute positioned title
   },
   headerTitle: {
     position: 'absolute',
