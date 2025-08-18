@@ -6,11 +6,12 @@ import { Theme } from '@/lib/supabase';
 
 interface AccountsHeaderProps {
   onAdd: () => void;
+  onSort: () => void;
   onFilter: () => void;
   onMore: () => void;
 }
 
-const AccountsHeader: React.FC<AccountsHeaderProps> = ({ onAdd, onFilter, onMore }) => {
+const AccountsHeader: React.FC<AccountsHeaderProps> = ({ onAdd, onSort, onFilter, onMore }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
 
@@ -20,6 +21,9 @@ const AccountsHeader: React.FC<AccountsHeaderProps> = ({ onAdd, onFilter, onMore
       <View style={styles.actionsContainer}>
         <TouchableOpacity style={styles.actionButton} onPress={onAdd} activeOpacity={0.7}>
           <Ionicons name="add" size={24} color={theme.colors.text.primary} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.actionButton} onPress={onSort} activeOpacity={0.7}>
+          <Ionicons name="swap-vertical" size={22} color={theme.colors.text.primary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={onFilter} activeOpacity={0.7}>
           <Ionicons name="search" size={22} color={theme.colors.text.primary} />

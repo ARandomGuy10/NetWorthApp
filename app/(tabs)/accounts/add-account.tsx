@@ -28,7 +28,7 @@ import { Theme } from '@/lib/supabase';
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { accountId, mode, accountData } = useLocalSearchParams();
+  const { accountId, mode, accountData, type: accountType } = useLocalSearchParams();
   const addAccountMutation = useAddAccount();
   const updateAccountMutation = useUpdateAccount();
   const { theme } = useTheme();
@@ -67,6 +67,16 @@ export default function AddAccountScreen() {
       }),
     ]).start();
   }, []);
+
+  // Pre-fill account type from navigation parameter
+  useEffect(() => {
+    if (accountType && !isEditMode && !didPrefillRef.current) {
+      if (accountType === 'asset' || accountType === 'liability') {
+        setFormData(prev => ({ ...prev, type: accountType as 'asset' | 'liability' }));
+        didPrefillRef.current = true;
+      }
+    }
+  }, [accountType, isEditMode]);
 
   // Load existing account data for edit mode
   useEffect(() => {

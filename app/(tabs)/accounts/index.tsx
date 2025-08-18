@@ -28,6 +28,7 @@ import StatusShelf from '../../../components/accounts/StatusShelf'; // Import th
 import AccountSectionHeader from '../../../components/accounts/AccountSectionHeader';
 import AccountRow from '../../../components/accounts/AccountRow';
 import QuickEditSheet from '../../../components/accounts/QuickEditSheet';
+import SortOptionsSheet, { SortOption } from '../../../components/accounts/SortOptionsSheet';
 
 
 // Define types for FlashList items
@@ -102,6 +103,8 @@ function AccountsScreen() {
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const [isDeleting, setIsDeleting] = useState(false);
   const [isQuickEditVisible, setIsQuickEditVisible] = useState(false);
+  const [isSortSheetVisible, setIsSortSheetVisible] = useState(false);
+  const [sortOption, setSortOption] = useState<SortOption>('name_a_to_z');
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
@@ -123,6 +126,10 @@ function AccountsScreen() {
 
   const handleToggleSection = (title: string) => {
     setCollapsedSections(prev => ({ ...prev, [title]: !prev[title] }));
+  };
+
+  const handleSort = (option: SortOption) => {
+    setSortOption(option);
   };
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
@@ -217,9 +224,6 @@ function AccountsScreen() {
     },
   ];
 
-   // Fixed: Better loading logic that accounts for cached data
-  const showLoadingSpinner = (isLoading || (!accountsData && isFetching)) && !accounts.length;
-
   const outdatedAccounts = useMemo(() => {
     const remindAfterDays = profile?.remind_after_days || 30;
     return accounts.filter(acc => {
@@ -234,19 +238,45 @@ function AccountsScreen() {
   const filteredAccounts = useMemo(() => {
     switch (activeFilter) {
       case 'Assets':
-        return accounts.filter(acc => acc.account_type === 'asset');
+        return accounts.filter(acc => acc.account_type === 'asset' && !acc.is_archived);
       case 'Liabilities':
-        return accounts.filter(acc => acc.account_type === 'liability');
+        return accounts.filter(acc => acc.account_type === 'liability' && !acc.is_archived);
       case 'Archived':
         return hiddenAccounts;
       case 'Outdated':
         return outdatedAccounts;
       case 'All':
       default:
-        // Return all accounts EXCEPT archived ones
         return accounts.filter(acc => !acc.is_archived);
     }
   }, [accounts, activeFilter, outdatedAccounts, hiddenAccounts]);
+
+  const sortedAccounts = useMemo(() => {
+    const sortable = [...filteredAccounts];
+    sortable.sort((a, b) => {
+      switch (sortOption) {
+        case 'balance_high_to_low':
+          return (b.latest_balance ?? 0) - (a.latest_balance ?? 0);
+        case 'balance_low_to_high':
+          return (a.latest_balance ?? 0) - (b.latest_balance ?? 0);
+        case 'name_a_to_z':
+          return a.account_name.localeCompare(b.account_name);
+        case 'name_z_to_a':
+          return b.account_name.localeCompare(a.account_name);
+        case 'last_updated':
+          return new Date(b.latest_balance_date ?? 0).getTime() - new Date(a.latest_balance_date ?? 0).getTime();
+        default:
+          return 0;
+      }
+    });
+    return sortable;
+  }, [filteredAccounts, sortOption]);
+
+  const assetAccounts = useMemo(() => sortedAccounts.filter(acc => acc.account_type === 'asset'), [sortedAccounts]);
+  const liabilityAccounts = useMemo(() => sortedAccounts.filter(acc => acc.account_type === 'liability'), [sortedAccounts]);
+
+  // Fixed: Better loading logic that accounts for cached data
+  const showLoadingSpinner = (isLoading || (!accountsData && isFetching)) && !accounts.length;
 
   if (showLoadingSpinner) {
     return (
@@ -256,10 +286,6 @@ function AccountsScreen() {
       </View>
     );
   }
-
-  // Group accounts by type
-  const assetAccounts = filteredAccounts.filter(acc => acc.account_type === 'asset');
-  const liabilityAccounts = filteredAccounts.filter(acc => acc.account_type === 'liability');
 
   // Prepare data for FlashList
   const prepareFlashListData = (): FlashListItem[] => {
@@ -297,7 +323,7 @@ function AccountsScreen() {
       data.push({ type: 'emptyState', id: 'empty-state' });
     }
 
-    data.push({ type: 'footer', id: 'footer-add-button' }); // Add a footer item for the button
+    //data.push({ type: 'footer', id: 'footer-add-button' }); // Add a footer item for the button
 
     return data;
   };
@@ -315,8 +341,13 @@ function AccountsScreen() {
             count={headerData.count}
             isCollapsed={headerData.isCollapsed}
             onToggleCollapse={() => handleToggleSection(headerData.title)}
-            onAdd={() => console.log('Add from section')}
-            onSort={() => console.log('Sort section')}
+            onAdd={() => {
+              const type = headerData.title === 'Assets' ? 'asset' : 'liability';
+              router.push({
+                pathname: 'accounts/add-account',
+                params: { type },
+              });
+            }}
           />
         );
       case 'account':
@@ -379,7 +410,7 @@ function AccountsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <AccountsHeader
         onAdd={() => router.push('accounts/add-account')}
-        onFilter={() => console.log('Filter pressed')}
+        onSort={() => setIsSortSheetVisible(true)}
         onMore={() => console.log('More pressed')}
       />
       <FilterChipsRow 
@@ -425,6 +456,14 @@ function AccountsScreen() {
         onClose={() => setIsQuickEditVisible(false)}
         account={selectedAccount}
         onSave={handleSaveBalance}
+      />
+
+      <SortOptionsSheet
+        isVisible={isSortSheetVisible}
+        onClose={() => setIsSortSheetVisible(false)}
+        onSort={handleSort}
+        currentSort={sortOption}
+        title="Sort Accounts"
       />
     </View>
   );
