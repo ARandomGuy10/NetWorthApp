@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { useIsFocused } from '@react-navigation/native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
 
 import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'; // Updated hook
@@ -105,6 +106,9 @@ function AccountsScreen() {
   const [isQuickEditVisible, setIsQuickEditVisible] = useState(false);
   const [isSortSheetVisible, setIsSortSheetVisible] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('name_a_to_z');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const isFocused = useIsFocused();
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
 
@@ -114,6 +118,13 @@ function AccountsScreen() {
       flashListRef.current.scrollToOffset({ animated: true, offset: 0 });
     }
   }, [activeFilter]);
+
+  // Automatically close search when navigating away from the screen
+  useEffect(() => {
+    if (!isFocused && isSearchVisible) {
+      handleCloseSearch();
+    }
+  }, [isFocused, isSearchVisible]);
 
   const onRefresh = async () => {
     setIsManualRefreshing(true);
@@ -130,6 +141,24 @@ function AccountsScreen() {
 
   const handleSort = (option: SortOption) => {
     setSortOption(option);
+  };
+
+  const handleShowSearch = () => {
+    setIsSearchVisible(true);
+  };
+
+  const handleCloseSearch = () => {
+    setIsSearchVisible(false);
+    setSearchQuery('');
+  };
+
+  // Group search props for the header to keep the component API clean
+  const searchProps = {
+    isVisible: isSearchVisible,
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    onOpen: handleShowSearch,
+    onClose: handleCloseSearch,
   };
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
@@ -236,20 +265,29 @@ function AccountsScreen() {
   const hiddenAccounts = useMemo(() => accounts.filter(acc => acc.is_archived), [accounts]);
 
   const filteredAccounts = useMemo(() => {
+    let filtered = [];
     switch (activeFilter) {
       case 'Assets':
-        return accounts.filter(acc => acc.account_type === 'asset' && !acc.is_archived);
+        filtered = accounts.filter(acc => acc.account_type === 'asset' && !acc.is_archived);
+        break;
       case 'Liabilities':
-        return accounts.filter(acc => acc.account_type === 'liability' && !acc.is_archived);
+        filtered = accounts.filter(acc => acc.account_type === 'liability' && !acc.is_archived);
+        break;
       case 'Archived':
-        return hiddenAccounts;
+        filtered = hiddenAccounts;
+        break;
       case 'Outdated':
-        return outdatedAccounts;
+        filtered = outdatedAccounts;
+        break;
       case 'All':
       default:
-        return accounts.filter(acc => !acc.is_archived);
+        filtered = accounts.filter(acc => !acc.is_archived);
     }
-  }, [accounts, activeFilter, outdatedAccounts, hiddenAccounts]);
+    if (searchQuery) {
+      return filtered.filter(acc => acc.account_name.toLowerCase().includes(searchQuery.toLowerCase()));
+    }
+    return filtered;
+  }, [accounts, activeFilter, outdatedAccounts, hiddenAccounts, searchQuery]);
 
   const sortedAccounts = useMemo(() => {
     const sortable = [...filteredAccounts];
@@ -412,6 +450,7 @@ function AccountsScreen() {
         onAdd={() => router.push('accounts/add-account')}
         onSort={() => setIsSortSheetVisible(true)}
         onMore={() => console.log('More pressed')}
+        search={searchProps}
       />
       <FilterChipsRow 
         activeFilter={activeFilter} 
