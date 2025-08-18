@@ -147,7 +147,7 @@ function AccountsScreen() {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            setIsDeleting(true);
+            setIsDeleting(true); 
             try {
               await deleteAccountMutation.mutateAsync(selectedAccount.account_id);
               setMenuVisible(false);
@@ -317,7 +317,6 @@ function AccountsScreen() {
             onToggleCollapse={() => handleToggleSection(headerData.title)}
             onAdd={() => console.log('Add from section')}
             onSort={() => console.log('Sort section')}
-            onBulkEdit={() => console.log('Bulk edit section')}
           />
         );
       case 'account':

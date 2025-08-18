@@ -11,7 +11,6 @@ interface AccountSectionHeaderProps {
   onToggleCollapse: () => void;
   onAdd: () => void;
   onSort: () => void;
-  onBulkEdit: () => void;
 }
 
 const AccountSectionHeader: React.FC<AccountSectionHeaderProps> = ({ 
@@ -21,7 +20,6 @@ const AccountSectionHeader: React.FC<AccountSectionHeaderProps> = ({
   onToggleCollapse, 
   onAdd, 
   onSort, 
-  onBulkEdit 
 }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
@@ -43,9 +41,6 @@ const AccountSectionHeader: React.FC<AccountSectionHeaderProps> = ({
         </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={onSort} activeOpacity={0.7}>
           <Text style={styles.actionText}>Sort ▾</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton} onPress={onBulkEdit} activeOpacity={0.7}>
-          <Text style={styles.actionText}>Bulk Edit</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -20,7 +20,15 @@ interface AccountRowProps {
   isOutdated?: boolean;
 }
 
-const AccountRow: React.FC<AccountRowProps> = ({ account, onPress, onEdit, onDelete, onArchive, isIncludedInNetWorth, isOutdated }) => {
+const AccountRow: React.FC<AccountRowProps> = ({ 
+  account, 
+  onPress, 
+  onEdit, 
+  onDelete, 
+  onArchive, 
+  isIncludedInNetWorth, 
+  isOutdated, 
+}) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const translateX = useSharedValue(0);

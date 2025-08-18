@@ -7,8 +7,6 @@ export const useAccountsWithBalances = () => {
   const { user } = useUser();
   const supabase = useSupabase();
   
-  console.log('useAccountsWithBalances - user?.id:', user?.id);
-
   return useQuery<AccountWithBalance[]> ({
     queryKey: ['accountsWithBalances', user?.id],
     queryFn: async () => {
