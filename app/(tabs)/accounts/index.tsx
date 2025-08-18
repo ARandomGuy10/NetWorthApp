@@ -34,7 +34,7 @@ import SortOptionsSheet, { SortOption } from '../../../components/accounts/SortO
 
 // Define types for FlashList items
 interface FlashListItem {
-  type: 'header' | 'account' | 'emptyState' | 'footer';
+  type: 'header' | 'account' | 'emptyState';
   id: string; // Unique ID for FlashList keyExtractor
   data?: any; // Either section data, account data, or null for empty/footer
 }
@@ -441,32 +441,6 @@ function AccountsScreen() {
             </Text>
           </View>
         );
-      case 'footer':
-        return (
-          <TouchableOpacity 
-            style={[
-              styles.addAccountButton,
-              isDeleting && styles.addAccountButtonDisabled
-            ]} 
-            onPress={() => {
-              if (!isDeleting) {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                router.push('accounts/add-account');
-              }
-            }} 
-            activeOpacity={0.8}
-            disabled={isDeleting}
-          >
-            {isDeleting ? (
-              <ActivityIndicator size="small" color={theme.colors.text.inverse} />
-            ) : (
-              <Ionicons name="add" size={20} color={theme.colors.text.inverse} />
-            )}
-            <Text style={styles.addAccountText}>
-              {isDeleting ? 'Processing...' : 'Add New Account'}
-            </Text>
-          </TouchableOpacity>
-        );
       default:
         return null;
     }
@@ -555,43 +529,30 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     color: theme.colors.text.secondary 
   },
   flashListContent: { // New style for FlashList content container
-    paddingBottom: theme.spacing.xxxl + 80, // Extra padding to ensure button is always visible
+    paddingBottom: 90 + theme.spacing.lg, // Padding to ensure content doesn't hide behind the tab bar
   },
   emptyState: { 
     padding: theme.spacing.xxxl, 
     alignItems: 'center', 
-    marginTop: theme.spacing.xxxl 
+    marginTop: theme.spacing.xxxl,
+    flex: 1,
+    justifyContent: 'center',
   },
   emptyIcon: { 
-    marginBottom: theme.spacing.lg 
+    marginBottom: theme.spacing.xl,
+    opacity: 0.7,
   },
   emptyTitle: { 
-    fontSize: 18, 
+    fontSize: 20, 
     fontWeight: '600', 
     color: theme.colors.text.primary, 
     marginBottom: theme.spacing.sm 
   },
   emptyText: { 
-    fontSize: 14, 
+    fontSize: 15, 
     color: theme.colors.text.secondary, 
     textAlign: 'center', 
-    lineHeight: 20 
-  },
-  // Fixed: Simplified add account button styling
-  addAccountButton: { 
-    backgroundColor: theme.colors.primary, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    padding: theme.spacing.lg, 
-    borderRadius: theme.borderRadius.md, 
-    margin: theme.spacing.xl, 
-    marginTop: theme.spacing.xxxl, 
-    marginBottom: theme.spacing.xxxl, // Extra bottom margin
-    ...theme.shadows.md 
-  },
-  addAccountButtonDisabled: {
-    opacity: 0.6,
+    lineHeight: 22 
   },
   addAccountText: { 
     fontSize: 15, 

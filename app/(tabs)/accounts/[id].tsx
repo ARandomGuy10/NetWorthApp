@@ -17,6 +17,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -179,31 +180,33 @@ import { Theme } from '@/lib/supabase';
         }
       >
         {/* Summary card */}
-        <Animated.View style={[styles.card, { opacity: fade, backgroundColor: theme.colors.background.elevated }]}>
-          <View style={styles.cardRow}>
-            <View style={styles.iconWrap}>
-              <Ionicons name={iconFor(account.category)} size={24} color={theme.colors.text.inverse} />
+        <Animated.View style={[styles.cardWrapper, { opacity: fade }]}>
+          <LinearGradient colors={[theme.colors.background.card, theme.colors.background.elevated]} style={styles.card}>
+            <View style={styles.cardRow}>
+              <View style={styles.iconWrap}>
+                <Ionicons name={iconFor(account.category)} size={24} color={theme.colors.text.inverse} />
+              </View>
+              <View style={styles.meta}>
+                <Text style={[styles.metaName, { color: theme.colors.text.primary }]}>{account.name}</Text>
+                <Text style={[styles.metaSub,  { color: theme.colors.text.secondary  }]}>
+                  {account.type === 'asset' ? 'Asset' : 'Liability'} · {account.category}
+                </Text>
+              </View>
             </View>
-            <View style={styles.meta}>
-              <Text style={[styles.metaName, { color: theme.colors.text.primary }]}>{account.name}</Text>
-              <Text style={[styles.metaSub,  { color: theme.colors.text.secondary  }]}>
-                {account.type === 'asset' ? 'Asset' : 'Liability'} · {account.category}
-              </Text>
-            </View>
-          </View>
 
-          <Text style={[styles.balanceLabel, { color: theme.colors.text.secondary }]}>Current Balance</Text>
-          <Text
-            style={[
-              styles.balanceValue,
-              account.type === 'liability'
-                ? { color: theme.colors.liability }
-                : { color: theme.colors.asset },
-            ]}
-          >
-            {account.type === 'liability' ? '-' : ''}
-            {formatCurrency(currentBal, account.currency)}
-          </Text>
+            <Text style={[styles.balanceLabel, { color: theme.colors.text.secondary }]}>Current Balance</Text>
+            <Text
+              style={[
+                styles.balanceValue,
+                account.type === 'liability'
+                  ? { color: theme.colors.liability }
+                  : { color: theme.colors.asset },
+              ]}
+            >
+              {account.type === 'liability' ? '-' : ''}
+              {formatCurrency(currentBal, account.currency)}
+            </Text>
+          </LinearGradient>
         </Animated.View>
 
         {/* CTA */}
@@ -240,7 +243,7 @@ import { Theme } from '@/lib/supabase';
           balances.map(b => (
             <TouchableOpacity
               key={b.id}
-              style={styles.item}
+              style={styles.itemCard}
               activeOpacity={0.7}
               onPress={e => handleBalanceMenu(b, e)}
             >
@@ -302,15 +305,18 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   scContent: { paddingBottom: theme.spacing.xxxl },
 
   /* Summary card */
-  card: {
+  cardWrapper: {
     marginHorizontal: theme.spacing.lg,
     marginTop: theme.spacing.lg,
+    ...theme.shadows.lg,
+  },
+  card: {
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
-    ...theme.shadows.md,
   },
+
   cardRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.lg },
   iconWrap: {
     width: 48, height: 48, borderRadius: 24,
@@ -347,16 +353,16 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   },
 
   /* Empty state */
-  empty:      { alignItems: 'center', padding: theme.spacing.xxl },
+  empty:      { alignItems: 'center', padding: theme.spacing.xxxl, marginTop: theme.spacing.xl },
   emptyTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text.primary, marginTop: theme.spacing.lg },
   emptySub:   { fontSize: 14, color: theme.colors.text.secondary, textAlign: 'center', marginTop: theme.spacing.xs },
 
   /* History item */
-  item: {
+  itemCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: theme.colors.background.card,
+    backgroundColor: theme.colors.background.elevated,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,

@@ -187,21 +187,27 @@ export default function AddBalanceScreen() {
           <Animated.View style={{
             opacity: fadeAnim,
             transform: [{ translateY: slideAnim }]
-          }}>
-            {!isEditMode && (
+          }}>            
+            {isEditMode && selectedAccount ? (
+              <View style={styles.accountInfo}>
+                <Text style={styles.accountName}>{selectedAccount.name}</Text>
+                <Text style={styles.accountMeta}>
+                  {selectedAccount.type === 'asset' ? 'Asset' : 'Liability'} · {selectedAccount.category}
+                </Text>
+              </View>
+            ) : (
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Account</Text>
                 <CustomPicker
+                  // Use a more descriptive placeholder when no account is pre-selected
+                  placeholder={!accountId ? "Select an account" : (accounts?.find(a => a.id === accountId)?.name || "Select an account")}
                   value={formData.account_id}
                   onValueChange={handleAccountChange}
                   items={accountOptions}
-                  placeholder="Select an account"
                   disabled={loading || !!accountId}
                 />
               </View>
             )}
-
-            
 
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Date</Text>
@@ -294,7 +300,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     color: theme.colors.text.secondary,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: 'row',    
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
@@ -309,7 +315,11 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 16,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 17,
     fontWeight: '600',
     color: theme.colors.text.primary,
   },
@@ -331,7 +341,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   accountInfo: {
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.background.card,
     borderRadius: theme.borderRadius.md,
@@ -361,13 +371,14 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   },
   currencySymbol: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: theme.colors.text.secondary,
     marginRight: theme.spacing.sm,
   },
   amountInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 24,
+    fontWeight: 'bold',
     color: theme.colors.text.primary,
     paddingVertical: theme.spacing.lg,
   },

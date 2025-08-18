@@ -210,18 +210,17 @@ export default function AddAccountScreen() {
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
-          }}
-          style={styles.backButton}
+          }}          style={styles.headerButton}
           activeOpacity={0.7}
         >
-          <Ionicons name="chevron-back" size={20} color={theme.colors.text.primary} />
+          <Ionicons name="close" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
         
         <Text style={styles.headerTitle}>
           {isEditMode ? 'Edit Account' : 'Add Account'}
         </Text>
         
-        <View style={styles.placeholder} />
+        <View style={styles.headerButton} />
       </View>
 
       <KeyboardAvoidingView 
@@ -459,18 +458,20 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     paddingBottom: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
-    backgroundColor: theme.colors.background.primary,
-    minHeight: 32,
+    minHeight: 44,
   },
-  backButton: {
+  headerButton: {
     width: 32,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
   },
   headerTitle: {
-    fontSize: 16,
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    textAlign: 'center',
+    fontSize: 17,
     fontWeight: '600',
     color: theme.colors.text.primary,
   },
@@ -577,7 +578,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   },
   buttonContainer: {
     marginTop: theme.spacing.xxl,
-    marginBottom: theme.spacing.xxl,
+    paddingBottom: theme.spacing.xxxl,
     gap: theme.spacing.md,
   },
   saveButton: {
