@@ -48,8 +48,6 @@ export default function SignInScreen() {
       });
 
       await setActive({ session: completeSignIn.createdSessionId });
-      // Navigate to the dashboard tab after successful sign in
-      router.replace('/(tabs)/dashboard');
     } catch (err) {
       console.error('Sign in error:', err);
       Alert.alert('Error', err.errors?.[0]?.message || 'Failed to sign in');

@@ -41,6 +41,7 @@ export type Database = {
           remind_after_days?: number;
         };
         Update: {
+          avatar_url?: string | null;
           first_name?: string | null;
           last_name?: string | null;
           email?: string | null;
@@ -136,6 +137,7 @@ export type AccountUpdate = Database['public']['Tables']['accounts']['Update'];
 export type Balance = Database['public']['Tables']['balance_entries']['Row'];
 export type BalanceInsert = Database['public']['Tables']['balance_entries']['Insert'];
 export type Profile = Database['public']['Tables']['profiles']['Row'];
+export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export type AccountWithBalance = Database['public']['Functions']['get_accounts_with_balances']['Returns'][0];
 
 // Edge Function Response Types

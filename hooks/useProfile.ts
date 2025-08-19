@@ -85,7 +85,7 @@ export const useUpdateProfile = () => {
       console.log('🔥 CALLING DATABASE - useUpdateProfile mutationFn');
       const { data, error } = await supabase
         .from('profiles')
-        .update({ ...updates, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq('id', user!.id)
         .select()
         .single();
@@ -97,12 +97,11 @@ export const useUpdateProfile = () => {
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
       queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
-      // Optimistically update the profile cache
-      //queryClient.setQueryData(['profile', user?.id], data);
+      queryClient.setQueryData(['profile', user?.id], data);
       showToast('Profile updated successfully!', 'success');
     },
-    onError: (error) => {
-      showToast('Failed to update profile. Please try again.', 'error');
+    onError: (error: Error) => {
+      showToast('Failed to update profile', 'error', { text: error.message });
       console.error('Error updating profile:', error);
     }
   });

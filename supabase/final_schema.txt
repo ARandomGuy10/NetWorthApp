@@ -203,6 +203,35 @@ CREATE TRIGGER trg_balance_entries_updated_at
 
 -- =============================================
 
+-- Create a bucket for avatars with public access.
+-- Make sure to replace 'avatars' with your desired bucket name if different.
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- RLS policy to allow authenticated users to upload to their own folder.
+-- The folder is named after the user's ID.
+CREATE POLICY "Avatar uploads"
+ON storage.objects FOR INSERT TO authenticated
+WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = get_user_id());
+
+-- RLS policy to allow authenticated users to update their own avatar.
+CREATE POLICY "Avatar updates"
+ON storage.objects FOR UPDATE TO authenticated
+USING ((storage.foldername(name))[1] = get_user_id());
+
+-- RLS policy to allow anyone to view avatars.
+CREATE POLICY "Avatars are publicly viewable"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'avatars');
+
+-- RLS policy to allow authenticated users to delete their own avatar.
+CREATE POLICY "Avatar deletes"
+ON storage.objects FOR DELETE TO authenticated
+USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = get_user_id());
+
+-- =============================================
+
 -- 11.  Improved accounts with balances function
 -- Function to get accounts balances for the current authenticated user
 CREATE OR REPLACE FUNCTION public.get_accounts_with_balances()

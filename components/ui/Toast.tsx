@@ -26,6 +26,7 @@ interface ToastProps {
   visible: boolean;
   message: string;
   type?: ToastType;
+  details?: string;
   onDismiss?: () => void;
   duration?: number;
   position?: 'top' | 'bottom';
@@ -50,6 +51,7 @@ export default function Toast({
   visible,
   message,
   type = 'success',
+  details,
   onDismiss,
   duration = 4000,
   position = 'top',
@@ -146,9 +148,16 @@ export default function Toast({
       >
         <View style={styles.content}>
           <Ionicons name={toastStyle.icon} size={24} color={staticColors.textInverse} style={styles.icon} />
-          <Text style={[styles.message, { color: staticColors.textInverse }]} numberOfLines={3}>
-            {message}
-          </Text>
+          <View style={styles.textContainer}>
+            <Text style={[styles.message, { color: staticColors.textInverse }]} numberOfLines={2}>
+              {message}
+            </Text>
+            {details && (
+              <Text style={[styles.details, { color: staticColors.textInverse }]} numberOfLines={2}>
+                {details}
+              </Text>
+            )}
+          </View>
           {showCloseButton && (
             <TouchableOpacity onPress={hideToast} style={styles.closeButton} activeOpacity={0.7}>
               <Ionicons name="close" size={20} color={staticColors.textInverse} />
@@ -178,6 +187,19 @@ const getStyles = () =>
       minHeight: 56,
     },
     icon: {marginRight: 12, flexShrink: 0},
-    message: {flex: 1, fontSize: 15, fontWeight: '500', lineHeight: 22},
+    textContainer: {
+      flex: 1,
+    },
+    message: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      lineHeight: 22,
+    },
+    details: {
+      fontSize: 14,
+      lineHeight: 20,
+      opacity: 0.8,
+      marginTop: 2,
+    },
     closeButton: {marginLeft: 12, padding: 4, borderRadius: 12, flexShrink: 0},
   });

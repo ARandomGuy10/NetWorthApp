@@ -4,8 +4,12 @@ import Toast from '../../components/ui/Toast';
 
 type ToastType = 'success' | 'error' | 'warning' | 'info';
 
+interface ToastOptions {
+  text?: string;
+}
+
 interface ToastContextType {
-  showToast: (message: string, type?: ToastType) => void;
+  showToast: (message: string, type?: ToastType, options?: ToastOptions) => void;
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
@@ -27,14 +31,15 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
     visible: boolean;
     message: string;
     type: ToastType;
+    details?: string;
   }>({
     visible: false,
     message: '',
     type: 'success',
   });
 
-  const showToast = (message: string, type: ToastType = 'success') => {
-    setToast({ visible: true, message, type });
+  const showToast = (message: string, type: ToastType = 'success', options?: ToastOptions) => {
+    setToast({ visible: true, message, type, details: options?.text });
   };
 
   const hideToast = () => {
@@ -48,6 +53,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
         visible={toast.visible}
         message={toast.message}
         type={toast.type}
+        details={toast.details}
         onDismiss={hideToast}
       />
     </ToastContext.Provider>
