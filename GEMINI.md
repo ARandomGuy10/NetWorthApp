@@ -37,6 +37,12 @@ The architecture consists of a **React Native (Expo)** frontend and a **Supabase
     -   `(auth)`: Contains all pre-authentication screens (Welcome, Sign In, Sign Up).
     -   `(tabs)`: Contains the main, post-authentication screens (Dashboard, Accounts, etc.).
 
+5.  **Composable UI for Settings**: To ensure visual consistency and maintainability, settings screens are built using a composable pattern. Generic, reusable components like `SettingRow` handle the layout and presentation of individual options, while container components like `AppearancePreferencesSection` group them into logical cards. This promotes code reuse and simplifies the development of new settings pages.
+
+6.  **Synced User Preferences**: User-specific settings like theme, haptics, and notification preferences are stored in the `profiles` table in the database. This ensures a consistent user experience across multiple devices, as settings are tied to the user's account, not the local device storage.
+
+7.  **Instant-Save User Actions**: To reduce cognitive load and create a more fluid user experience, settings changes in simple pickers (e.g., theme, reminder frequency) are saved instantly upon selection, eliminating the need for an extra 'Save' button. This makes the interface feel more responsive and direct.
+
 ## Building and Running
 
 The project uses `npm` as the package manager. Key commands are defined in `package.json`:

@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useColorScheme } from 'react-native';
 import { useAuth } from '@clerk/clerk-expo';
 import { useProfile } from '@/hooks/useProfile';
-import { themes } from './themes';
+import { getTheme } from './themes';
 
 export const ThemeContext = createContext();
 
@@ -12,23 +12,15 @@ export const ThemeProvider = ({ children }) => {
   const { data: profile, isLoading: profileLoading } = useProfile();
   const systemColorScheme = useColorScheme();
 
-  const [theme, setTheme] = useState(themes.DARK_THEME); // Start with a default
+  const [theme, setTheme] = useState(getTheme('DARK')); // Start with a default
 
   useEffect(() => {
-    let currentTheme;
-    const userThemePref = profile?.theme;
-
-    if (isSignedIn && userThemePref) {
-      if (userThemePref === 'SYSTEM') {
-        currentTheme = systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME;
-      } else {
-        const themeKey = `${userThemePref}_THEME`;
-        currentTheme = themes[themeKey] || (systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME);
-      }
-    } else {
-      currentTheme = systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME;
+    if (profileLoading) return;
+    let themeName = profile?.theme || 'SYSTEM';
+    if (themeName === 'SYSTEM') {
+      themeName = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
     }
-    setTheme(currentTheme);
+    setTheme(getTheme(themeName));
   }, [profile, isSignedIn, systemColorScheme, profileLoading]);
 
   // Do not render the app until the profile is loaded for signed-in users
@@ -37,12 +29,11 @@ export const ThemeProvider = ({ children }) => {
   }
 
   const switchTheme = (themeName) => {
-    const themeKey = `${themeName}_THEME`;
-    if (themeName === 'SYSTEM') {
-      setTheme(systemColorScheme === 'dark' ? themes.DARK_THEME : themes.LIGHT_THEME);
-    } else if (themes[themeKey]) {
-      setTheme(themes[themeKey]);
+    let themeToSet = themeName;
+    if (themeToSet === 'SYSTEM') {
+      themeToSet = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
     }
+    setTheme(getTheme(themeToSet));
   };
 
   return (

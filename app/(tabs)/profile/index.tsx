@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import UserProfileCard from '@/components/profile/UserProfileCard';
 import PremiumBanner from '@/components/profile/PremiumBanner';
+import AppearancePreferencesSection from '@/components/profile/AppearancePreferencesSection';
 
 const ProfileScreen = () => {
   const router = useRouter();
@@ -36,6 +37,7 @@ const ProfileScreen = () => {
       >
         <UserProfileCard onPress={handleProfileCardPress} />
         <PremiumBanner onPress={handlePremiumPress} />
+        <AppearancePreferencesSection />
       </ScrollView>
     </View>
   );

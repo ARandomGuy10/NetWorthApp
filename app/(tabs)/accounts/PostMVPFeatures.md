@@ -56,3 +56,17 @@ This document contains features that were considered but deferred until after th
 -   **Inspiration**: Review implementations from libraries like shadcn/ui and 21st.dev for a better user experience.
 -   **Component**: Update `components/ui/DatePicker.tsx` and its dependencies.
 -   **Functionality**: Could include features like quick-select ranges, a more intuitive calendar view, and better mobile interaction.
+
+## Smart Notifications
+
+**Objective**: Move beyond simple reminders to a proactive and intelligent notification system that enhances user engagement and helps them stay on track with their financial goals.
+
+**Implementation Details**:
+-   **Component**: A new `app/(tabs)/profile/notifications.tsx` screen for detailed notification settings.
+-   **Backend Logic**: Would likely require a Supabase Edge Function to run on a schedule or be triggered by certain events.
+-   **Functionality**:
+    -   **Smart Timing**: Analyze user activity to suggest or automatically send reminders at optimal times (e.g., when they usually check the app).
+    -   **Streak Protection**: Send a special notification if a user is about to break a long streak of updating their balances.
+    -   **Insightful Alerts**: Notify users about significant changes in their net worth, large transactions, or when an account balance reaches a certain threshold.
+    -   **Customizable Channels**: Allow users to choose what they get notified about (e.g., only outdated balances, major net worth shifts, etc.).
+    -   **Push Token Management**: Requires a new database table to store device-specific push notification tokens for each user.

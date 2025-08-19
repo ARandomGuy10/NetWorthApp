@@ -61,17 +61,14 @@ export default function Toast({
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.9)).current;
   const insets = useSafeAreaInsets();
-  const styles = getStyles();
 
   const [isVisible, setIsVisible] = useState(visible);
 
   // Show/hide based on `visible` prop
   useEffect(() => {
     if (visible) {
-      // Defer setIsVisible to avoid useInsertionEffect warning
-      setTimeout(() => {
-        setIsVisible(true);
-      }, 0);
+      // Set visibility directly to trigger the render and animation.
+      setIsVisible(true);
 
       // Trigger haptics
       const triggerHaptic = async () => {
@@ -100,7 +97,7 @@ export default function Toast({
     }
   }, [visible]);
 
-  const hideToast = () => {
+  const hideToast = (cb?: () => void) => {
     Animated.parallel([
       Animated.timing(translateY, {toValue: position === 'top' ? -100 : 100, duration: 250, useNativeDriver: true}),
       Animated.timing(opacity, {toValue: 0, duration: 250, useNativeDriver: true}),
@@ -129,6 +126,7 @@ export default function Toast({
   if (!isVisible) return null;
 
   const toastStyle = getToastStyle();
+  const styles = getStyles();
 
   return (
     <Animated.View

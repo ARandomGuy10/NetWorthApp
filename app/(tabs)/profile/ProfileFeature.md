@@ -60,17 +60,17 @@ This comprehensive roadmap details how to implement the PocketrackrApp Profile s
 
 ## Phase 2: Engaging Appearance & Preferences Section
 
-- [ ] **2.1 AppearancePreferencesSection (`components/profile/AppearancePreferencesSection.tsx`)**
+- [x] **2.1 AppearancePreferencesSection (`components/profile/AppearancePreferencesSection.tsx`)**
   - **Section Header**: "Appearance & Preferences" with consistent styling (16px, semibold, accent color)
   - **Card Container**: Single grouped card with internal dividers
   - **Section Progress Meter**: Visual ring or progress bar showing how many preferences completed (and what's missing).
   
   - **Theme Row**:
-    - Paint palette or theme icon (color-adaptive)
-    - "Theme" label
-    - Current theme as secondary text ("System", "Dark", "Light")
-    - Right chevron to open theme selection modal
-    - **Live Preview**: Real-time theme preview with smooth transitions
+    - [x] Paint palette or theme icon (color-adaptive)
+    - [x] "Theme" label
+    - [x] Current theme as secondary text ("System", "Dark", "Light")
+    - [x] Right chevron to open theme selection modal
+    - [x] **Live Preview**: Real-time theme preview with smooth transitions
     - **Mood Indicators**: Theme options show mood/energy level ("Energizing Dark", "Calm Light")
     - **Time-based Suggestions**: "Switch to light theme? It's morning! ☀️"
     - **Theme Streak**: Track consecutive days using selected theme

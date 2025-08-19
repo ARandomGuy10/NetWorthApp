@@ -847,16 +847,27 @@ export const PLATINUM_ELEGANCE_THEME = createTheme({
   },
 }, 'PLATINUM_ELEGANCE');
 
-export const themes = {
-  DARK_THEME,
-  LIGHT_THEME,
-  MODERN_FINANCE_THEME,
-  WARM_LUXURY_THEME,
-  NEO_BANKING_THEME,
-  DARK_MODE_FOCUSED_THEME,
-  EARTHY_CALM_THEME,
-  MINIMAL_MONOCHROME_THEME,
-  SUNSET_VIBES_THEME,
-  OCEAN_DEPTHS_THEME,
-  PLATINUM_ELEGANCE_THEME,
+// --- New Additions for Component Compatibility ---
+
+// A map of simple names to the full theme objects, used by the theme picker.
+const allThemes = {
+  'DARK': DARK_THEME,
+  'LIGHT': LIGHT_THEME,
+  'MODERN_FINANCE': MODERN_FINANCE_THEME,
+  'WARM_LUXURY': WARM_LUXURY_THEME,
+  'NEO_BANKING': NEO_BANKING_THEME,
+  'DARK_MODE_FOCUSED': DARK_MODE_FOCUSED_THEME,
+  'EARTHY_CALM': EARTHY_CALM_THEME,
+  'MINIMAL_MONOCHROME': MINIMAL_MONOCHROME_THEME,
+  'SUNSET_VIBES': SUNSET_VIBES_THEME,
+  'OCEAN_DEPTHS': OCEAN_DEPTHS_THEME,
+  'PLATINUM_ELEGANCE': PLATINUM_ELEGANCE_THEME,
+};
+
+// An array of the simple theme names, for iterating in the picker.
+export const THEMES = Object.keys(allThemes);
+
+// A helper function to get a theme by its simple name.
+export const getTheme = (themeName) => {
+  return allThemes[themeName] || DARK_THEME;
 };

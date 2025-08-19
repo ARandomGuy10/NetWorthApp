@@ -12,6 +12,7 @@ type SettingRowProps = {
   isSwitch?: boolean;
   switchValue?: boolean;
   onSwitchChange?: (value: boolean) => void;
+  isLast?: boolean;
   theme: Theme;
 };
 
@@ -23,12 +24,13 @@ export const SettingRow = ({
   isSwitch,
   switchValue,
   onSwitchChange,
+  isLast,
   theme,
 }: SettingRowProps) => {
   const styles = getStyles(theme);
 
   return (
-    <TouchableOpacity style={styles.settingRow} onPress={onPress} disabled={isSwitch}>
+    <TouchableOpacity style={[styles.settingRow, isLast && styles.lastSettingRow]} onPress={onPress} disabled={isSwitch}>
       <View style={styles.settingRowLeft}>
         <Ionicons name={icon} size={24} color={theme.colors.text.secondary} style={styles.settingIcon} />
         <Text style={styles.settingText}>{text}</Text>
@@ -57,6 +59,9 @@ const getStyles = (theme: Theme) =>
       paddingHorizontal: theme.spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border.primary,
+    },
+    lastSettingRow: {
+      borderBottomWidth: 0,
     },
     settingRowLeft: {
       flexDirection: 'row',
