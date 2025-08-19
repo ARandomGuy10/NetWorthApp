@@ -4,7 +4,8 @@ import {View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ScrollView
 import {Ionicons} from '@expo/vector-icons';
 import {useRouter} from 'expo-router';
 import {LinearGradient} from 'expo-linear-gradient';
-import {getGradientColors} from '@/utils/utils';
+import {getGradientColors} from '@/src/utils/formatters';
+import { isAccountOutdated, formatTimeSince } from '@/src/utils/dateUtils';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {Theme, DashboardAccount} from '@/lib/supabase';
 import * as Haptics from 'expo-haptics';
@@ -39,12 +40,7 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
   const liabilitiesCount = activeAccounts.filter(acc => acc.account_type === 'liability').length;
 
   // Get outdated accounts (older than 30 days)
-  const outdatedAccounts = activeAccounts.filter(acc => {
-    if (!acc.latest_balance_date) return true;
-    const lastUpdate = new Date(acc.latest_balance_date);
-    const daysSinceUpdate = (Date.now() - lastUpdate.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSinceUpdate > remindAfterDays;
-  });
+  const outdatedAccounts = activeAccounts.filter(acc => isAccountOutdated(acc.latest_balance_date, remindAfterDays));
 
   const outdatedCount = outdatedAccounts.length;
 
@@ -71,24 +67,6 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
       Brokerage: 'stats-chart',
     };
     return iconMap[category] || 'ellipse';
-  };
-
-  // Format time since last update
-  const getTimeSinceUpdate = (date: string | null): string => {
-    if (!date) return 'Never updated';
-    // By appending T00:00:00, we ensure the date is parsed in the user's local timezone, not UTC.
-    const lastUpdate = new Date(`${date}T00:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const diffTime = today.getTime() - lastUpdate.getTime();
-    const daysSince = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-    if (daysSince <= 0) return 'Updated today';
-    if (daysSince === 1) return '1 day ago';
-    if (daysSince < 30) return `${daysSince} days ago`;
-    if (daysSince < 60) return '1 month ago';
-    return `${Math.floor(daysSince / 30)} months ago`;
   };
 
   // Handle main summary press
@@ -178,7 +156,7 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
               {item.account_name}
             </Text>
             <Text style={[styles.horizontalTime, {color: '#8B7355'}]}>
-              {getTimeSinceUpdate(item.latest_balance_date)}
+              {formatTimeSince(item.latest_balance_date)}
             </Text>
           </View>
           <View style={[styles.horizontalActionIndicator, {backgroundColor: 'rgba(180, 134, 11, 0.18)'}]}>

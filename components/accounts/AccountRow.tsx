@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme, AccountWithBalance } from '@/lib/supabase';
-import { formatCurrency } from '@/utils/utils';
+import { formatCurrency, getGradientColors } from '@/src/utils/formatters';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient'; // Add this import
-import { getGradientColors } from '@/utils/utils'; // Add this import
+import { LinearGradient } from 'expo-linear-gradient';
+import { formatTimeSince } from '@/src/utils/dateUtils';
 
 interface AccountRowProps {
   account: AccountWithBalance;
@@ -118,25 +118,6 @@ const AccountRow: React.FC<AccountRowProps> = ({
     return iconMap[category] || 'ellipse-outline';
   };
 
-  const timeSinceUpdate = (date: string | null): string => {
-    if (!date) return 'Never updated';
-    // By appending T00:00:00, we ensure the date is parsed in the user's local timezone, not UTC.
-    // This prevents issues where a date might be considered "yesterday" or "tomorrow" due to timezone differences.
-    const lastUpdate = new Date(`${date}T00:00:00`);
-    const today = new Date();
-    
-    // Set today's time to 00:00:00 to compare just the date part.
-    today.setHours(0, 0, 0, 0);
-
-    const diffTime = today.getTime() - lastUpdate.getTime();
-    // Use Math.round to handle daylight saving transitions gracefully.
-    const daysSince = Math.round(diffTime / (1000 * 60 * 60 * 24));
-
-    if (daysSince <= 0) return 'Updated today';
-    if (daysSince === 1) return '1 day ago';
-    return `${daysSince} days ago`;
-  };
-
   return (
     <View style={styles.outerContainer}>
       {/* Actions Container - positioned absolutely behind the row */}
@@ -211,7 +192,7 @@ const AccountRow: React.FC<AccountRowProps> = ({
                   {formatCurrency(account.latest_balance || 0, account.currency)}
                 </Text>
                 <Text style={[styles.balanceDate, isOutdated && styles.outdatedText]}>
-                  {timeSinceUpdate(account.latest_balance_date)}
+                  {formatTimeSince(account.latest_balance_date)}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />

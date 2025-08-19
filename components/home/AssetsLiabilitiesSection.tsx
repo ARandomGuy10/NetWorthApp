@@ -6,7 +6,7 @@ import {AnimatedCircularProgress} from 'react-native-circular-progress';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useTheme} from '../../src/styles/theme/ThemeContext';
 import {Theme} from '@/lib/supabase';
-import {formatSmartNumber, getGradientColors} from '@/utils/utils';
+import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
 import * as Haptics from 'expo-haptics';
 
 const {width: screenWidth} = Dimensions.get('window');

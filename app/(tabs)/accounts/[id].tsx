@@ -25,7 +25,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 
 import { useAccountDetails } from '@/hooks/useAccounts';
 import { useBalances, useDeleteBalance } from '@/hooks/useBalances';
-import { formatCurrency } from '@/utils/utils';
+import { formatCurrency } from '@/src/utils/formatters';
+import { formatDate } from '@/src/utils/dateUtils';
 import ActionMenu, { Action } from '@/components/ui/ActionMenu';
 import type { Balance } from '@/lib/supabase';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
@@ -57,9 +58,6 @@ import { Theme } from '@/lib/supabase';
   }, []);
 
   /* ───────── utilities ───────── */
-  const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
   const iconFor = (cat: string): keyof typeof Ionicons.glyphMap => {
     const m: Record<string, keyof typeof Ionicons.glyphMap> = {
       Cash: 'cash-outline',

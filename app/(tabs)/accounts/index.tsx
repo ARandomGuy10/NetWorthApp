@@ -29,6 +29,7 @@ import StatusShelf from '../../../components/accounts/StatusShelf'; // Import th
 import AccountSectionHeader from '../../../components/accounts/AccountSectionHeader';
 import AccountRow from '../../../components/accounts/AccountRow';
 import QuickEditSheet from '../../../components/accounts/QuickEditSheet';
+import { isAccountOutdated } from '@/src/utils/dateUtils'; // Import the new utility
 import SortOptionsSheet, { SortOption } from '../../../components/accounts/SortOptionsSheet';
 
 
@@ -65,21 +66,22 @@ function AccountsScreen() {
     }
   };
 
-  // New function for swipe-to-delete with confirmation
-  const confirmAndDeleteAccount = (accountId: string, accountName: string) => {
+  // Consolidated handler for deleting an account with confirmation
+  const handleDeleteAccountWithConfirmation = (account: { id: string; name: string }, onCompletion?: () => void) => {
     Alert.alert(
       'Delete Account',
-      `Are you sure you want to delete "${accountName}"? This will also delete all balance entries.`,
+      `Are you sure you want to delete "${account.name}"? This will also delete all balance entries.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            setIsDeleting(true); 
+            setIsDeleting(true);
             try {
-              await deleteAccountMutation.mutateAsync(accountId); 
+              await deleteAccountMutation.mutateAsync(account.id);
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              onCompletion?.();
             } catch (error) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
             } finally {
@@ -185,34 +187,6 @@ function AccountsScreen() {
     setMenuVisible(true);
   };
 
-  const handleDeleteAccount = async () => {
-    if (!selectedAccount) return;
-
-    Alert.alert(
-      'Delete Account',
-      `Are you sure you want to delete "${selectedAccount.account_name}"? This will also delete all balance entries.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true); 
-            try {
-              await deleteAccountMutation.mutateAsync(selectedAccount.account_id);
-              setMenuVisible(false);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            } catch (error) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-            } finally {
-              setIsDeleting(false);
-            }
-          },
-        },
-      ]
-    );
-  };
-
   const handleQuickEdit = (account: AccountWithBalance) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedAccount(account);
@@ -270,17 +244,19 @@ function AccountsScreen() {
       title: 'Delete Account',
       icon: 'trash-outline',
       destructive: true,
-      onPress: handleDeleteAccount,
+      onPress: () => {
+        if (!selectedAccount) return;
+        handleDeleteAccountWithConfirmation(
+          { id: selectedAccount.account_id, name: selectedAccount.account_name },
+          () => setMenuVisible(false)
+        );
+      },
     },
   ];
 
   const outdatedAccounts = useMemo(() => {
     const remindAfterDays = profile?.remind_after_days || 30;
-    return accounts.filter(acc => {
-      if (!acc.latest_balance_date) return true;
-      const daysSinceUpdate = (Date.now() - new Date(acc.latest_balance_date).getTime()) / (1000 * 60 * 60 * 24);
-      return daysSinceUpdate > remindAfterDays;
-    });
+    return accounts.filter(acc => isAccountOutdated(acc.latest_balance_date, remindAfterDays));
   }, [accounts, profile]);
 
   const hiddenAccounts = useMemo(() => accounts.filter(acc => acc.is_archived), [accounts]);
@@ -422,7 +398,7 @@ function AccountsScreen() {
             onEdit={() => handleQuickEdit(account)}
             onDelete={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              confirmAndDeleteAccount(account.account_id, account.account_name);
+              handleDeleteAccountWithConfirmation({ id: account.account_id, name: account.account_name });
             }}
             onArchive={() => handleArchiveAccount(account)}
             isIncludedInNetWorth={account.include_in_net_worth ?? false}

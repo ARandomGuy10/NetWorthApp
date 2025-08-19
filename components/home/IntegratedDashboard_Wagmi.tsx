@@ -6,7 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
-import {formatSmartNumber, getGradientColors} from '@/utils/utils';
+import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
 import * as Haptics from 'expo-haptics';
 
 const {width: screenWidth} = Dimensions.get('window');

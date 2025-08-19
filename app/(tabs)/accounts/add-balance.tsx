@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import { useAccounts } from '@/hooks/useAccounts';
 import { useAddBalance, useUpdateBalance } from '@/hooks/useBalances';
 import { useToast } from '@/hooks/providers/ToastProvider';
+import { getYYYYMMDD } from '@/src/utils/dateUtils';
 import CustomPicker from '@/components/ui/CustomPicker';
 import DatePicker from '@/components/ui/DatePicker';
 import { Balance, Theme } from '@/lib/supabase';
@@ -36,18 +37,11 @@ export default function AddBalanceScreen() {
   const addBalanceMutation = useAddBalance();
   const updateBalanceMutation = useUpdateBalance();
 
-  const getLocalDateString = (date: Date): string => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const [selectedAccount, setSelectedAccount] = useState<any>(null);
   const [formData, setFormData] = useState({
     account_id: (accountId as string) || '',
     amount: '',
-    date: getLocalDateString(new Date()),
+    date: getYYYYMMDD(new Date()),
     notes: '',
   });
 
