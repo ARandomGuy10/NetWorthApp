@@ -27,6 +27,8 @@ export type Database = {
           updated_at: string | null;
           theme: string;
           remind_after_days: number;
+          haptic_feedback_enabled: boolean;
+          sounds_enabled: boolean;
         };
         Insert: {
           id: string;
@@ -39,6 +41,8 @@ export type Database = {
           last_sign_in_at?: string | null;
           theme?: string;
           remind_after_days?: number;
+          haptic_feedback_enabled?: boolean;
+          sounds_enabled?: boolean;
         };
         Update: {
           avatar_url?: string | null;
@@ -50,6 +54,8 @@ export type Database = {
           date_format?: string | null;
           theme?: string;
           remind_after_days?: number;
+          haptic_feedback_enabled?: boolean;
+          sounds_enabled?: boolean;
         };
       };
       accounts: {
@@ -234,10 +240,50 @@ export const THEMES = [
   'PLATINUM_ELEGANCE',
 ];
 
+type ColorPalette = {
+  primary: string;
+  secondary: string;
+  accent: string;
+  asset: string;
+  liability: string;
+  background: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+    card: string;
+    elevated: string;
+    navBarBackground?: string;
+  };
+  text: {
+    primary: string;
+    secondary: string;
+    tertiary: string;
+    disabled: string;
+    inverse: string;
+    onPrimary: string;
+    onCard?: string;
+  };
+  border: {
+    primary: string;
+    secondary: string;
+    focus?: string;
+  };
+  interactive: {
+    hover: string;
+    pressed?: string;
+    disabled?: string;
+  };
+  error: string;
+  success: string;
+  warning: string;
+  info?: string;
+  gradient?: any; // Keep as any for flexibility with gradient arrays
+};
+
 export type Theme = {
   name: string;
-  colors: any;
-  spacing: any;
-  borderRadius: any;
-  shadows: any;
+  colors: ColorPalette;
+  spacing: Record<string, number>;
+  borderRadius: Record<string, number>;
+  shadows: Record<string, any>;
 };
