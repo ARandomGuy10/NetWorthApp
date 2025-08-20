@@ -6,8 +6,9 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
-import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
 import * as Haptics from 'expo-haptics';
+import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -24,6 +25,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   const {theme} = useTheme() || {};
   const [range, setRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
   const {data, isLoading, error} = useNetWorthHistory({period: range});
+  const { impactAsync } = useHaptics();
 
   // State for custom tooltip
   const [tooltipData, setTooltipData] = useState<{
@@ -34,9 +36,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     y: number;
   } | null>(null);
 
-  const invokeHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
 
   const prepared = useMemo(() => {
     const empty = {
@@ -110,7 +109,8 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   // Enhanced callback to handle tooltip data
   const onCurrentIndexChange = useCallback(
     (index: number) => {
-      invokeHaptic();
+      impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
 
       // Show tooltip with current data point
       if (prepared.chartData[index]) {
@@ -135,7 +135,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
         }, 3000);
       }
     },
-    [invokeHaptic, prepared.chartData]
+    [impactAsync, prepared.chartData]
   );
 
   const lineColor = theme.colors.asset || theme.colors.primary;
@@ -187,10 +187,11 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
               data={prepared.chartData}
               onCurrentIndexChange={onCurrentIndexChange}
               key={`${range}-${prepared.chartData.length}-${prepared.latest}-${prepared.calculatedAt}`}>
-              <LineChart height={200} width={screenWidth}>
-                <LineChart.Path color={lineColor} width={3} />
-                <LineChart.CursorCrosshair color={lineColor} onActivated={invokeHaptic} onEnded={invokeHaptic} />
-              </LineChart>
+              <LineChart.Path color={lineColor} width={3} />
+                <LineChart.CursorCrosshair color={lineColor} 
+                  onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)} 
+                  onEnded={() => {}} 
+                />
             </LineChart.Provider>
           )}
 
@@ -220,7 +221,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
               key={option.value}
               style={[styles.enhancedPeriodButton, option.value === range && styles.selectedPeriodButton]}
               onPress={() => {
-                invokeHaptic();
+                impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setRange(option.value as any);
               }}>
               <Text

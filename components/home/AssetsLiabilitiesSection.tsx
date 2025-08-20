@@ -5,9 +5,10 @@ import {View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated} from 're
 import {AnimatedCircularProgress} from 'react-native-circular-progress';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useTheme} from '../../src/styles/theme/ThemeContext';
-import {Theme} from '@/lib/supabase';
-import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
+import { Theme } from '@/lib/supabase';
+import { formatSmartNumber, getGradientColors } from '@/src/utils/formatters';
 import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ interface AssetsLiabilitiesSectionProps {
 const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netWorthData}) => {
   const {theme} = useTheme();
   const styles = getStyles(theme);
+  const { impactAsync } = useHaptics();
 
   // State for toggling between percentage and actual values
   const [showPercentage, setShowPercentage] = useState(true);
@@ -38,7 +40,7 @@ const AssetsLiabilitiesSection: React.FC<AssetsLiabilitiesSectionProps> = ({netW
 
   // Haptics callback
   const invokeHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
   // Calculate percentages

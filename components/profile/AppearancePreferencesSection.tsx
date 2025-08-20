@@ -6,6 +6,7 @@ import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
 import { SettingRow } from '../ui/SettingRow';
 import ThemePicker from './ThemePicker';
 import RemindAfterDaysPicker from './RemindAfterDaysPicker';
+import CurrencyPicker from './CurrencyPicker';
 
 const formatThemeName = (name: string | undefined) => {
   if (!name) return '';
@@ -20,6 +21,7 @@ const AppearancePreferencesSection = () => {
 
   const [isThemePickerVisible, setThemePickerVisible] = useState(false);
   const [isReminderPickerVisible, setReminderPickerVisible] = useState(false);
+  const [isCurrencyPickerVisible, setCurrencyPickerVisible] = useState(false);
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [soundsEnabled, setSoundsEnabled] = useState(false);
 
@@ -31,10 +33,6 @@ const AppearancePreferencesSection = () => {
   }, [profile]);
 
   const isLoading = isLoadingProfile || updateProfileMutation.isPending;
-
-  const handleCurrencyPress = () => {
-    Alert.alert('Currency Selection', 'This will open the currency selection modal.');
-  };
 
   const handleNotificationsPress = () => {
     Alert.alert('Notification Settings', 'This will navigate to notification settings.');
@@ -54,6 +52,10 @@ const AppearancePreferencesSection = () => {
 
   const handleSaveReminder = (days: number) => {
     handleSavePreference({ remind_after_days: days });
+  };
+
+  const handleSaveCurrency = (currency: string) => {
+    handleSavePreference({ preferred_currency: currency });
   };
 
   return (
@@ -76,7 +78,7 @@ const AppearancePreferencesSection = () => {
               icon="cash-outline"
               text="Preferred Currency"
               value={profile?.preferred_currency}
-              onPress={handleCurrencyPress}
+              onPress={() => setCurrencyPickerVisible(true)}
             />
             <SettingRow
               theme={theme}
@@ -128,6 +130,12 @@ const AppearancePreferencesSection = () => {
         onClose={() => setReminderPickerVisible(false)}
         currentValue={profile?.remind_after_days || 30}
         onSave={handleSaveReminder}
+      />
+      <CurrencyPicker
+        isVisible={isCurrencyPickerVisible}
+        onClose={() => setCurrencyPickerVisible(false)}
+        currentValue={profile?.preferred_currency || 'USD'}
+        onSave={handleSaveCurrency}
       />
     </View>
   );

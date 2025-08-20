@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { useHaptics } from '@/hooks/useHaptics';
 import { Theme } from '@/lib/supabase';
 
 interface SwitchProps {
@@ -29,6 +30,7 @@ export default function Switch({
   const animatedValue = useRef(new Animated.Value(value ? 1 : 0)).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const { theme } = useTheme();
+  const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
 
   const sizes = {
@@ -52,7 +54,7 @@ export default function Switch({
     if (disabled) return;
 
     // Haptic feedback
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     // Use a different animation approach that works well with native driver
     Animated.parallel([

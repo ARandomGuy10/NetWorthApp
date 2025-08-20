@@ -8,6 +8,7 @@ import ProfileHeader from '@/components/profile/ProfileHeader';
 import UserProfileCard from '@/components/profile/UserProfileCard';
 import PremiumBanner from '@/components/profile/PremiumBanner';
 import AppearancePreferencesSection from '@/components/profile/AppearancePreferencesSection';
+import AccountActionsSection from '@/components/profile/AccountActionsSection';
 
 const ProfileScreen = () => {
   const router = useRouter();
@@ -38,6 +39,7 @@ const ProfileScreen = () => {
         <UserProfileCard onPress={handleProfileCardPress} />
         <PremiumBanner onPress={handlePremiumPress} />
         <AppearancePreferencesSection />
+        <AccountActionsSection />
       </ScrollView>
     </View>
   );

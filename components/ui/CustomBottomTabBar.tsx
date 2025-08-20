@@ -11,6 +11,8 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Theme } from '@/lib/supabase';
+import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 const { width } = Dimensions.get('window');
@@ -65,6 +67,7 @@ const TabBarButton: React.FC<TabBarButtonProps> = ({ route, isFocused, onPress, 
 export default function CustomBottomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
 
   return (
@@ -74,6 +77,7 @@ export default function CustomBottomTabBar({ state, descriptors, navigation }: B
         const isFocused = state.index === index;
 
         const onPress = () => {
+          impactAsync(Haptics.ImpactFeedbackStyle.Light);
           const event = navigation.emit({
             type: 'tabPress',
             target: route.key,

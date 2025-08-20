@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from 
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 
 interface CategoryInputProps {
   value: string;
@@ -14,6 +15,7 @@ interface CategoryInputProps {
 
 const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, suggestions, disabled, accountType }) => {
   const { theme } = useTheme();
+  const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
   const selectedColor = accountType === 'asset' ? theme.colors.asset : theme.colors.liability;
   const placeholderText = accountType === 'asset'
@@ -46,7 +48,7 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, sugg
               value === suggestion && { backgroundColor: selectedColor, borderColor: selectedColor },
             ]}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              impactAsync(Haptics.ImpactFeedbackStyle.Light);
               onChangeText(suggestion);
             }}
             disabled={disabled}

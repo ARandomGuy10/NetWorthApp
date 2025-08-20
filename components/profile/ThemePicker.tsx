@@ -95,7 +95,7 @@ const getStyles = (theme: Theme, insets: any) => StyleSheet.create({
     borderTopLeftRadius: theme.borderRadius.xl,
     borderTopRightRadius: theme.borderRadius.xl,
     paddingBottom: insets.bottom + theme.spacing.lg,
-    maxHeight: '80%',
+    maxHeight: '60%',
   },
   header: {
     padding: theme.spacing.lg,

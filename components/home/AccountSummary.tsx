@@ -7,8 +7,9 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {getGradientColors} from '@/src/utils/formatters';
 import { isAccountOutdated, formatTimeSince } from '@/src/utils/dateUtils';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
-import {Theme, DashboardAccount} from '@/lib/supabase';
 import * as Haptics from 'expo-haptics';
+import {Theme, DashboardAccount} from '@/lib/supabase';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -20,16 +21,12 @@ interface AccountSummaryProps {
 const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAfterDays}) => {
   const router = useRouter();
   const {theme} = useTheme();
+  const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
 
   // Animation state
   const [scaleAnim] = useState(new Animated.Value(1));
   const [showAllOutdated, setShowAllOutdated] = useState(false);
-
-  // Haptic feedback
-  const invokeHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
 
   // Filter out archived accounts (soft deleted)
   const activeAccounts = accounts.filter(acc => acc.is_archived !== true);
@@ -71,7 +68,7 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
 
   // Handle main summary press
   const handleSummaryPress = useCallback(() => {
-    invokeHaptic();
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     Animated.sequence([
       Animated.timing(scaleAnim, {
@@ -87,22 +84,22 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
     ]).start();
 
     router.push('/accounts' as any);
-  }, [invokeHaptic, scaleAnim, router]);
+  }, [impactAsync, scaleAnim, router]);
 
   // Handle outdated account press - navigate to add balance
   const handleOutdatedAccountPress = useCallback(
     (accountId: string) => {
-      invokeHaptic();
+      impactAsync(Haptics.ImpactFeedbackStyle.Light);
       router.push({ pathname: `accounts/add-balance`, params: { accountId } });
     },
-    [invokeHaptic, router]
+    [impactAsync, router]
   );
 
   // Handle show more/less toggle
   const handleToggleOutdated = useCallback(() => {
-    invokeHaptic();
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setShowAllOutdated(!showAllOutdated);
-  }, [invokeHaptic, showAllOutdated]);
+  }, [impactAsync, showAllOutdated]);
 
   if (totalAccounts === 0) {
     return (
@@ -110,7 +107,7 @@ const AccountSummary: React.FC<AccountSummaryProps> = ({accounts = [], remindAft
         <TouchableOpacity
           style={styles.emptyCard} 
           onPress={() => {
-            invokeHaptic();
+            impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push('/accounts/add-account' as any);
           }}
           activeOpacity={0.8}>

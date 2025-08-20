@@ -2,8 +2,9 @@ import React, {JSX, useEffect, useRef, useState} from 'react';
 import {View, Text, StyleSheet, Animated, TouchableOpacity, Dimensions} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const getGradientColorsForType = (type: ToastType): [string, string] => {
   switch (type) {
@@ -61,6 +62,7 @@ export default function Toast({
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.9)).current;
   const insets = useSafeAreaInsets();
+  const { notificationAsync, impactAsync } = useHaptics();
 
   const [isVisible, setIsVisible] = useState(visible);
 
@@ -72,9 +74,9 @@ export default function Toast({
 
       // Trigger haptics
       const triggerHaptic = async () => {
-        if (type === 'error') await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        else if (type === 'success') await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        else await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        if (type === 'error') await notificationAsync(Haptics.NotificationFeedbackType.Error);
+        else if (type === 'success') await notificationAsync(Haptics.NotificationFeedbackType.Success);
+        else await impactAsync(Haptics.ImpactFeedbackStyle.Light);
       };
       triggerHaptic();
 

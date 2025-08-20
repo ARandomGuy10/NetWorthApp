@@ -14,12 +14,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { toByteArray } from 'base64-js';
 import * as ImagePicker from 'expo-image-picker';
 
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
+import { useHaptics } from '@/hooks/useHaptics';
 import { useSupabase } from '@/hooks/useSupabase';
 import { useToast } from '@/hooks/providers/ToastProvider';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
@@ -44,6 +45,7 @@ export default function EditProfileScreen() {
   const { showToast } = useToast();
   const supabase = useSupabase();
   const { theme } = useTheme();
+  const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
 
   const [formData, setFormData] = useState({
@@ -99,7 +101,7 @@ export default function EditProfileScreen() {
   };
 
   const handleRemoveAvatar = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setNewAvatarUri(null);
     setNewAvatarBase64(null);
     setNewAvatarMimeType(null);
@@ -113,7 +115,7 @@ export default function EditProfileScreen() {
   };
 
   const handleSave = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsUploading(true);
 
     if (!formData.first_name.trim()) {

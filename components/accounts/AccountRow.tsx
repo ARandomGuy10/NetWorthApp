@@ -7,6 +7,7 @@ import { formatCurrency, getGradientColors } from '@/src/utils/formatters';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { formatTimeSince } from '@/src/utils/dateUtils';
 
@@ -30,6 +31,7 @@ const AccountRow: React.FC<AccountRowProps> = ({
   isOutdated, 
 }) => {
   const { theme } = useTheme();
+  const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
   const translateX = useSharedValue(0);
   const timeoutRef = useRef<number | null>(null);
@@ -73,11 +75,11 @@ const AccountRow: React.FC<AccountRowProps> = ({
     .onEnd((e) => {
       if (e.translationX > SWIPE_THRESHOLD) { // Swiped right enough
         translateX.value = withTiming(QUICK_EDIT_WIDTH, { duration: 150 });
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+        runOnJS(impactAsync)(Haptics.ImpactFeedbackStyle.Light);
         runOnJS(startAutoCloseTimer)();
       } else if (e.translationX < -SWIPE_THRESHOLD) { // Swiped left enough
         translateX.value = withTiming(-HIDE_ARCHIVE_WIDTH, { duration: 150 });
-        runOnJS(Haptics.impactAsync)(Haptics.ImpactFeedbackStyle.Light);
+        runOnJS(impactAsync)(Haptics.ImpactFeedbackStyle.Light);
         runOnJS(startAutoCloseTimer)();
       } else {
         translateX.value = withTiming(0, { duration: 150 }); // Snap back

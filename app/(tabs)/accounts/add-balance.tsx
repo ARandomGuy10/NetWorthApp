@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useAccounts } from '@/hooks/useAccounts';
+import { useHaptics } from '@/hooks/useHaptics';
 import { useAddBalance, useUpdateBalance } from '@/hooks/useBalances';
 import { useToast } from '@/hooks/providers/ToastProvider';
 import { getYYYYMMDD } from '@/src/utils/dateUtils';
@@ -31,7 +32,8 @@ export default function AddBalanceScreen() {
   const { accountId, balanceId, mode, balanceData } = useLocalSearchParams();
   const { showToast } = useToast();
    const { theme } = useTheme();
-   const styles = getStyles(theme);
+  const { impactAsync } = useHaptics();
+  const styles = getStyles(theme);
 
   const { data: accounts, isLoading: accountsLoading } = useAccounts();
   const addBalanceMutation = useAddBalance();
@@ -125,7 +127,7 @@ export default function AddBalanceScreen() {
       return;
     }
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const balancePayload: Omit<Balance, 'id' | 'created_at' | 'updated_at'> = {
       account_id: formData.account_id,
@@ -176,7 +178,7 @@ export default function AddBalanceScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton} onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.back();
         }} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="close" size={24} color={theme.colors.text.primary} />
@@ -280,7 +282,7 @@ export default function AddBalanceScreen() {
               <TouchableOpacity
                 style={styles.cancelButton}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.back();
                 }}
                 disabled={loading}

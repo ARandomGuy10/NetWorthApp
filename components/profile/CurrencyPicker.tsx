@@ -9,19 +9,17 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
+import { Theme, CURRENCIES } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
 
-interface RemindAfterDaysPickerProps {
+interface CurrencyPickerProps {
   isVisible: boolean;
   onClose: () => void;
-  currentValue: number;
-  onSave: (value: number) => void;
+  currentValue: string;
+  onSave: (value: string) => void;
 }
 
-const REMINDER_OPTIONS = [7, 15, 30, 60, 90];
-
-const RemindAfterDaysPicker: React.FC<RemindAfterDaysPickerProps> = ({
+const CurrencyPicker: React.FC<CurrencyPickerProps> = ({
   isVisible,
   onClose,
   currentValue,
@@ -41,14 +39,14 @@ const RemindAfterDaysPicker: React.FC<RemindAfterDaysPickerProps> = ({
       <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Remind to Update</Text>
+            <Text style={styles.title}>Select Currency</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={theme.colors.text.primary} />
             </TouchableOpacity>
           </View>
           <FlatList
-            data={REMINDER_OPTIONS}
-            keyExtractor={(item) => item.toString()}
+            data={CURRENCIES}
+            keyExtractor={(item) => item}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[styles.optionRow, currentValue === item && styles.selectedOption]}
@@ -58,7 +56,7 @@ const RemindAfterDaysPicker: React.FC<RemindAfterDaysPickerProps> = ({
                 }}
               >
                 <Text style={[styles.optionText, currentValue === item && styles.selectedText]}>
-                  Every {item} days
+                  {item}
                 </Text>
                 {currentValue === item && (
                   <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
@@ -73,26 +71,9 @@ const RemindAfterDaysPicker: React.FC<RemindAfterDaysPickerProps> = ({
 };
 
 const getStyles = (theme: Theme, insets: any) => StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
-  },
-  container: {
-    backgroundColor: theme.colors.background.card,
-    borderTopLeftRadius: theme.borderRadius.xl,
-    borderTopRightRadius: theme.borderRadius.xl,
-    paddingBottom: insets.bottom + theme.spacing.lg,
-    maxHeight: '50%',
-  },
-  header: {
-    padding: theme.spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' },
+  container: { backgroundColor: theme.colors.background.card, borderTopLeftRadius: theme.borderRadius.xl, borderTopRightRadius: theme.borderRadius.xl, paddingBottom: insets.bottom + theme.spacing.lg, maxHeight: '60%' },
+  header: { padding: theme.spacing.lg, borderBottomWidth: 1, borderBottomColor: theme.colors.border.primary, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '600', color: theme.colors.text.primary },
   closeButton: { padding: theme.spacing.sm },
   optionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: theme.spacing.lg, borderBottomWidth: 1, borderBottomColor: theme.colors.border.primary },
@@ -101,4 +82,4 @@ const getStyles = (theme: Theme, insets: any) => StyleSheet.create({
   selectedText: { fontWeight: 'bold', color: theme.colors.primary },
 });
 
-export default RemindAfterDaysPicker;
+export default CurrencyPicker;

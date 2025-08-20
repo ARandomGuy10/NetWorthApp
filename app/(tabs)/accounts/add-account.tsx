@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
 import { useAddAccount, useUpdateAccount } from '@/hooks/useAccounts';
+import { useHaptics } from '@/hooks/useHaptics';
 import { ACCOUNT_CATEGORIES, CURRENCIES } from '@/lib/supabase';
 import { useToast } from '@/hooks/providers/ToastProvider';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
@@ -33,6 +34,7 @@ export default function AddAccountScreen() {
   const addAccountMutation = useAddAccount();
   const updateAccountMutation = useUpdateAccount();
   const { theme } = useTheme();
+  const { impactAsync, notificationAsync } = useHaptics();
   const styles = getStyles(theme);
   
   const isEditMode = mode === 'edit' && accountId;
@@ -130,7 +132,7 @@ export default function AddAccountScreen() {
   const handleSave = async () => {
     if (!validateForm()) return;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       if (isEditMode) {
@@ -148,7 +150,7 @@ export default function AddAccountScreen() {
           updates: saveData
         });
 
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        notificationAsync(Haptics.NotificationFeedbackType.Success);
         setTimeout(() => router.back(), 1500);
       } else {
         const accountWithBalance = {
@@ -163,19 +165,19 @@ export default function AddAccountScreen() {
 
         await addAccountMutation.mutateAsync(accountWithBalance);
 
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        notificationAsync(Haptics.NotificationFeedbackType.Success);
         setTimeout(() => router.back(), 1500);
       }
     } catch (error) {
       console.error('Error saving account:', error);
       showToast(`Failed to ${isEditMode ? 'update' : 'create'} account. Please try again.`, 'error');
       
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
   const handleTypeChange = (type: 'asset' | 'liability') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setFormData({ ...formData, type, category: '' });
   };
 
@@ -206,7 +208,7 @@ export default function AddAccountScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
           }}          style={styles.headerButton}
           activeOpacity={0.7}
@@ -333,7 +335,7 @@ export default function AddAccountScreen() {
               <CustomPicker
                 value={formData.currency}
                 onValueChange={(value) => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setFormData({ ...formData, currency: value });
                 }}
                 items={currencyOptions}
@@ -385,7 +387,7 @@ export default function AddAccountScreen() {
               <Switch
                 value={formData.include_in_net_worth}
                 onValueChange={(value) => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setFormData({ ...formData, include_in_net_worth: value });
                 }}
                 disabled={isLoading}
@@ -418,7 +420,7 @@ export default function AddAccountScreen() {
             <TouchableOpacity
               style={styles.cancelButton}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 router.back();
               }}
               disabled={isLoading}

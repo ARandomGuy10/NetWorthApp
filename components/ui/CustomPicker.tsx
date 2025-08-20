@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { useHaptics } from '@/hooks/useHaptics';
 import { useTheme } from '../../src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 
@@ -42,13 +43,14 @@ export default function CustomPicker({
   const [slideAnim] = useState(new Animated.Value(50));
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
   const selectedItem = items.find(item => item.value === value);
 
   const showModal = () => {
     if (disabled) return;
     
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setModalVisible(true);
     
     Animated.parallel([
@@ -82,7 +84,7 @@ export default function CustomPicker({
   };
 
   const handleSelect = (selectedValue: string): void => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onValueChange(selectedValue);
     hideModal();
   };

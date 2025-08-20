@@ -11,9 +11,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../src/styles/theme/ThemeContext';
+import * as Haptics from 'expo-haptics';
 import { Theme } from '@/lib/supabase';
 
 import { useIsFocused } from '@react-navigation/native';
+import { useHaptics } from '@/hooks/useHaptics';
 
 const ModernFAB: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);
@@ -23,6 +25,7 @@ const ModernFAB: React.FC = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const isFocused = useIsFocused();
+  const { impactAsync } = useHaptics();
 
   // Effect to close the FAB if the screen is not focused
   React.useEffect(() => {
@@ -32,6 +35,7 @@ const ModernFAB: React.FC = () => {
   }, [isFocused]);
 
   const toggleFAB = (): void => {
+    impactAsync(isOpen ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
     const toValue = isOpen ? 0 : 1;
     
     Animated.spring(animation, {

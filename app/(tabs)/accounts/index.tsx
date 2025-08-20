@@ -19,6 +19,7 @@ import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'
 import { useDeleteAccount, useUpdateAccount } from '../../../hooks/useAccounts';
 import { useAddBalance } from '../../../hooks/useBalances';
 import { useProfile } from '../../../hooks/useProfile'; // Import useProfile hook
+import { useHaptics } from '@/hooks/useHaptics';
 import { useToast } from '../../../hooks/providers/ToastProvider'; // Add this import
 import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
 import { AccountWithBalance, Theme } from '../../../lib/supabase'; // Updated type
@@ -52,6 +53,7 @@ function AccountsScreen() {
   const deleteAccountMutation = useDeleteAccount();
   const updateAccountMutation = useUpdateAccount();
   const addBalanceMutation = useAddBalance();
+  const { impactAsync, notificationAsync } = useHaptics();
 
   const { showToast } = useToast(); // Get showToast from the hook
 
@@ -59,10 +61,10 @@ function AccountsScreen() {
     try {
       await updateAccountMutation.mutateAsync({ id: account.account_id, updates: { is_archived: !account.is_archived } });
       showToast(`Account ${account.is_archived ? 'unarchived' : 'archived'} successfully!`, 'success');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       showToast(`Failed to ${account.is_archived ? 'unarchive' : 'archive'} account.`, 'error');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
@@ -80,10 +82,10 @@ function AccountsScreen() {
             setIsDeleting(true);
             try {
               await deleteAccountMutation.mutateAsync(account.id);
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              notificationAsync(Haptics.NotificationFeedbackType.Success);
               onCompletion?.();
             } catch (error) {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+              notificationAsync(Haptics.NotificationFeedbackType.Error);
             } finally {
               setIsDeleting(false);
             }
@@ -138,33 +140,33 @@ function AccountsScreen() {
   };
 
   const handleToggleSection = (title: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setCollapsedSections(prev => ({ ...prev, [title]: !prev[title] }));
   };
 
   const handleSort = (option: SortOption) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSortOption(option);
   };
 
   const handleShowSearch = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsSearchVisible(true);
   };
 
   const handleCloseSearch = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsSearchVisible(false);
     setSearchQuery('');
   };
 
   const handleFilterChange = (filter: FilterType) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setActiveFilter(filter);
   };
 
   const handleViewOutdated = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setActiveFilter('Outdated');
   };
 
@@ -179,7 +181,7 @@ function AccountsScreen() {
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
   const handleAccountMenu = (account: AccountWithBalance, event: any) => { // Updated type
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     const { pageY } = event.nativeEvent;
     setSelectedAccount(account);
@@ -188,7 +190,7 @@ function AccountsScreen() {
   };
 
   const handleQuickEdit = (account: AccountWithBalance) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setSelectedAccount(account);
     setIsQuickEditVisible(true);
   };
@@ -209,7 +211,7 @@ function AccountsScreen() {
       notes: notes,
     });
 
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
   const accountMenuActions: Action[] = [
@@ -377,7 +379,7 @@ function AccountsScreen() {
             isCollapsed={headerData.isCollapsed}
             onToggleCollapse={() => handleToggleSection(headerData.title)}
             onAdd={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               const type = headerData.title === 'Assets' ? 'asset' : 'liability';
               router.push({
                 pathname: 'accounts/add-account',
@@ -392,12 +394,12 @@ function AccountsScreen() {
           <AccountRow 
             account={account} 
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push(`/accounts/${account.account_id}`);
             }}
             onEdit={() => handleQuickEdit(account)}
             onDelete={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               handleDeleteAccountWithConfirmation({ id: account.account_id, name: account.account_name });
             }}
             onArchive={() => handleArchiveAccount(account)}
@@ -426,11 +428,11 @@ function AccountsScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <AccountsHeader
         onAdd={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           router.push('accounts/add-account');
         }}
         onSort={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setIsSortSheetVisible(true);
         }}
         search={searchProps}
