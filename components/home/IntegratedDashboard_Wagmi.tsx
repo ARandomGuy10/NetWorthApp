@@ -22,7 +22,7 @@ const ranges = [
 
 const IntegratedDashboard_Wagmi: React.FC = () => {
   const router = useRouter();
-  const {theme} = useTheme() || {};
+  const {theme} = useTheme();
   const [range, setRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
   const {data, isLoading, error} = useNetWorthHistory({period: range});
   const { impactAsync } = useHaptics();
@@ -187,14 +187,16 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
               data={prepared.chartData}
               onCurrentIndexChange={onCurrentIndexChange}
               key={`${range}-${prepared.chartData.length}-${prepared.latest}-${prepared.calculatedAt}`}>
-              <LineChart.Path color={lineColor} width={3} />
-                <LineChart.CursorCrosshair color={lineColor} 
-                  onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)} 
-                  onEnded={() => {}} 
-                />
+              <LineChart height={200} width={screenWidth}>
+                <LineChart.Path color={lineColor} width={3} />
+                  <LineChart.CursorCrosshair color={lineColor} 
+                    onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)} 
+                    onEnded={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)} 
+                  />
+              </LineChart>
             </LineChart.Provider>
           )}
-
+``
           {/* Custom Tooltip - Safe Implementation */}
           {tooltipData && (
             <View

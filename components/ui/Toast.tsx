@@ -5,6 +5,7 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useSounds } from '@/hooks/useSounds';
 
 const getGradientColorsForType = (type: ToastType): [string, string] => {
   switch (type) {
@@ -32,6 +33,7 @@ interface ToastProps {
   duration?: number;
   position?: 'top' | 'bottom';
   showCloseButton?: boolean;
+  haptics?: boolean;
 }
 
 interface ToastStyle {
@@ -57,12 +59,14 @@ export default function Toast({
   duration = 4000,
   position = 'top',
   showCloseButton = true,
+  haptics = true,
 }: ToastProps): JSX.Element | null {
   const translateY = useRef(new Animated.Value(position === 'top' ? -100 : 100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.9)).current;
   const insets = useSafeAreaInsets();
   const { notificationAsync, impactAsync } = useHaptics();
+  const { playSound } = useSounds();
 
   const [isVisible, setIsVisible] = useState(visible);
 
@@ -72,13 +76,19 @@ export default function Toast({
       // Set visibility directly to trigger the render and animation.
       setIsVisible(true);
 
-      // Trigger haptics
-      const triggerHaptic = async () => {
-        if (type === 'error') await notificationAsync(Haptics.NotificationFeedbackType.Error);
-        else if (type === 'success') await notificationAsync(Haptics.NotificationFeedbackType.Success);
-        else await impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      };
-      triggerHaptic();
+      // Trigger haptics if enabled for this toast instance
+      if (haptics) {
+        const triggerHaptic = async () => {
+          if (type === 'error') await notificationAsync(Haptics.NotificationFeedbackType.Error);
+          else if (type === 'success') await notificationAsync(Haptics.NotificationFeedbackType.Success);
+          else await impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        };
+        triggerHaptic();
+      }
+
+      // Play sounds based on the global sound setting (handled by the useSounds hook)
+      if (type === 'success') playSound('success');
+      else if (type === 'error') playSound('error');
 
       // Animate in
       Animated.parallel([
@@ -97,7 +107,7 @@ export default function Toast({
     } else {
       hideToast();
     }
-  }, [visible]);
+  }, [visible, haptics]);
 
   const hideToast = (cb?: () => void) => {
     Animated.parallel([
