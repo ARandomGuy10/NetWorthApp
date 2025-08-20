@@ -1,7 +1,7 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { Audio } from 'expo-av';
-import { useProfile } from './useProfile';
-
+import { useSettingsStore } from '@/stores/settingsStore';
+  
 // Define sound types for type safety and easy management
 export type SoundType = 'success' | 'error' | 'tap_light';
 
@@ -14,8 +14,7 @@ const soundFiles: Record<SoundType, any> = {
 };
 
 export const useSounds = () => {
-  const { data: profile } = useProfile();
-  const soundsEnabled = profile?.sounds_enabled ?? false; // Default to false
+  const soundsEnabled = useSettingsStore((state) => state.soundsEnabled);
 
   const playSound = useCallback(
     async (type: SoundType) => {

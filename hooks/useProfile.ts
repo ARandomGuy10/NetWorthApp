@@ -3,12 +3,14 @@ import { useUser } from '@clerk/clerk-expo';
 import { useSupabase } from './useSupabase';
 import type { Profile, ProfileUpdate } from '../lib/supabase';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSettingsStore } from '../stores/settingsStore';
 
 import { useToast } from './providers/ToastProvider';
 
 export const useProfile = () => {
   const { user } = useUser();
   const supabase = useSupabase();
+  const initializeSettings = useSettingsStore((state) => state.initializeSettings);
   
   return useQuery({
     queryKey: ['profile', user?.id],
@@ -24,6 +26,12 @@ export const useProfile = () => {
       if (error?.code === 'PGRST116') return null; // No profile found
       if (error) throw error;
       
+      if (data) {
+        initializeSettings({
+          hapticsEnabled: data.haptic_feedback_enabled ?? true,
+          soundsEnabled: data.sounds_enabled ?? true,
+        });
+      }
       return data;
     },
     enabled: !!user?.id,
@@ -79,6 +87,7 @@ export const useUpdateProfile = () => {
   const supabase     = useSupabase();
   const queryClient  = useQueryClient();
   const { showToast } = useToast();
+  const initializeSettings = useSettingsStore((state) => state.initializeSettings);
 
   return useMutation({
     mutationFn: async (updates: ProfileUpdate) => {
@@ -95,6 +104,14 @@ export const useUpdateProfile = () => {
     onSuccess: (data, updates) => {
       // Optimistically update the profile in the cache
       queryClient.setQueryData(['profile', user?.id], data);
+
+      // Also update our global settings store to avoid waiting for a refetch
+      if (updates.haptic_feedback_enabled !== undefined || updates.sounds_enabled !== undefined) {
+        initializeSettings({
+          hapticsEnabled: updates.haptic_feedback_enabled ?? data.haptic_feedback_enabled ?? true,
+          soundsEnabled: updates.sounds_enabled ?? data.sounds_enabled ?? true,
+        });
+      }
 
       // If the currency was changed, invalidate all queries that depend on it.
       // This is much more efficient than invalidating on every profile update.
