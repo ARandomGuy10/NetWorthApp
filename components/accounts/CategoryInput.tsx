@@ -12,9 +12,11 @@ interface CategoryInputProps {
   disabled?: boolean;
   soundEffectsEnabled?: boolean;
   accountType: 'asset' | 'liability';
+  error?: string;
+  onFocus?: () => void;
 }
 
-const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, suggestions, disabled, soundEffectsEnabled, accountType }) => {
+const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, suggestions, disabled, soundEffectsEnabled, accountType, error, onFocus }) => {
   const { theme } = useTheme();
   const { impactAsync } = useHaptics();
   const styles = getStyles(theme);
@@ -26,7 +28,7 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, sugg
   return (
     <View>
       <TextInput
-        style={[styles.textInput, disabled && styles.textInputDisabled]}
+        style={[styles.textInput, disabled && styles.textInputDisabled, !!error && styles.errorBorder]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholderText}
@@ -34,7 +36,9 @@ const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, sugg
         editable={!disabled}
         autoCapitalize="words"
         returnKeyType="next"
+        onFocus={onFocus}
       />
+      {error && <Text style={styles.errorText}>{error}</Text>}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -82,6 +86,16 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     ...theme.shadows.sm,
   },
   textInputDisabled: { opacity: 0.6 },
+  errorBorder: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    color: theme.colors.error,
+    fontSize: 13,
+    marginTop: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
+    fontWeight: '500',
+  },
   suggestionsContainer: { marginTop: theme.spacing.md },
   suggestionChip: {
     backgroundColor: theme.colors.background.elevated,

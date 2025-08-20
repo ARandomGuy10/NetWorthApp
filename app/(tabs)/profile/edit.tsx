@@ -58,6 +58,7 @@ export default function EditProfileScreen() {
   const [isUploading, setIsUploading] = useState(false);
   const [shouldRemoveAvatar, setShouldRemoveAvatar] = useState(false);
   const [isAvatarViewerVisible, setIsAvatarViewerVisible] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (profile) {
@@ -116,13 +117,13 @@ export default function EditProfileScreen() {
 
   const handleSave = async () => {
     impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setIsUploading(true);
 
     if (!formData.first_name.trim()) {
-      Alert.alert('First Name Required', 'Your first name cannot be empty.');
-      setIsUploading(false);
+      setErrors({ first_name: 'Your first name cannot be empty.' });
+      impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       return;
     }
+    setIsUploading(true);
 
     const oldAvatarPath = getPathFromUrl(profile?.avatar_url);
 
@@ -241,14 +242,18 @@ export default function EditProfileScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>First Name</Text>
                 <TextInput
-                  style={styles.textInput}
+                  style={[styles.textInput, !!errors.first_name && styles.errorBorder]}
                   value={formData.first_name}
-                  onChangeText={(text) => setFormData({ ...formData, first_name: text })}
+                  onChangeText={(text) => {
+                    setFormData({ ...formData, first_name: text });
+                    if (errors.first_name) setErrors(prev => ({ ...prev, first_name: '' }));
+                  }}
                   placeholder="Enter your first name"
                   placeholderTextColor={theme.colors.text.secondary}
                   autoCapitalize="words"
                   returnKeyType="next"
                 />
+                {errors.first_name && <Text style={styles.errorText}>{errors.first_name}</Text>}
               </View>
 
               <View style={styles.inputGroup}>
@@ -384,6 +389,16 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     borderColor: theme.colors.border.primary,
     minHeight: 52,
     ...theme.shadows.sm,
+  },
+  errorBorder: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    color: theme.colors.error,
+    fontSize: 13,
+    marginTop: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
+    fontWeight: '500',
   },
   buttonContainer: {
     marginTop: theme.spacing.xxl,

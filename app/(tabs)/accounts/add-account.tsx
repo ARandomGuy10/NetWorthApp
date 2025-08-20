@@ -50,6 +50,7 @@ export default function AddAccountScreen() {
   });
 
   const [initialLoading, setInitialLoading] = useState(isEditMode);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const { showToast } = useToast();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -111,21 +112,26 @@ export default function AddAccountScreen() {
   }, [isEditMode, accountData]);
 
   const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
     if (!formData.name.trim()) {
-      showToast('Please enter an account name', 'error');
-      return false;
+      newErrors.name = 'Please enter an account name.';
     }
     
     if (!formData.category.trim()) {
-      showToast('Please select or enter a category', 'error');
-      return false;
+      newErrors.category = 'Please select or enter a category.';
     }
     
     if (!isEditMode && formData.initial_balance && (isNaN(parseFloat(formData.initial_balance)) || parseFloat(formData.initial_balance) < 0)) {
-      showToast('Please enter a valid initial balance', 'error');
-      return false;
+      newErrors.initial_balance = 'Please enter a valid initial balance.';
     }
     
+    setErrors(newErrors);
+
+    if (Object.keys(newErrors).length > 0) {
+      notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return false;
+    }
     return true;
   };
 
@@ -241,7 +247,7 @@ export default function AddAccountScreen() {
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Account Name *</Text>
             <TextInput
-              style={[styles.textInput, loading && styles.textInputDisabled]}
+              style={[styles.textInput, loading && styles.textInputDisabled, !!errors.name && styles.errorBorder]}
               value={formData.name}
               onChangeText={(text) => setFormData({ ...formData, name: text })}
               placeholder="e.g., Chase Checking, Vanguard IRA"
@@ -249,7 +255,9 @@ export default function AddAccountScreen() {
               editable={!loading}
               autoCapitalize="words"
               returnKeyType="next"
+              onFocus={() => setErrors(prev => ({ ...prev, name: '' }))}
             />
+            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
           </View>
 
           {/* Account Type */}
@@ -325,6 +333,8 @@ export default function AddAccountScreen() {
               suggestions={availableCategories}
               disabled={isLoading}
               accountType={formData.type}
+              error={errors.category}
+              onFocus={() => setErrors(prev => ({ ...prev, category: '' }))}
             />
           </View>
 
@@ -347,7 +357,7 @@ export default function AddAccountScreen() {
               <View style={[styles.inputGroup, styles.halfWidth]}>
                 <Text style={styles.label}>Initial Balance</Text>
                 <TextInput
-                  style={[styles.textInput, loading && styles.textInputDisabled]}
+                  style={[styles.textInput, loading && styles.textInputDisabled, !!errors.initial_balance && styles.errorBorder]}
                   value={formData.initial_balance}
                   onChangeText={(text) => setFormData({ ...formData, initial_balance: text })}
                   placeholder="0.00"
@@ -355,7 +365,9 @@ export default function AddAccountScreen() {
                   keyboardType="decimal-pad"
                   editable={!loading}
                   returnKeyType="next"
+                  onFocus={() => setErrors(prev => ({ ...prev, initial_balance: '' }))}
                 />
+                {errors.initial_balance && <Text style={styles.errorText}>{errors.initial_balance}</Text>}
               </View>
             )}
           </View>
@@ -516,6 +528,16 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     borderColor: theme.colors.border.primary,
     minHeight: 52,
     ...theme.shadows.sm,
+  },
+  errorBorder: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    color: theme.colors.error,
+    fontSize: 13,
+    marginTop: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
+    fontWeight: '500',
   },
   textInputDisabled: {
     opacity: 0.6,

@@ -48,6 +48,7 @@ export default function AddBalanceScreen() {
   });
 
   const [initialLoading, setInitialLoading] = useState(true);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
 
@@ -101,29 +102,34 @@ export default function AddBalanceScreen() {
     }
   };
 
-  const handleSave = async () => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
     if (!formData.account_id) {
-      showToast('Please select an account', 'error');
-      return;
+      newErrors.account_id = 'Please select an account.';
     }
-
-    if (!formData.amount || parseFloat(formData.amount) < 0) {
-      showToast('Please enter a valid amount', 'error');
-      return;
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      newErrors.amount = 'Please enter a valid, positive amount.';
     }
-
     if (!formData.date) {
-      showToast('Please select a date', 'error');
-      return;
+      newErrors.date = 'Please select a date.';
+    } else {
+      const selectedDate = new Date(`${formData.date}T00:00:00`);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (selectedDate > today) {
+        newErrors.date = 'Cannot record a balance for a future date.';
+      }
     }
+    setErrors(newErrors);
+    if (Object.keys(newErrors).length > 0) {
+      impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      return false;
+    }
+    return true;
+  };
 
-    // New validation: Prevent future dates
-    const selectedDate = new Date(`${formData.date}T00:00:00`);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Normalize to midnight for accurate comparison
-
-    if (selectedDate > today) {
-      showToast('Cannot record a balance for a future date.', 'error');
+  const handleSave = async () => {
+    if (!validateForm()) {
       return;
     }
 
@@ -156,6 +162,7 @@ export default function AddBalanceScreen() {
     const account = accounts?.find(acc => acc.id === accountId);
     setSelectedAccount(account);
     setFormData({ ...formData, account_id: accountId });
+    setErrors(prev => ({ ...prev, account_id: '' }));
   };
 
   const accountOptions = accounts?.map(account => ({
@@ -219,6 +226,7 @@ export default function AddBalanceScreen() {
                   items={accountOptions}
                   disabled={loading || !!accountId}
                 />
+                {errors.account_id && <Text style={styles.errorText}>{errors.account_id}</Text>}
               </View>
             )}
 
@@ -226,7 +234,10 @@ export default function AddBalanceScreen() {
               <Text style={styles.label}>Date</Text>
               <DatePicker
                 value={formData.date}
-                onChange={(date) => setFormData({ ...formData, date })}
+                onChange={(date) => {
+                  setFormData({ ...formData, date });
+                  setErrors(prev => ({ ...prev, date: '' }));
+                }}
                 disabled={loading}
               />
               <Text style={styles.helperText}>
@@ -239,7 +250,7 @@ export default function AddBalanceScreen() {
               <View style={styles.amountContainer}>
                 <Text style={styles.currencySymbol}>{selectedAccount?.currency || ''}</Text>
                 <TextInput
-                  style={styles.amountInput}
+                  style={[styles.amountInput, !!errors.amount && styles.errorBorder]}
                   value={formData.amount}
                   onChangeText={(text) => setFormData({ ...formData, amount: text })}
                   placeholder="0.00"
@@ -247,8 +258,10 @@ export default function AddBalanceScreen() {
                   keyboardType="decimal-pad"
                   editable={!loading}
                   returnKeyType="done"
+                  onFocus={() => setErrors(prev => ({ ...prev, amount: '' }))}
                 />
               </View>
+              {errors.amount && <Text style={styles.errorText}>{errors.amount}</Text>}
               <Text style={styles.helperText}>Enter the total balance (always positive).</Text>
             </View>
 
@@ -379,6 +392,16 @@ const getStyles = (theme: Theme) => StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     minHeight: 52,
     ...theme.shadows.sm,
+  },
+  errorBorder: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    color: theme.colors.error,
+    fontSize: 13,
+    marginTop: theme.spacing.sm,
+    marginLeft: theme.spacing.xs,
+    fontWeight: '500',
   },
   currencySymbol: {
     fontSize: 16,
