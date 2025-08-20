@@ -6,6 +6,7 @@ type ToastType = 'success' | 'error' | 'warning' | 'info';
 
 interface ToastOptions {
   text?: string;
+  haptics?: boolean;
 }
 
 interface ToastContextType {
@@ -32,14 +33,16 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
     message: string;
     type: ToastType;
     details?: string;
+    haptics?: boolean;
   }>({
     visible: false,
     message: '',
     type: 'success',
+    haptics: true,
   });
 
   const showToast = (message: string, type: ToastType = 'success', options?: ToastOptions) => {
-    setToast({ visible: true, message, type, details: options?.text });
+    setToast({ visible: true, message, type, details: options?.text, haptics: options?.haptics ?? true });
   };
 
   const hideToast = () => {
@@ -54,6 +57,7 @@ export const ToastProvider = ({ children }: ToastProviderProps) => {
         message={toast.message}
         type={toast.type}
         details={toast.details}
+        haptics={toast.haptics}
         onDismiss={hideToast}
       />
     </ToastContext.Provider>

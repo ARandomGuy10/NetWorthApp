@@ -190,13 +190,12 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
               <LineChart height={200} width={screenWidth}>
                 <LineChart.Path color={lineColor} width={3} />
                   <LineChart.CursorCrosshair color={lineColor} 
-                    onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)} 
-                    onEnded={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)} 
+                    onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                    onEnded={() => {}}
                   />
               </LineChart>
             </LineChart.Provider>
           )}
-``
           {/* Custom Tooltip - Safe Implementation */}
           {tooltipData && (
             <View

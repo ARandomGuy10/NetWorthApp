@@ -70,8 +70,7 @@ export default function SignInScreen() {
       
       if (createdSessionId) {
         await setActive({ session: createdSessionId });
-        // Navigate to the dashboard tab after successful OAuth sign in
-        router.replace('/(tabs)/dashboard');
+        // Navigation is handled by the root layout (index.tsx)
       }
     } catch (err) {
       console.error('OAuth error', err);
@@ -98,8 +97,7 @@ export default function SignInScreen() {
       
       if (createdSessionId) {
         await setActive({ session: createdSessionId });
-        // Navigate to the dashboard tab after successful OAuth sign in
-        router.replace('/(tabs)/dashboard');
+        // Navigation is handled by the root layout (index.tsx)
       }
     } catch (err) {
       console.error('OAuth error', err);

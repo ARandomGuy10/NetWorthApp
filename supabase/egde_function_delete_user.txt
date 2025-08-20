@@ -1,0 +1,57 @@
+// supabase/functions/delete-user/index.ts
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClerkClient } from 'npm:@clerk/clerk-sdk-node';
+
+const CLERK_SECRET_KEY = Deno.env.get('CLERK_SECRET_KEY');
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+
+if (!CLERK_SECRET_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('Missing required environment variables for delete-user function.');
+}
+
+const clerkClient = createClerkClient({ secretKey: CLERK_SECRET_KEY });
+
+Deno.serve(async (req) => {
+  try {
+    // Authenticated client (uses Clerk JWT in header)
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
+    });
+
+    // 1. Get the current user's id (Clerk userId)
+    const { data: userIdData, error: userIdError } = await supabaseClient.rpc('get_user_id');
+    if (userIdError || !userIdData) {
+      console.error('get_user_id() error:', userIdError);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
+    const userId = userIdData;
+
+    // 2. Delete the profile (RLS ensures only their own row is deleted)
+    const { error: profileError } = await supabaseClient
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+
+    if (profileError) {
+      throw new Error(`Supabase profile deletion failed: ${profileError.message}`);
+    }
+
+    // 3. Delete Clerk user
+    await clerkClient.users.deleteUser(userId);
+
+    return new Response(
+      JSON.stringify({ message: `User ${userId} deleted successfully from Supabase + Clerk.` }),
+      { headers: { 'Content-Type': 'application/json' }, status: 200 },
+    );
+
+  } catch (error) {
+    console.error('Error in delete-user function:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { 'Content-Type': 'application/json' },
+      status: 500,
+    });
+  }
+});

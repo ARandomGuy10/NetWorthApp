@@ -45,8 +45,9 @@ export default function VerifyEmailScreen() {
         code,
       });
 
+      // Setting the session to active will trigger a redirect from the root layout.
+      // No need to navigate here.
       await setActive({ session: completeSignUp.createdSessionId });
-      router.replace('/(tabs)/home');
     } catch (err) {
       console.error('Verification error:', err);
       Alert.alert('Error', err.errors?.[0]?.message || 'Failed to verify email');

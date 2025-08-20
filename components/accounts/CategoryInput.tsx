@@ -10,10 +10,11 @@ interface CategoryInputProps {
   onChangeText: (text: string) => void;
   suggestions: string[];
   disabled?: boolean;
+  soundEffectsEnabled?: boolean;
   accountType: 'asset' | 'liability';
 }
 
-const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, suggestions, disabled, accountType }) => {
+const CategoryInput: React.FC<CategoryInputProps> = ({ value, onChangeText, suggestions, disabled, soundEffectsEnabled, accountType }) => {
   const { theme } = useTheme();
   const { impactAsync } = useHaptics();
   const styles = getStyles(theme);

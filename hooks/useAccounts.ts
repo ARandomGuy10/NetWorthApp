@@ -133,8 +133,9 @@ export const useDeleteAccount = () => {
 
   return useMutation({
     mutationFn: async (accountId: string) => {
-      console.log('🔥 CALLING DATABASE - useDeleteAccount mutationFn');
-      await supabase.from('balance_entries').delete().eq('account_id', accountId);
+      console.log('🔥 CALLING DATABASE - useDeleteAccount mutationFn');      
+      // No need to delete balance_entries manually.
+      // The `ON DELETE CASCADE` constraint on the `accounts` table handles this automatically.
       const { error } = await supabase.from('accounts').delete().eq('id', accountId);
       if (error) throw error;
     },

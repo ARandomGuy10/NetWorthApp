@@ -25,8 +25,7 @@ export default function SignUpScreen() {
       const { createdSessionId } = await selectedAuth();
       if (createdSessionId) {
         await setActive({ session: createdSessionId });
-        // Navigate to the home tab after successful OAuth sign up
-        router.replace('/(tabs)/home');
+        // Navigation is handled by the root layout (index.tsx)
       }
     } catch (err) {
       console.error('OAuth error:', err);

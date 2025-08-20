@@ -33,7 +33,7 @@ const ProfileScreen = () => {
       <ProfileHeader onSettingsPress={handleSettingsPress} />
       <ScrollView
         style={styles.scrollContainer}
-        contentContainerStyle={[styles.scrollContentContainer, { paddingBottom: insets.bottom }]}
+        contentContainerStyle={[styles.scrollContentContainer, { paddingBottom: insets.bottom + 90 }]}
         showsVerticalScrollIndicator={false}
       >
         <UserProfileCard onPress={handleProfileCardPress} />
