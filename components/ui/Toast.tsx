@@ -105,7 +105,7 @@ export default function Toast({
     }
   }, [visible]);
 
-  const hideToast = (cb?: () => void) => {
+  const hideToast = () => {
     Animated.parallel([
       Animated.timing(translateY, {toValue: position === 'top' ? -100 : 100, duration: 250, useNativeDriver: true}),
       Animated.timing(opacity, {toValue: 0, duration: 250, useNativeDriver: true}),

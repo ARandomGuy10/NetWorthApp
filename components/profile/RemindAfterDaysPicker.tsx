@@ -58,7 +58,7 @@ const RemindAfterDaysPicker: React.FC<RemindAfterDaysPickerProps> = ({
                 }}
               >
                 <Text style={[styles.optionText, currentValue === item && styles.selectedText]}>
-                  Every {item} days
+                  After {item} days
                 </Text>
                 {currentValue === item && (
                   <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
