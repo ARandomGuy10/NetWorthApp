@@ -33,7 +33,6 @@ interface ToastProps {
   duration?: number;
   position?: 'top' | 'bottom';
   showCloseButton?: boolean;
-  haptics?: boolean;
 }
 
 interface ToastStyle {
@@ -56,10 +55,9 @@ export default function Toast({
   type = 'success',
   details,
   onDismiss,
-  duration = 4000,
+  duration = 2500,
   position = 'top',
   showCloseButton = true,
-  haptics = true,
 }: ToastProps): JSX.Element | null {
   const translateY = useRef(new Animated.Value(position === 'top' ? -100 : 100)).current;
   const opacity = useRef(new Animated.Value(0)).current;
@@ -76,15 +74,13 @@ export default function Toast({
       // Set visibility directly to trigger the render and animation.
       setIsVisible(true);
 
-      // Trigger haptics if enabled for this toast instance
-      if (haptics) {
-        const triggerHaptic = async () => {
-          if (type === 'error') await notificationAsync(Haptics.NotificationFeedbackType.Error);
-          else if (type === 'success') await notificationAsync(Haptics.NotificationFeedbackType.Success);
-          else await impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        };
-        triggerHaptic();
-      }
+      // Trigger haptics. The useHaptics hook respects the user's global setting.
+      const triggerHaptic = async () => {
+        if (type === 'error') await notificationAsync(Haptics.NotificationFeedbackType.Error);
+        else if (type === 'success') await notificationAsync(Haptics.NotificationFeedbackType.Success);
+        else await impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      };
+      triggerHaptic();
 
       // Play sounds based on the global sound setting (handled by the useSounds hook)
       if (type === 'success') playSound('success');
@@ -107,7 +103,7 @@ export default function Toast({
     } else {
       hideToast();
     }
-  }, [visible, haptics]);
+  }, [visible]);
 
   const hideToast = (cb?: () => void) => {
     Animated.parallel([

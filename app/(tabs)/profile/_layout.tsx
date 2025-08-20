@@ -19,13 +19,6 @@ export default function ProfileLayout() {
           title: 'Edit Profile' 
         }} 
       />
-      {/* <Stack.Screen 
-        name="settings" 
-        options={{ 
-          title: 'Settings',
-          headerBackTitle: 'Profile'
-        }} 
-      /> */}
     </Stack>
   );
 }

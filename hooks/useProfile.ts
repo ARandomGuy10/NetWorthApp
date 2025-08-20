@@ -104,8 +104,7 @@ export const useUpdateProfile = () => {
         queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
       }
 
-      // Disable haptics on this specific toast to prevent race conditions when toggling haptics off.
-      showToast('Profile updated successfully!', 'success', { haptics: false });
+      showToast('Profile updated successfully!', 'success');
     },
     onError: (error: Error) => {
       showToast('Failed to update profile', 'error', { text: error.message });

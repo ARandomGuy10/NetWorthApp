@@ -16,10 +16,6 @@ const ProfileScreen = () => {
   const styles = getStyles(theme);
   const insets = useSafeAreaInsets();
 
-  const handleSettingsPress = () => {
-    Alert.alert('Settings', 'Advanced settings will be available here.');
-  };
-
   const handleProfileCardPress = () => {
     router.push('/(tabs)/profile/edit');
   };
@@ -30,7 +26,7 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.container}>
-      <ProfileHeader onSettingsPress={handleSettingsPress} />
+      <ProfileHeader />
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={[styles.scrollContentContainer, { paddingBottom: insets.bottom + 90 }]}

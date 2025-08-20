@@ -5,11 +5,9 @@ import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-interface ProfileHeaderProps {
-  onSettingsPress?: () => void;
-}
 
-const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onSettingsPress }) => {
+
+const ProfileHeader: React.FC = () => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
   const insets = useSafeAreaInsets();
@@ -20,9 +18,6 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ onSettingsPress }) => {
       <View style={styles.titleContainer}>
         <Text style={styles.title}>Settings</Text>
       </View>
-      <TouchableOpacity style={styles.iconContainer} onPress={onSettingsPress}>
-        <Ionicons name="settings-outline" size={24} color={theme.colors.text.secondary} />
-      </TouchableOpacity>
     </View>
   );
 };
@@ -31,7 +26,7 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingHorizontal: theme.spacing.lg,
     backgroundColor: theme.colors.background.primary,
     borderBottomWidth: StyleSheet.hairlineWidth,
