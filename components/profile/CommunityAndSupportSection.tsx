@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Share, Alert, View, Text, StyleSheet } from 'react-native';
+import { Share, Alert, View, Text, StyleSheet, Linking, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as StoreReview from 'expo-store-review';
+import * as Device from 'expo-device';
 
 import { useHaptics } from '@/hooks/useHaptics';
 import { SettingRow } from '@/components/ui/SettingRow';
@@ -20,38 +21,67 @@ const CommunityAndSupportSection = () => {
   const handleShare = async () => {
     await impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
-      // TODO: Before launch, replace the placeholder URL with your app's actual store or website link.
+      // Using platform-specific URLs for a better user experience.
+      const storeUrl = Platform.select({
+        // TODO: Replace <YOUR_APP_ID_HERE> with your actual Apple App ID from App Store Connect.
+        ios: 'https://apps.apple.com/app/id<YOUR_APP_ID_HERE>',
+        // The app's page on the Google Play Store.
+        android: 'https://play.google.com/store/apps/details?id=com.networthtrackr',
+        // A fallback website for other platforms (like web).
+        default: 'https://networthtrackr.example.com',
+      });
+
+      const message = `Check out NetWorthTrackr! It’s a great app for tracking your net worth and achieving financial goals.`;
+
+      // The Share API can accept a URL, which is often handled better by receiving apps.
       await Share.share({
-        message:
-          'Check out NetWorthTrackr! It’s a great app for tracking your net worth and achieving financial goals. Download it here: https://networthtrackr.example.com',
+        message: `${message}\n\n${storeUrl}`,
+        // The URL property is used by iOS's AirDrop and other services.
+        url: storeUrl,
         title: 'Share NetWorthTrackr',
       });
     } catch (error: any) {
       Alert.alert('Error', 'Could not open the share dialog.');
     }
   };
-
+  
   const handleRateApp = async () => {
     await impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    // This uses expo-store-review, the recommended way to ask for reviews.
-    // It provides a native, non-intrusive prompt.
-    // TODO: To enable this, run `npx expo install expo-store-review`. No other code changes are needed.
-    const isAvailable = await StoreReview.isAvailableAsync();
-    if (isAvailable) {
-      // This will open the native review prompt. iOS and Android handle the logic
-      // of when to actually show it to the user to avoid spamming them.
-      StoreReview.requestReview();
-    } else {
-      // Fallback for when the native review UI isn't available (e.g., on web or older devices)
+  
+    const storeUrl = Platform.select({
+      // TODO: Replace <YOUR_APP_ID_HERE> with your actual Apple App ID from App Store Connect.
+      ios: 'https://apps.apple.com/app/id<YOUR_APP_ID_HERE>',
+      android: 'market://details?id=com.networthtrackr',
+      default: 'https://networthtrackr.example.com', // A fallback website
+    });
+  
+    // In development (__DEV__ is true), we'll always show the fallback alert.
+    // This makes testing predictable, as the native review prompt is rate-limited
+    // by the OS and doesn't show on simulators.
+    if (__DEV__) {
       Alert.alert(
-        'Enjoying NetWorthTrackr?',
-        'Your feedback helps us grow. Please take a moment to rate us on the App Store!',
+        'Dev Mode: Rate App',
+        'This would open the native review prompt in production. In dev, we link directly to the store.',
         [
-          { text: 'Not Now', style: 'cancel' },
-          // TODO: Replace this with a Linking.openURL() call to your app's store page.
-          { text: 'Rate Now', onPress: () => Alert.alert('Thank You!', 'This would link to the store URL.') },
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open Store URL',
+            onPress: async () => {
+              await Linking.openURL(storeUrl).catch(() => Alert.alert('Error', 'Could not open the app store.'));
+            },
+          },
         ]
       );
+      return;
+    }
+  
+    // In production, use the native in-app review API.
+    const isReviewAvailable = await StoreReview.isAvailableAsync();
+    if (isReviewAvailable) {
+      StoreReview.requestReview();
+    } else {
+      // As a fallback in production (e.g., on older devices), link to the store.
+      await Linking.openURL(storeUrl).catch(() => Alert.alert('Error', 'Could not open the app store.'));
     }
   };
 
