@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Theme } from '@/lib/supabase';
 import { useProfile } from '@/hooks/useProfile';
 import ProfileCompletionRing from './ProfileCompletionRing';
@@ -49,27 +50,35 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({ onPress }) => {
   const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.trim();
 
   return (
-    <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.8}>
-      <ProfileCompletionRing
-        size={84} // Outer size of the ring
-        strokeWidth={5}
-        progress={profileCompletion}
+    <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+      <LinearGradient
+        colors={[theme.colors.background.secondary, theme.colors.background.card]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container}
       >
-        <View style={styles.avatarContainer}>
-          {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
-          ) : (
-            <View style={styles.avatarInitials}>
-              <Text style={styles.initialsText}>{getInitials(profile.first_name, profile.last_name)}</Text>
-            </View>
-          )}
+        <ProfileCompletionRing
+          size={84} // Outer size of the ring
+          strokeWidth={5}
+          progress={profileCompletion}
+        >
+          <View style={styles.avatarContainer}>
+            {profile.avatar_url ? (
+              <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+            ) : (
+              <View style={styles.avatarInitials}>
+                <Text style={styles.initialsText}>{getInitials(profile.first_name, profile.last_name)}</Text>
+              </View>
+            )}
+          </View>
+        </ProfileCompletionRing>
+        <View style={styles.textContainer}>
+          <Text style={styles.name}>{fullName || 'Anonymous User'}</Text>
+          <Text style={styles.email}>{profile.email}</Text>
+          <Text style={styles.actionText}>View & Edit Profile</Text>
         </View>
-      </ProfileCompletionRing>
-      <View style={styles.textContainer}>
-        <Text style={styles.name}>{fullName || 'Anonymous User'}</Text>
-        <Text style={styles.email}>{profile.email}</Text>
-      </View>
-      <Ionicons name="chevron-forward" size={22} color={theme.colors.text.tertiary} />
+        <Ionicons name="chevron-forward" size={22} color={theme.colors.text.tertiary} />
+      </LinearGradient>
     </TouchableOpacity>
   );
 };
@@ -78,11 +87,9 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: theme.colors.background.secondary,
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: theme.colors.border.primary,
+    ...theme.shadows.sm,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -122,6 +129,12 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   email: {
     fontSize: 14,
     color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.xs,
+  },
+  actionText: {
+    fontSize: 13,
+    color: theme.colors.primary,
+    fontWeight: '500',
   },
 });
 

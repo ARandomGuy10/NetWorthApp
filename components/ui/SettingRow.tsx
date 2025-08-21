@@ -1,9 +1,10 @@
 
 import React from 'react';
-import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
+import Switch from './Switch';
 
 type SettingRowProps = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -42,11 +43,16 @@ export const SettingRow = ({
       </View>
       <View style={styles.settingRowRight}>
         {isSwitch ? (
-          <Switch value={switchValue} onValueChange={onSwitchChange} />
+          <Switch
+            value={switchValue || false}
+            onValueChange={onSwitchChange || (() => {})}
+            activeColor={theme.colors.primary}
+            inactiveColor={theme.colors.background.tertiary}
+          />
         ) : (
           <>
             {value && <Text style={styles.settingValue}>{value}</Text>}
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />
+            {onPress && <Ionicons name="chevron-forward" size={20} color={theme.colors.text.tertiary} />}
           </>
         )}
       </View>
