@@ -23,8 +23,8 @@ const CommunityAndSupportSection = () => {
       // TODO: Before launch, replace the placeholder URL with your app's actual store or website link.
       await Share.share({
         message:
-          'Check out PocketRackr! It’s a great app for tracking your net worth and achieving financial goals. Download it here: https://pocketrackr.example.com',
-        title: 'Share PocketRackr',
+          'Check out NetWorthTrackr! It’s a great app for tracking your net worth and achieving financial goals. Download it here: https://networthtrackr.example.com',
+        title: 'Share NetWorthTrackr',
       });
     } catch (error: any) {
       Alert.alert('Error', 'Could not open the share dialog.');
@@ -44,7 +44,7 @@ const CommunityAndSupportSection = () => {
     } else {
       // Fallback for when the native review UI isn't available (e.g., on web or older devices)
       Alert.alert(
-        'Enjoying PocketRackr?',
+        'Enjoying NetWorthTrackr?',
         'Your feedback helps us grow. Please take a moment to rate us on the App Store!',
         [
           { text: 'Not Now', style: 'cancel' },

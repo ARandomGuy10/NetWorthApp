@@ -4,7 +4,7 @@ import LegalContentPage, { ContentItem } from '@/components/profile/LegalContent
 const content: ContentItem[] = [
   {
     type: 'paragraph',
-    text: "This is a placeholder for your Terms of Use. It's crucial to replace this with your actual terms before releasing your app. These terms govern your use of PocketRackr.",
+    text: "This is a placeholder for your Terms of Use. It's crucial to replace this with your actual terms before releasing your app. These terms govern your use of NetWorthTrackr.",
   },
   {
     type: 'subheader',

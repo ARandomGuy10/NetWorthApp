@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "PocketrackrApp",
-    "slug": "PocketrackrApp",
+    "name": "NetWorthTrackr",
+    "slug": "NetWorthTrackr",
     "main": "expo-router/entry",
-    "scheme": "pocketrackr",
+    "scheme": "networthtrackr",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -18,12 +18,12 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.yourcompany.pocketrackr",
+      "bundleIdentifier": "com.networthtrackr",
       "googleServicesFile": "./GoogleService-Info.plist",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.yourcompany.pocketrackr",
+      "package": "com.networthtrackr",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -35,7 +35,7 @@
           "autoVerify": true,
           "data": [
             {
-              "scheme": "pocketrackr",
+              "scheme": "networthtrackr",
               "host": "oauth"
             }
           ],

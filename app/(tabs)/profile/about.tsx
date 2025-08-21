@@ -24,8 +24,8 @@ const AboutScreen = () => {
         }}
       >
         <View style={styles.headerContainer}>
-          <Image source={require('../../../assets/icon.png')} style={styles.appIcon} />
-          <Text style={styles.appName}>PocketRackr</Text>
+          <Image source={require('../../../assets/adaptive-icon.png')} style={styles.appIcon} />
+          <Text style={styles.appName}>NetWorthTrackr</Text>
           <Text style={styles.tagline}>Your financial journey, simplified.</Text>
         </View>
 

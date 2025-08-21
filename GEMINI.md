@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a cross-platform personal finance application named **PocketrackrApp**, built to track a user's net worth. The application allows users to manage financial accounts (assets and liabilities), track balances over time, and visualize their net worth growth.
+This is a cross-platform personal finance application named **NetWorthTrackr**, built to track a user's net worth. The application allows users to manage financial accounts (assets and liabilities), track balances over time, and visualize their net worth growth.
 
 The architecture consists of a **React Native (Expo)** frontend and a **Supabase** backend. User authentication is handled by **Clerk**.
 

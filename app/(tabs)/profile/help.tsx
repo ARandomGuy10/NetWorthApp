@@ -45,7 +45,7 @@ const HelpScreen = () => {
             <TouchableOpacity
               style={styles.emailButton}
               onPress={() => {
-                const mailtoUrl = 'mailto:support@pocketrackr.example.com?subject=Support Request';
+                const mailtoUrl = 'mailto:networthtrackr.app@gmail.com?subject=Support Request';
                 Linking.canOpenURL(mailtoUrl).then(supported => {
                   if (supported) {
                     Linking.openURL(mailtoUrl);
@@ -55,7 +55,7 @@ const HelpScreen = () => {
                 });
               }}
             >
-              <Text style={styles.emailButtonText}>support@pocketrackr.example.com</Text>
+              <Text style={styles.emailButtonText}>networthtrackr.app@gmail.com</Text>
             </TouchableOpacity>
           </View>
         </View>

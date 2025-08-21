@@ -37,7 +37,7 @@ export default function LandingPage() {
           <View style={styles.logoIcon}>
             <Ionicons name="trending-up" size={24} color={theme.colors.primary} />
           </View>
-          <Text style={styles.logoText}>pocketrackr</Text>
+          <Text style={styles.logoText}>NetWorthTrackr</Text>
         </View>
         
         <View style={styles.nav}>
@@ -85,7 +85,7 @@ export default function LandingPage() {
               <View style={styles.logoIconSmall}>
                 <Ionicons name="trending-up" size={16} color={theme.colors.primary} />
               </View>
-              <Text style={styles.phoneLogoText}>pocketrackr</Text>
+              <Text style={styles.phoneLogoText}>NetWorthTrackr</Text>
             </View>
             
             <View style={styles.phoneButtons}>
@@ -186,7 +186,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <View style={styles.footer}>
-        <Text style={styles.footerText}>© 2024 PocketRackr. All rights reserved.</Text>
+        <Text style={styles.footerText}>© 2024 NetWorthTrackr. All rights reserved.</Text>
       </View>
     </ScrollView>
   );

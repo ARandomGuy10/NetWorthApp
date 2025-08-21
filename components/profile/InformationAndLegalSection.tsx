@@ -25,7 +25,7 @@ const InformationAndLegalSection = () => {
       <View style={styles.card}>
         <SettingRow
           icon="information-circle-outline"
-          text="About PocketRackr"
+          text="About NetWorthTrackr"
           onPress={() => handleNavigation('/(tabs)/profile/about')}
         />
         <SettingRow

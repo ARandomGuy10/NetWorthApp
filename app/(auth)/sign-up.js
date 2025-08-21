@@ -77,7 +77,7 @@ export default function SignUpScreen() {
     <TouchableWithoutFeedback onPress={dismissKeyboard}>
       <View style={styles.container}>
         <Text style={styles.title}>Create an account</Text>
-        <Text style={styles.subtitle}>Sign up to get started with Pocketrackr</Text>
+        <Text style={styles.subtitle}>Sign up to get started with NetWorthTrackr</Text>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>

@@ -119,7 +119,7 @@ export default function SignInScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Sign in to continue to Pocketrackr</Text>
+          <Text style={styles.subtitle}>Sign in to continue to NetWorthTrackr</Text>
         </View>
 
         <View style={styles.form}>
