@@ -8,6 +8,8 @@ import ProfileHeader from '@/components/profile/ProfileHeader';
 import UserProfileCard from '@/components/profile/UserProfileCard';
 import PremiumBanner from '@/components/profile/PremiumBanner';
 import AppearancePreferencesSection from '@/components/profile/AppearancePreferencesSection';
+import CommunityAndSupportSection from '@/components/profile/CommunityAndSupportSection';
+import InformationAndLegalSection from '@/components/profile/InformationAndLegalSection';
 import AccountActionsSection from '@/components/profile/AccountActionsSection';
 
 const ProfileScreen = () => {
@@ -35,6 +37,8 @@ const ProfileScreen = () => {
         <UserProfileCard onPress={handleProfileCardPress} />
         <PremiumBanner onPress={handlePremiumPress} />
         <AppearancePreferencesSection />
+        <CommunityAndSupportSection />
+        <InformationAndLegalSection />
         <AccountActionsSection />
       </ScrollView>
     </View>

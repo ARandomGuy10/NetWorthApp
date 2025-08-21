@@ -26,7 +26,7 @@ const EmptyDashboardState: React.FC<EmptyDashboardStateProps> = ({
         {/* Illustration */}
         <View style={styles.illustrationContainer}>
           <Image
-            source={require('@/assets/images/empty_dashboard_illustration.png')}
+            source={require('../../assets/images/empty_dashboard_illustration.png')}
             style={styles.illustrationImage}
             resizeMode="contain"
           />

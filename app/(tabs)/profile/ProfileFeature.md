@@ -51,12 +51,31 @@ This document outlines the implementation plan for the Profile screen, tracking 
 ## Phase 3: Account Management (Future)
 
 - [x] **Sign Out**: A button to log the user out of the application.
-- [ ] **Delete Account**: A secure flow for users to permanently delete their account and all associated data.
+- [x] **Delete Account**: A secure flow for users to permanently delete their account and all associated data.
+
+---
+
+## Phase 4: Community & Support (Completed)
+
+- [x] **Rate the App**: A link to the App Store/Play Store for users to leave a rating.
+- [x] **Share with Friends**: A button to open the native share sheet.
+- [x] **Send Feedback**: A way for users to send feedback, suggestions, or bug reports. (Includes rate-limiting)
+- [x] **Help & Support**: A section for FAQs and contacting support.
+
+---
+
+## Phase 5: Information & Legal (Completed)
+
+- [x] **About the App**:
+  - A screen that shows the app version, build number, and a link to a "What's New" changelog.
+- [x] **Privacy Policy**:
+  - A screen or link to display the app's privacy policy. This is a legal requirement.
+- [x] **Terms of Use**:
+  - A screen or link to display the app's terms of use. This is a legal requirement.
 
 ---
 
 ## Post-MVP / Future Ideas
 
 - [ ] **Data Export**: Allow users to export their data.
-- [ ] **Help & Support**: A section for FAQs and contacting support.
 - [ ] **Gamification**: Consider adding achievements or streaks to encourage engagement.

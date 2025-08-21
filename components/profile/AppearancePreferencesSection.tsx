@@ -67,34 +67,29 @@ const AppearancePreferencesSection = () => {
         ) : (
           <>
             <SettingRow
-              theme={theme}
               icon="color-palette-outline"
               text="Theme"
               value={formatThemeName(theme.name)}
               onPress={() => setThemePickerVisible(true)}
             />
             <SettingRow
-              theme={theme}
               icon="cash-outline"
               text="Preferred Currency"
               value={profile?.preferred_currency}
               onPress={() => setCurrencyPickerVisible(true)}
             />
             <SettingRow
-              theme={theme}
               icon="alarm-outline"
               text="Remind to Update"
               value={`${profile?.remind_after_days || 30} days`}
               onPress={() => setReminderPickerVisible(true)}
             />
             <SettingRow
-              theme={theme}
               icon="notifications-outline"
               text="Notifications"
               onPress={handleNotificationsPress}
             />
             <SettingRow
-              theme={theme}
               icon="pulse-outline"
               text="Haptic Feedback"
               isSwitch
@@ -105,7 +100,6 @@ const AppearancePreferencesSection = () => {
               }}
             />
             <SettingRow
-              theme={theme}
               icon="musical-notes-outline"
               text="Sound Effects"
               isSwitch
