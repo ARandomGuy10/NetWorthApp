@@ -1,15 +1,18 @@
-// components/home/AccountSummary.tsx
 import React, {useState, useCallback} from 'react';
+
 import {View, Text, StyleSheet, TouchableOpacity, Animated, Platform, ScrollView, Dimensions} from 'react-native';
-import {Ionicons} from '@expo/vector-icons';
+
 import {useRouter} from 'expo-router';
-import {LinearGradient} from 'expo-linear-gradient';
-import {getGradientColors} from '@/src/utils/formatters';
-import { isAccountOutdated, formatTimeSince } from '@/src/utils/dateUtils';
-import {useTheme} from '@/src/styles/theme/ThemeContext';
+
 import * as Haptics from 'expo-haptics';
-import {Theme, DashboardAccount} from '@/lib/supabase';
+import {Ionicons} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
+
+import { isAccountOutdated, formatTimeSince } from '@/src/utils/dateUtils';
 import { useHaptics } from '@/hooks/useHaptics';
+import {Theme, DashboardAccount} from '@/lib/supabase';
+import {getGradientColors} from '@/src/utils/formatters';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 const {width: screenWidth} = Dimensions.get('window');
 

@@ -1,5 +1,5 @@
-// components/home/ModernFAB.tsx
 import React, { useState } from 'react';
+
 import {
   View,
   Text,
@@ -7,15 +7,18 @@ import {
   StyleSheet,
   Animated,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { useTheme } from '../../src/styles/theme/ThemeContext';
-import * as Haptics from 'expo-haptics';
-import { Theme } from '@/lib/supabase';
 
+import { useRouter } from 'expo-router';
+
+import * as Haptics from 'expo-haptics';
+import { Ionicons } from '@expo/vector-icons';
 import { useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Theme } from '@/lib/supabase';
 import { useHaptics } from '@/hooks/useHaptics';
+
+import { useTheme } from '../../src/styles/theme/ThemeContext';
 
 const ModernFAB: React.FC = () => {
   const [isOpen, setIsOpen] = useState<boolean>(false);

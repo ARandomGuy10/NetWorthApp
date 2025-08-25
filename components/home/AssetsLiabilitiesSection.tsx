@@ -1,14 +1,16 @@
-// components/home/AssetsLiabilitiesSection.tsx
-
 import React, {useState, useEffect, useCallback} from 'react';
+
 import {View, Text, StyleSheet, TouchableOpacity, Dimensions, Animated} from 'react-native';
+
+import * as Haptics from 'expo-haptics';
 import {AnimatedCircularProgress} from 'react-native-circular-progress';
 import {LinearGradient} from 'expo-linear-gradient';
-import {useTheme} from '../../src/styles/theme/ThemeContext';
+
 import { Theme } from '@/lib/supabase';
 import { formatSmartNumber, getGradientColors } from '@/src/utils/formatters';
-import * as Haptics from 'expo-haptics';
 import { useHaptics } from '@/hooks/useHaptics';
+
+import {useTheme} from '../../src/styles/theme/ThemeContext';
 
 const {width: screenWidth} = Dimensions.get('window');
 

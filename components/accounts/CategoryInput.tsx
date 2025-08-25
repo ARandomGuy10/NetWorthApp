@@ -1,9 +1,12 @@
 import React from 'react';
+
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
+
 import * as Haptics from 'expo-haptics';
+
+import { Theme } from '@/lib/supabase';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 interface CategoryInputProps {
   value: string;

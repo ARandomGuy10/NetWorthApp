@@ -1,11 +1,12 @@
 import React from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-
+import { Theme } from '@/lib/supabase';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 const ProfileHeader: React.FC = () => {
   const { theme } = useTheme();

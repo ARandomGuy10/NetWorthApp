@@ -1,14 +1,18 @@
 import React, { useState } from 'react';
+
 import { Share, Alert, View, Text, StyleSheet, Linking, Platform } from 'react-native';
+
 import { useRouter } from 'expo-router';
+
+import * as Device from 'expo-device';
 import * as Haptics from 'expo-haptics';
 import * as StoreReview from 'expo-store-review';
-import * as Device from 'expo-device';
 
-import { useHaptics } from '@/hooks/useHaptics';
 import { SettingRow } from '@/components/ui/SettingRow';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+
 import FeedbackSheet from './FeedbackSheet';
 
 const CommunityAndSupportSection = () => {

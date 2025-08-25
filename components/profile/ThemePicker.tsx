@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
   View,
   Text,
@@ -7,11 +8,13 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
+
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { Theme } from '@/lib/supabase';
 import { getTheme, THEMES } from '@/src/styles/theme/themes.js';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 interface ThemePickerProps {
   isVisible: boolean;

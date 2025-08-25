@@ -1,15 +1,18 @@
 import React, { memo, useRef } from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+
+import * as Haptics from 'expo-haptics';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
+import { LinearGradient } from 'expo-linear-gradient';
+
 import { Theme, AccountWithBalance } from '@/lib/supabase';
 import { formatCurrency, getGradientColors } from '@/src/utils/formatters';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, runOnJS } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
-import { useHaptics } from '@/hooks/useHaptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { formatTimeSince } from '@/src/utils/dateUtils';
+import { useHaptics } from '@/hooks/useHaptics';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 interface AccountRowProps {
   account: AccountWithBalance;

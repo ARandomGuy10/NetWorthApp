@@ -1,14 +1,18 @@
 import React, {useState, useMemo, useCallback} from 'react';
+
 import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Image, ActivityIndicator} from 'react-native';
+
 import {useRouter} from 'expo-router';
+
+import * as Haptics from 'expo-haptics';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {LineChart} from 'react-native-wagmi-charts';
 import {LinearGradient} from 'expo-linear-gradient';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {useTheme} from '@/src/styles/theme/ThemeContext';
-import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
-import * as Haptics from 'expo-haptics';
-import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
+
 import { useHaptics } from '@/hooks/useHaptics';
+import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
+import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 const {width: screenWidth} = Dimensions.get('window');
 

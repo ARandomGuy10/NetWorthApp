@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
+
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
-import { useAuth } from '@clerk/clerk-expo';
-import { useDeleteUser } from '@/hooks/useProfile';
-import { useQueryClient } from '@tanstack/react-query';
-import ConfirmationModal from '../ui/ConfirmationModal';
+
 import * as Haptics from 'expo-haptics';
+import { useAuth } from '@clerk/clerk-expo';
+import { useQueryClient } from '@tanstack/react-query';
+
+import { Theme } from '@/lib/supabase';
+import { useDeleteUser } from '@/hooks/useProfile';
 import { useHaptics } from '@/hooks/useHaptics';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
+
+import ConfirmationModal from '../ui/ConfirmationModal';
 
 const AccountActionsSection = () => {
   const { theme } = useTheme();

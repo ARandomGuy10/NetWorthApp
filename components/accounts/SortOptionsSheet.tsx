@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
   View,
   Text,
@@ -8,9 +9,11 @@ import {
   TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
+
 import { Ionicons } from '@expo/vector-icons';
+
+import { Theme } from '@/lib/supabase';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 export type SortOption = 
   | 'balance_high_to_low'
