@@ -2,7 +2,6 @@
   "expo": {
     "name": "NetWorthTrackr",
     "slug": "NetWorthTrackr",
-    "main": "expo-router/entry",
     "scheme": "networthtrackr",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,13 +17,11 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.networthtrackr",
-      "googleServicesFile": "./GoogleService-Info.plist",
+      "bundleIdentifier": "com.lightlabs.studio.networthtrackr",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.networthtrackr",
-      "googleServicesFile": "./google-services.json",
+      "package": "com.lightlabs.studio.networthtrackr",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
