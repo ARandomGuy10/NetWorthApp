@@ -55,6 +55,14 @@ export default function ProfileLayout() {
           title: 'Terms of Use',
         }}
       />
+      <Stack.Screen
+        name="paywall"
+        options={{
+          presentation: 'modal',
+          animation: 'slide_from_bottom',
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

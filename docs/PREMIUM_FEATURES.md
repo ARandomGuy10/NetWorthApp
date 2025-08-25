@@ -47,11 +47,16 @@ Before writing any code, the necessary services must be configured.
     -   Go to your app's page -> "In-App Purchases" -> "Subscriptions".
     -   Create a "Subscription Group" (e.g., "Pro Access").
     -   Inside the group, create your subscription products (e.g., "Monthly Pro", "Annual Pro"). Each will have a unique **Product ID**.
-3.  **Generate App-Specific Shared Secret**:
-    -   Go to your app's page -> "App Information" -> "App-Specific Shared Secret". Generate a secret and copy it.
+3.  **Generate App Store Connect API Key (Recommended Method)**:
+    -   In App Store Connect, go to **Users and Access -> Keys**.
+    -   Under "App Store Connect API", click **Generate API Key**.
+    -   Give the key a name (e.g., "RevenueCat") and select **App Manager** for the role.
+    -   After generating, you will get three pieces of information. **Save them securely**:
+        1.  **Issuer ID**: A UUID found at the top of the page.
+        2.  **Key ID**: A 10-character string next to your new key.
+        3.  **API Key File**: A `.p8` file. **Download this immediately, you cannot download it again.**
 4.  **Link to RevenueCat**:
-    -   In the RevenueCat dashboard (under your Apple app settings), paste the App-Specific Shared Secret.
-    -   In the "Products" section of RevenueCat, add your products and link them to the `pro_access` entitlement using the Product IDs from App Store Connect.
+    -   In the RevenueCat dashboard (under your Apple app settings), upload the `.p8` file and enter the **Key ID** and **Issuer ID** in the corresponding fields.
 
 #### 3. Google Play Console Setup
 
@@ -69,6 +74,25 @@ Before writing any code, the necessary services must be configured.
 
 ---
 
+### Development Without a Developer Account
+
+It's common to want to develop most of the premium features before committing to the annual Apple Developer Program fee. You can make significant progress without it.
+
+**What you CAN do:**
+
+-   **Android Setup**: If you have a Google Play Developer account (one-time fee), you can fully set up and test the entire purchase flow on Android. The `react-native-purchases` code is cross-platform, so this will validate most of your logic.
+-   **UI Development**: You can build the entire `paywall.tsx` screen. The code has been updated to show mock data in development (`__DEV__` mode) if real offerings can't be fetched. This allows you to style the UI and test the user flow without a live connection.
+-   **Backend Setup**: You can add the required columns to your `profiles` table and create the Supabase Edge Function for the webhook.
+-   **Feature Gating Logic**: You can implement the `useSubscription` hook and gate features behind the `isProUser` flag. You can manually set a user to "pro" in your Supabase database to test the gated UI.
+
+**What you CANNOT do (until you have an account):**
+
+-   Test the end-to-end purchase and restore flow on a physical iOS device.
+-   Receive and test live webhooks from Apple's sandbox environment.
+
+This phased approach allows you to be confident in your implementation before paying the developer fee.
+
+---
 ### Step 1: Define the "Pro" Tier Features
 
 Before implementation, we must clearly define which features are exclusive to paying users. Based on the existing `ROADMAP.md` and `PostMVPFeatures.md`, potential candidates include:

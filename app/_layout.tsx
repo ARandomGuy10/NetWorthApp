@@ -7,6 +7,7 @@ import { tokenCache } from '@clerk/clerk-expo/token-cache';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '../lib/queryClient';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SubscriptionProvider } from '@/hooks/providers/SubscriptionProvider';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
@@ -23,20 +24,22 @@ export default function RootLayout() {
         tokenCache={tokenCache}
         publishableKey={publishableKey}
       >
-        <QueryClientProvider client={queryClient}>
-          <ThemeProvider>
-            <ToastProvider>
-              <ClerkLoaded>
-                <StatusBar style="auto" />
-                <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="(auth)" />
-                  <Stack.Screen name="(tabs)" />
-                </Stack>
-              </ClerkLoaded>
-            </ToastProvider>
-          </ThemeProvider>
-        </QueryClientProvider>
+        <SubscriptionProvider>
+          <QueryClientProvider client={queryClient}>
+            <ThemeProvider>
+              <ToastProvider>
+                <ClerkLoaded>
+                  <StatusBar style="auto" />
+                  <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(auth)" />
+                    <Stack.Screen name="(tabs)" />
+                  </Stack>
+                </ClerkLoaded>
+              </ToastProvider>
+            </ThemeProvider>
+          </QueryClientProvider>
+        </SubscriptionProvider>
       </ClerkProvider>
     </GestureHandlerRootView>
   );

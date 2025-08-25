@@ -11,6 +11,9 @@ import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 import FeedbackSheet from './FeedbackSheet';
 
+// Set this to true once the app is published on the App Store and Google Play.
+const IS_APP_PUBLISHED = false;
+
 const CommunityAndSupportSection = () => {
   const { impactAsync } = useHaptics();
   const router = useRouter();
@@ -20,11 +23,17 @@ const CommunityAndSupportSection = () => {
 
   const handleShare = async () => {
     await impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (!IS_APP_PUBLISHED) {
+      Alert.alert('Coming Soon', 'Sharing will be available once the app is on the store.');
+      return;
+    }
+
     try {
       // Using platform-specific URLs for a better user experience.
       const storeUrl = Platform.select({
-        // TODO: Replace <YOUR_APP_ID_HERE> with your actual Apple App ID from App Store Connect.
-        ios: 'https://apps.apple.com/app/id<YOUR_APP_ID_HERE>',
+        // Replace <YOUR_APP_ID_HERE> with your actual Apple App ID from App Store Connect.
+        ios: 'https://apps.apple.com/app/id6479323987', // Example ID, replace with your actual one
         // The app's page on the Google Play Store.
         android: 'https://play.google.com/store/apps/details?id=com.networthtrackr',
         // A fallback website for other platforms (like web).
@@ -47,10 +56,15 @@ const CommunityAndSupportSection = () => {
   
   const handleRateApp = async () => {
     await impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (!IS_APP_PUBLISHED) {
+      Alert.alert('Coming Soon', 'Rating will be available once the app is on the store.');
+      return;
+    }
   
     const storeUrl = Platform.select({
-      // TODO: Replace <YOUR_APP_ID_HERE> with your actual Apple App ID from App Store Connect.
-      ios: 'https://apps.apple.com/app/id<YOUR_APP_ID_HERE>',
+      // Replace <YOUR_APP_ID_HERE> with your actual Apple App ID from App Store Connect.
+      ios: 'https://apps.apple.com/app/id6479323987', // Example ID, replace with your actual one
       android: 'market://details?id=com.networthtrackr',
       default: 'https://networthtrackr.example.com', // A fallback website
     });

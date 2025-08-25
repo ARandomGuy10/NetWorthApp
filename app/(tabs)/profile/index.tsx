@@ -4,9 +4,11 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSubscription } from '@/hooks/providers/SubscriptionProvider';
 import ProfileHeader from '@/components/profile/ProfileHeader';
 import UserProfileCard from '@/components/profile/UserProfileCard';
 import PremiumBanner from '@/components/profile/PremiumBanner';
+import SubscriptionManagementSection from '@/components/profile/SubscriptionManagementSection';
 import AppearancePreferencesSection from '@/components/profile/AppearancePreferencesSection';
 import CommunityAndSupportSection from '@/components/profile/CommunityAndSupportSection';
 import InformationAndLegalSection from '@/components/profile/InformationAndLegalSection';
@@ -16,6 +18,7 @@ const ProfileScreen = () => {
   const router = useRouter();
   const { theme } = useTheme();
   const styles = getStyles(theme);
+  const { isPro } = useSubscription();
   const insets = useSafeAreaInsets();
 
   const handleProfileCardPress = () => {
@@ -23,7 +26,7 @@ const ProfileScreen = () => {
   };
 
   const handlePremiumPress = () => {
-    Alert.alert('Premium Banner', 'This will navigate to the upgrade screen.');
+    router.push('/(tabs)/profile/paywall');
   };
 
   return (
@@ -35,7 +38,11 @@ const ProfileScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <UserProfileCard onPress={handleProfileCardPress} />
-        <PremiumBanner onPress={handlePremiumPress} />
+        {isPro ? (
+          <SubscriptionManagementSection />
+        ) : (
+          <PremiumBanner onPress={handlePremiumPress} />
+        )}
         <AppearancePreferencesSection />
         <CommunityAndSupportSection />
         <InformationAndLegalSection />

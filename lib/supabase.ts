@@ -29,6 +29,10 @@ export type Database = {
           remind_after_days: number;
           haptic_feedback_enabled: boolean;
           sounds_enabled: boolean;
+          subscription_tier: 'free' | 'pro';
+          subscription_provider: 'apple' | 'google' | 'stripe' | null;
+          subscription_expires_at: string | null;
+          revenuecat_customer_id: string | null;
         };
         Insert: {
           id: string;
@@ -43,6 +47,10 @@ export type Database = {
           remind_after_days?: number;
           haptic_feedback_enabled?: boolean;
           sounds_enabled?: boolean;
+          subscription_tier?: 'free' | 'pro';
+          subscription_provider?: 'apple' | 'google' | 'stripe' | null;
+          subscription_expires_at?: string | null;
+          revenuecat_customer_id?: string | null;
         };
         Update: {
           avatar_url?: string | null;
@@ -56,6 +64,10 @@ export type Database = {
           remind_after_days?: number;
           haptic_feedback_enabled?: boolean;
           sounds_enabled?: boolean;
+          subscription_tier?: 'free' | 'pro';
+          subscription_provider?: 'apple' | 'google' | 'stripe' | null;
+          subscription_expires_at?: string | null;
+          revenuecat_customer_id?: string | null;
         };
       };
       accounts: {

@@ -8,7 +8,7 @@ const WelcomeScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <FontAwesome5 name="wallet" size={80} color="#4CAF50" />
-        <Text style={styles.title}>PocketRackr</Text>
+        <Text style={styles.title}>NetWorthTrackr</Text>
         <Text style={styles.subtitle}>Track Your Wealth. See Your Progress.</Text>
         <View style={styles.chart}>
           {/* Placeholder for chart */}
