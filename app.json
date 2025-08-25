@@ -2,7 +2,6 @@
   "expo": {
     "name": "NetWorthTrackr",
     "slug": "NetWorthTrackr",
-    "main": "expo-router/entry",
     "scheme": "networthtrackr",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -37,7 +36,10 @@
               "host": "oauth"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "edgeToEdgeEnabled": true
@@ -51,7 +53,20 @@
         "Cross-Origin-Embedder-Policy": "require-corp"
       }
     },
-    "platforms": ["ios", "android", "web"],
-    "plugins": []
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "4c407c9c-30bc-42ff-bd19-a4acee7aa4c3"
+      }
+    },
+    "owner": "lightlabsstudio"
   }
 }
