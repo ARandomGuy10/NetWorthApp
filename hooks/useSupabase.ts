@@ -1,13 +1,16 @@
-// hooks/useSupabase.ts
 import { useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { useAuth } from '@clerk/clerk-expo';
 import type { Database } from '../lib/supabase';
 
 export const useSupabase = () => {
+  const authResult = useAuth();
   
-  const { getToken, isLoaded, isSignedIn } = useAuth();
-  
+  // Defensive check for corrupted auth object
+  const { getToken, isLoaded, isSignedIn } = authResult && typeof authResult === 'object' 
+    ? authResult 
+    : { getToken: null, isLoaded: false, isSignedIn: false };
+
   return useMemo(() => {
     return createClient<Database>(
       process.env.EXPO_PUBLIC_SUPABASE_URL!,
@@ -16,12 +19,14 @@ export const useSupabase = () => {
         global: {
           fetch: async (url, options) => {
             const headers = new Headers(options?.headers);
-            
-            if (isLoaded && isSignedIn) {
-              const token = await getToken();
-              if (token) headers.set('Authorization', `Bearer ${token}`);
+            if (isLoaded && isSignedIn && getToken) {
+              try {
+                const token = await getToken();
+                if (token) headers.set('Authorization', `Bearer ${token}`);
+              } catch (error) {
+                console.warn('useSupabase: Error getting token:', error);
+              }
             }
-            //console.log(headers.get('Authorization'));
             return fetch(url, { ...options, headers });
           },
         },

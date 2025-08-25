@@ -1,23 +1,34 @@
-import React, { useCallback, memo } from 'react';
+import React, { useCallback, memo, useState } from 'react';
+
 import { View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+
+import { router } from 'expo-router';
+
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import AccountSummary from '@/components/home/AccountSummary';
+import AssetsLiabilitiesSection from '@/components/home/AssetsLiabilitiesSection';
+import EmptyDashboardState from '@/components/home/EmptyDashboardState';
+import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
+import StickyHeader from '@/components/home/StickyHeader';
+import ModernFAB from '@/components/home/ModernFAB';
+import type { Theme } from '@/lib/supabase';
 import { useDashboardData } from '@/hooks/useDashboard';
 import { useProfile } from '@/hooks/useProfile';
-import type { Theme } from '@/lib/supabase';
-import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
-import AssetsLiabilitiesSection from '@/components/home/AssetsLiabilitiesSection';
-import ModernFAB from '@/components/home/ModernFAB';
-import EmptyDashboardState from '@/components/home/EmptyDashboardState';
-import StickyHeader from '@/components/home/StickyHeader'; // Add this import
+import { useNetWorthHistory } from '@/hooks/useNetWorthHistory';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { router } from 'expo-router';
-import AccountSummary from '@/components/home/AccountSummary';
 
 function DashboardScreen() {
   console.log('DashboardScreen rendered');
   const insets = useSafeAreaInsets();
+
+   // Safety check for the race condition
+  const safeInsets = typeof insets === 'object' && insets !== null 
+    ? insets 
+    : { top: 0, right: 0, bottom: 0, left: 0 };
+
   const { theme } = useTheme();
-  const styles = getStyles(theme, insets);
+  const styles = getStyles(theme, safeInsets);
 
   // Get both profile and dashboard data
   const { data: profile, isLoading: profileLoading } = useProfile();
@@ -39,9 +50,20 @@ function DashboardScreen() {
     router.push('accounts/add-account');
   };
 
-  const showLoadingSpinner = dashboardLoading && !dashboardData;
+  // The flicker happens in a state where `dashboardLoading` is false but `dashboardData` is still undefined.
+  // We must treat this as a loading state.
+  // We are loading if:
+  // 1. The profile is loading (our first dependency).
+  // 2. The dashboard is in its initial loading phase.
+  // 3. The history data is loading.
+  // 4. The dashboard is NOT loading, but we have no data AND no error. This catches the flicker.
+  const showSpinner =
+    profileLoading ||
+    dashboardLoading ||
+    (!dashboardData && !error);
 
-  if (showLoadingSpinner) {
+  if (showSpinner) {
+    console.log('Rendering loading spinner', theme.colors.primary);
     return (
       <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
@@ -49,8 +71,9 @@ function DashboardScreen() {
     );
   }
 
-  // Show empty state when dashboard data is null/undefined
-  if (!dashboardData || dashboardData.accounts.length === 0) {
+  // If we're past the spinner, it means we either have data or an error.
+  // If there's an error, or if the data is empty, show the empty state.
+  if (error || !dashboardData || dashboardData.accounts.length === 0) {
     return <EmptyDashboardState onAddFirstAccount={handleAddFirstAccount} />;
   }
 

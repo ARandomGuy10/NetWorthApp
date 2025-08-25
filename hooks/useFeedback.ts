@@ -1,7 +1,8 @@
 import { useMutation } from '@tanstack/react-query';
+import { useUser } from '@clerk/clerk-expo';
+
 import { useSupabase } from './useSupabase';
 import { useToast } from './providers/ToastProvider';
-import { useUser } from '@clerk/clerk-expo';
 
 interface FeedbackPayload {
   type: string;

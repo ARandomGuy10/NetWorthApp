@@ -1,7 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
-import { useSupabase } from './useSupabase';
+
 import type { AccountWithBalance } from '@/lib/supabase';
+
+import { useSupabase } from './useSupabase';
 
 export const useAccountsWithBalances = () => {
   const { user } = useUser();

@@ -1,40 +1,34 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useColorScheme } from 'react-native';
-import { useAuth } from '@clerk/clerk-expo';
-import { useProfile } from '@/hooks/useProfile';
+import { useSettingsStore } from '@/stores/settingsStore';
 import { getTheme } from './themes';
 
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
-  console.log('ThemeProvider rendered');
-  const { isSignedIn } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  const { theme: userTheme, isSignedIn, updateTheme } = useSettingsStore();
   const systemColorScheme = useColorScheme();
-
-  const [theme, setTheme] = useState(getTheme('DARK')); // Start with a default
+  const [theme, setTheme] = useState(getTheme('DARK'));
 
   useEffect(() => {
-    if (profileLoading) return;
-    let themeName = profile?.theme || 'SYSTEM';
-    if (themeName === 'SYSTEM') {
-      themeName = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
+    let activeTheme = isSignedIn ? userTheme : 'DARK';
+    
+    if (activeTheme === 'SYSTEM') {
+      activeTheme = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
     }
-    setTheme(getTheme(themeName));
-  }, [profile, isSignedIn, systemColorScheme, profileLoading]);
 
-  // Do not render the app until the profile is loaded for signed-in users
-  if (isSignedIn && profileLoading) {
-    return null; // Or a global loading screen
-  }
+    setTheme(getTheme(activeTheme));
+  }, [userTheme, isSignedIn, systemColorScheme]);
 
-  const switchTheme = (themeName) => {
-    let themeToSet = themeName;
-    if (themeToSet === 'SYSTEM') {
-      themeToSet = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
+  const switchTheme = useCallback((newTheme) => {
+    updateTheme(newTheme); // Update store
+    
+    let activeTheme = newTheme;
+    if (activeTheme === 'SYSTEM') {
+      activeTheme = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
     }
-    setTheme(getTheme(themeToSet));
-  };
+    setTheme(getTheme(activeTheme));
+  }, [updateTheme, systemColorScheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, switchTheme }}>

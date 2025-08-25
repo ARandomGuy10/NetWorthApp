@@ -1,40 +1,75 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
-import { useSupabase } from './useSupabase';
-import type { Profile, ProfileUpdate } from '../lib/supabase';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSettingsStore } from '../stores/settingsStore';
 
+import type { Profile, ProfileUpdate } from '../lib/supabase';
+import { useSettingsStore } from '../stores/settingsStore';
+import { useSupabase } from './useSupabase';
 import { useToast } from './providers/ToastProvider';
+
+// Helper function to ensure boolean values for enabled
+const fixEnabled = (value: any): boolean => {
+  return typeof value === 'boolean' ? value : Boolean(value);
+};
 
 export const useProfile = () => {
   const { user } = useUser();
   const supabase = useSupabase();
   const initializeSettings = useSettingsStore((state) => state.initializeSettings);
   
+  // Ensure enabled is always a proper boolean
+  const enabled = fixEnabled(user && typeof user === 'object' && user.id);
+
   return useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async (): Promise<Profile | null> => {
       console.log('🔥 CALLING DATABASE - useProfile queryFn');
       
+      // Extra safety check before database call
+      if (!user || typeof user !== 'object' || !user.id) {
+        console.warn('useProfile: Invalid user object, skipping query');
+        // Initialize with defaults when no user
+        initializeSettings({
+          hapticsEnabled: true,
+          soundsEnabled: true,
+          theme: 'DARK', // Default theme for signed-out users
+          isSignedIn: false
+        });
+        return null;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user!.id)
+        .eq('id', user.id)
         .single();
+
+      if (error?.code === 'PGRST116') {
+        // No profile found - signed in but no profile yet
+        initializeSettings({
+          hapticsEnabled: true,
+          soundsEnabled: true,
+          theme: 'SYSTEM',
+          isSignedIn: true
+        });
+        return null;
+      }
       
-      if (error?.code === 'PGRST116') return null; // No profile found
       if (error) throw error;
-      
+
       if (data) {
+        // Update settings store with profile data
         initializeSettings({
           hapticsEnabled: data.haptic_feedback_enabled ?? true,
           soundsEnabled: data.sounds_enabled ?? true,
+          theme: data.theme ?? 'DARK',
+          isSignedIn: true
         });
       }
+
       return data;
     },
-    enabled: !!user?.id,
+    enabled, // Now guaranteed to be boolean
   });
 };
 
@@ -43,11 +78,15 @@ export const useCreateProfile = () => {
   const supabase = useSupabase();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const initializeSettings = useSettingsStore((state) => state.initializeSettings);
 
   return useMutation({
     mutationFn: async () => {
       console.log('🔥 CALLING DATABASE - useCreateProfile mutationFn');
-      if (!user) throw new Error('User not authenticated');
+      
+      if (!user || typeof user !== 'object' || !user.id) {
+        throw new Error('User not authenticated or invalid user object');
+      }
 
       const { data, error } = await supabase
         .from('profiles')
@@ -71,8 +110,19 @@ export const useCreateProfile = () => {
       return data;
     },
     onSuccess: (data) => {
+      if (!user?.id) return;
+      
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      queryClient.setQueryData(['profile', user?.id], data);
+      queryClient.setQueryData(['profile', user.id], data);
+      
+      // Update settings store with new profile data
+      initializeSettings({
+        hapticsEnabled: data.haptic_feedback_enabled ?? true,
+        soundsEnabled: data.sounds_enabled ?? true,
+        theme: data.theme ?? 'DARK',
+        isSignedIn: true
+      });
+      
       showToast('Profile created successfully!', 'success');
     },
     onError: (error) => {
@@ -84,37 +134,51 @@ export const useCreateProfile = () => {
 
 export const useUpdateProfile = () => {
   const { user } = useUser();
-  const supabase     = useSupabase();
-  const queryClient  = useQueryClient();
+  const supabase = useSupabase();
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const initializeSettings = useSettingsStore((state) => state.initializeSettings);
 
   return useMutation({
     mutationFn: async (updates: ProfileUpdate) => {
       console.log('🔥 CALLING DATABASE - useUpdateProfile mutationFn');
+      
+      if (!user || typeof user !== 'object' || !user.id) {
+        throw new Error('Invalid user object for profile update');
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('id', user!.id)
+        .eq('id', user.id)
         .select()
         .single();
+
       if (error) throw error;
       return data;
     },
     onSuccess: (data, updates) => {
-      // Optimistically update the profile in the cache
-      queryClient.setQueryData(['profile', user?.id], data);
+      // Only proceed if user is still valid
+      if (!user?.id) {
+        console.warn('useUpdateProfile: Invalid user during onSuccess, skipping cache updates');
+        return;
+      }
 
-      // Also update our global settings store to avoid waiting for a refetch
-      if (updates.haptic_feedback_enabled !== undefined || updates.sounds_enabled !== undefined) {
+      queryClient.setQueryData(['profile', user.id], data);
+
+      // Update settings store with any changed settings
+      if (updates.haptic_feedback_enabled !== undefined || 
+          updates.sounds_enabled !== undefined || 
+          updates.theme !== undefined) {
         initializeSettings({
           hapticsEnabled: updates.haptic_feedback_enabled ?? data.haptic_feedback_enabled ?? true,
           soundsEnabled: updates.sounds_enabled ?? data.sounds_enabled ?? true,
+          theme: updates.theme ?? data.theme ?? 'DARK',
+          isSignedIn: true
         });
       }
 
-      // If the currency was changed, invalidate all queries that depend on it.
-      // This is much more efficient than invalidating on every profile update.
+      // If the currency was changed, invalidate all queries that depend on it
       if (updates.preferred_currency) {
         queryClient.invalidateQueries({ queryKey: ['dashboard'] });
         queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
@@ -126,14 +190,14 @@ export const useUpdateProfile = () => {
     onError: (error: Error) => {
       showToast('Failed to update profile', 'error', { text: error.message });
       console.error('Error updating profile:', error);
-    }
+    },
   });
 };
 
 export const useDeleteUser = () => {
   const supabase = useSupabase();
-  const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const initializeSettings = useSettingsStore((state) => state.initializeSettings);
 
   return useMutation({
     mutationFn: async () => {
@@ -142,8 +206,14 @@ export const useDeleteUser = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      // The toast is shown, and then the component handles sign-out and cache clearing.
-      // This prevents a race condition where a profile auto-creation might be triggered.
+      // Reset settings store to defaults when user is deleted
+      initializeSettings({
+        hapticsEnabled: true,
+        soundsEnabled: true,
+        theme: 'SYSTEM',
+        isSignedIn: false
+      });
+      
       showToast('Account deleted successfully', 'success');
     },
     onError: (error: Error) => {

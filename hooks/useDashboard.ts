@@ -1,8 +1,8 @@
-// hooks/useDashboard.ts
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
-import { useSupabase } from './useSupabase';
+
 import { useProfile } from './useProfile';
+import { useSupabase } from './useSupabase';
 
 export const useDashboardData = () => {
   const { user } = useUser();
