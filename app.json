@@ -19,12 +19,10 @@
     ],
     "ios": {
       "bundleIdentifier": "com.lightlabs.studio.networthtrackr",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "supportsTablet": true
     },
     "android": {
       "package": "com.lightlabs.studio.networthtrackr",
-      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
