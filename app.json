@@ -18,12 +18,12 @@
       "**/*"
     ],
     "ios": {
-      "bundleIdentifier": "com.networthtrackr",
+      "bundleIdentifier": "com.lightlabs.studio.networthtrackr",
       "googleServicesFile": "./GoogleService-Info.plist",
       "supportsTablet": true
     },
     "android": {
-      "package": "com.networthtrackr",
+      "package": "com.lightlabs.studio.networthtrackr",
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
