@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSupabase } from './useSupabase';
+
 import type { Balance } from '../lib/supabase';
+import { useSupabase } from './useSupabase';
 import { useToast } from '../hooks/providers/ToastProvider';
 
 /* ---------- list ---------- */

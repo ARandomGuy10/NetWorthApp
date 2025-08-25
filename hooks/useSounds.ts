@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef } from 'react';
+
 import { Audio } from 'expo-av';
+
 import { useSettingsStore } from '@/stores/settingsStore';
-  
+
 // Define sound types for type safety and easy management
 export type SoundType = 'success' | 'error' | 'tap_light';
 

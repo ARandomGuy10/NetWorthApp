@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
   View,
   Text,
@@ -7,10 +8,12 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme, CURRENCIES } from '@/lib/supabase';
+
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Theme, CURRENCIES } from '@/lib/supabase';
+import { useTheme } from '@/src/styles/theme/ThemeContext';
 
 interface CurrencyPickerProps {
   isVisible: boolean;

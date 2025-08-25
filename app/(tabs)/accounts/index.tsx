@@ -1,4 +1,5 @@
 import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
+
 import {
   View,
   Text,
@@ -8,31 +9,33 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+
 import * as Haptics from 'expo-haptics';
-import { useIsFocused } from '@react-navigation/native';
 import { FlashList, FlashListRef } from '@shopify/flash-list';
+import { Ionicons } from '@expo/vector-icons';
+import { useIsFocused } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'; // Updated hook
-import { useDeleteAccount, useUpdateAccount } from '../../../hooks/useAccounts';
-import { useAddBalance } from '../../../hooks/useBalances';
-import { useProfile } from '../../../hooks/useProfile'; // Import useProfile hook
+import { isAccountOutdated } from '@/src/utils/dateUtils';
 import { useHaptics } from '@/hooks/useHaptics';
-import { useToast } from '../../../hooks/providers/ToastProvider'; // Add this import
-import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
-import { AccountWithBalance, Theme } from '../../../lib/supabase'; // Updated type
 import { useTheme } from '@/src/styles/theme/ThemeContext';
-import AccountsHeader from '../../../components/accounts/AccountsHeader'; // Import the new header
-import FilterChipsRow, { FilterType } from '../../../components/accounts/FilterChipsRow'; // Import the new filter chips
-import StatusShelf from '../../../components/accounts/StatusShelf'; // Import the new status shelf
-import AccountSectionHeader from '../../../components/accounts/AccountSectionHeader';
-import AccountRow from '../../../components/accounts/AccountRow';
-import QuickEditSheet from '../../../components/accounts/QuickEditSheet';
-import { isAccountOutdated } from '@/src/utils/dateUtils'; // Import the new utility
-import SortOptionsSheet, { SortOption } from '../../../components/accounts/SortOptionsSheet';
+import { useToast } from '@/hooks/providers/ToastProvider';
 
+import AccountRow from '../../../components/accounts/AccountRow';
+import AccountSectionHeader from '../../../components/accounts/AccountSectionHeader';
+import AccountsHeader from '../../../components/accounts/AccountsHeader';
+import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
+import FilterChipsRow, { FilterType } from '../../../components/accounts/FilterChipsRow';
+import QuickEditSheet from '../../../components/accounts/QuickEditSheet';
+import SortOptionsSheet, { SortOption } from '../../../components/accounts/SortOptionsSheet';
+import StatusShelf from '../../../components/accounts/StatusShelf';
+import { AccountWithBalance, Theme } from '../../../lib/supabase';
+import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances';
+import { useAddBalance } from '../../../hooks/useBalances';
+import { useDeleteAccount, useUpdateAccount } from '../../../hooks/useAccounts';
+import { useProfile } from '../../../hooks/useProfile';
 
 // Define types for FlashList items
 interface FlashListItem {
@@ -455,6 +458,7 @@ function AccountsScreen() {
         renderItem={renderFlashListItem}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
+        estimatedItemSize={100}
         refreshControl={
           <RefreshControl
             refreshing={isManualRefreshing}

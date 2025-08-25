@@ -1,5 +1,7 @@
 import { useCallback } from 'react';
+
 import * as Haptics from 'expo-haptics';
+
 import { useSettingsStore } from '../stores/settingsStore';
 
 export const useHaptics = () => {

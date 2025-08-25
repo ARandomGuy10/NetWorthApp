@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useUser } from '@clerk/clerk-expo';
-import { useSupabase } from './useSupabase';
+
 import { useProfile } from './useProfile';
+import { useSupabase } from './useSupabase';
 
 type Period = '1M' | '3M' | '6M' | '12M' | 'ALL' | 'CUSTOM';
 type SamplingStrategy = 'daily' | 'weekly' | 'monthly' | 'adaptive';
