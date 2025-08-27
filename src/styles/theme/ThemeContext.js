@@ -16,10 +16,8 @@ export const ThemeProvider = ({ children }) => {
 
   useEffect(() => {
     if (profileLoading) return;
-    let themeName = profile?.theme || 'SYSTEM';
-    if (themeName === 'SYSTEM') {
-      themeName = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
-    }
+    let themeName = profile?.theme || 'DARK';
+  
     setTheme(getTheme(themeName));
   }, [profile, isSignedIn, systemColorScheme, profileLoading]);
 
