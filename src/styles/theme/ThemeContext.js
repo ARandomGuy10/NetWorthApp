@@ -1,44 +1,44 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
-import { useColorScheme } from 'react-native';
-import { useAuth } from '@clerk/clerk-expo';
-import { useProfile } from '@/hooks/useProfile';
-import { getTheme } from './themes';
+import React, {createContext, useState, useContext, useEffect} from 'react';
+
+import {useColorScheme} from 'react-native';
+
+import {useProfile} from '@/hooks/useProfile';
+
+import {getTheme} from './themes';
 
 export const ThemeContext = createContext();
 
-export const ThemeProvider = ({ children }) => {
+export const ThemeProvider = ({children}) => {
   console.log('ThemeProvider rendered');
-  const { isSignedIn } = useAuth();
-  const { data: profile, isLoading: profileLoading } = useProfile();
+  // This is safe to call here because ThemeProvider is now only used inside
+  // the (tabs) layout, which is only rendered for authenticated users.
+  const {data: profile, isLoading: profileLoading} = useProfile();
   const systemColorScheme = useColorScheme();
-
-  const [theme, setTheme] = useState(getTheme('DARK')); // Start with a default
+  const [theme, setTheme] = useState(getTheme('DARK')); // Default theme while loading
 
   useEffect(() => {
     if (profileLoading) return;
-    let themeName = profile?.theme || 'DARK';
-  
-    setTheme(getTheme(themeName));
-  }, [profile, isSignedIn, systemColorScheme, profileLoading]);
 
-  // Do not render the app until the profile is loaded for signed-in users
-  if (isSignedIn && profileLoading) {
-    return null; // Or a global loading screen
+    // Use the theme from the user's profile, or fall back to DARK.
+    const themeName = profile?.theme || 'DARK';
+    setTheme(getTheme(themeName));
+  }, [profile, profileLoading, systemColorScheme]);
+
+  // Prevent rendering children until the correct theme is loaded to avoid a
+  // "flash of wrong theme" when the app starts.
+  if (profileLoading) {
+    return null;
   }
 
-  const switchTheme = (themeName) => {
+  const switchTheme = themeName => {
     let themeToSet = themeName;
     if (themeToSet === 'SYSTEM') {
-      themeToSet = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
+      themeToSet = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT'; // This logic can be enhanced later
     }
     setTheme(getTheme(themeToSet));
   };
 
-  return (
-    <ThemeContext.Provider value={{ theme, switchTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={{theme, switchTheme}}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {
