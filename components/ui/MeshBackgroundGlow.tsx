@@ -11,6 +11,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
 import Svg, {Defs, RadialGradient, Stop, Rect} from 'react-native-svg';
+import GradientBackground from './GradientBackgroundDark';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
@@ -29,12 +30,11 @@ const Glow = ({style, duration, delay = 0, colors}: GlowProps) => {
 
   useEffect(() => {
     const easing = Easing.inOut(Easing.sin);
-
     scale.value = withRepeat(withTiming(1.3, {duration, easing}), -1, true);
     translateX.value = withRepeat(withTiming(30, {duration: duration * 1.2, easing}), -1, true);
     translateY.value = withRepeat(withTiming(-30, {duration: duration * 1.3, easing}), -1, true);
     opacity.value = withRepeat(withTiming(0.8, {duration: duration * 0.8, easing}), -1, true);
-  }, [duration, delay]);
+  }, [duration]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{translateX: translateX.value}, {translateY: translateY.value}, {scale: scale.value}],
@@ -52,9 +52,9 @@ const Glow = ({style, duration, delay = 0, colors}: GlowProps) => {
 };
 
 type MeshBackgroundGlowProps = {
-  colors?: readonly string[]; // Colors for mesh gradients (min 1, max 4)
-  glowColors?: [string, string][]; // Optional glow colors for circles
-  glowDurations?: number[]; // Duration for each glow circle animation
+  colors?: readonly string[];
+  glowColors?: [string, string][];
+  glowDurations?: number[];
 };
 
 const MeshBackgroundGlow = ({
@@ -73,7 +73,7 @@ const MeshBackgroundGlow = ({
   const glow2Style = useMemo(() => ({width: 400, height: 400, right: -120, bottom: height * 0.2}), [width, height]);
   const glow3Style = useMemo(() => ({width: 300, height: 300, left: width * 0.3, top: height * 0.6}), [width, height]);
 
-  // Liquid motion shared values
+  // Mesh motion shared values
   const animX = useSharedValue(0);
   const animY = useSharedValue(0);
   const animScale = useSharedValue(0);
@@ -97,7 +97,13 @@ const MeshBackgroundGlow = ({
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      {/* Mesh background */}
+      {/* Dark base layer to preserve richness */}
+      <AnimatedLinearGradient colors={['#0a1120', '#0a1120']} style={StyleSheet.absoluteFill} />
+
+      {/* Enhanced radial gradients with motion */}
+      <GradientBackground colors={colors} />
+
+      {/* Mesh background motion */}
       <Animated.View style={[StyleSheet.absoluteFill, animatedMeshStyle]}>
         <Svg height="100%" width="100%">
           <Defs>
@@ -113,7 +119,6 @@ const MeshBackgroundGlow = ({
               </RadialGradient>
             ))}
           </Defs>
-
           {colors.map((_, idx) => (
             <Rect key={`rect-${idx}`} width="100%" height="100%" fill={`url(#grad${idx})`} />
           ))}

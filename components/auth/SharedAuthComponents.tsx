@@ -242,7 +242,8 @@ interface SocialButtonProps {
   strategy: OAuthStrategy;
   onPress: (strategy: OAuthStrategy) => void;
   loading: boolean;
-  disabled: boolean;
+  disabled?: boolean;
+  highlight?: boolean;
 }
 
 export const SocialButton: React.FC<SocialButtonProps> = ({strategy, onPress, loading, disabled}) => {
