@@ -1,15 +1,21 @@
-import { Tabs, router } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
-import { useEffect } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import {useEffect} from 'react';
+
+import {View, ActivityIndicator, Text} from 'react-native';
+
+import {Tabs, router} from 'expo-router';
+
+import {StackActions} from '@react-navigation/native';
+import {useAuth} from '@clerk/clerk-expo';
+
+import {ThemeProvider} from '@/src/styles/theme/ThemeContext';
+
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
-import { StackActions } from '@react-navigation/native';
-import { useProfile, useCreateProfile } from '../../hooks/useProfile';
+import {useProfile, useCreateProfile} from '../../hooks/useProfile';
 
 export default function TabsLayout() {
-  const { isSignedIn, isLoaded } = useAuth();
-  const { data: profile, isLoading: isProfileLoading } = useProfile();
-  const { mutate: createProfile } = useCreateProfile();
+  const {isSignedIn, isLoaded} = useAuth();
+  const {data: profile, isLoading: isProfileLoading} = useProfile();
+  const {mutate: createProfile} = useCreateProfile();
   console.log('TabsLayout rendered');
 
   // Redirect if not authenticated
@@ -26,57 +32,58 @@ export default function TabsLayout() {
   // Show loading while auth loads
   if (!isLoaded || !isSignedIn) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" />
         <Text>Loading...</Text>
       </View>
     );
   }
 
-   // Don't render tabs if user is not signed in
-   if (!isSignedIn) {
+  // Don't render tabs if user is not signed in
+  if (!isSignedIn) {
     return null; // Redirect is happening
   }
 
   // Remove the context providers - use TanStack Query instead
   return (
-    <Tabs
-      tabBar={(props) => <CustomBottomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-      }}
-    >
-     <Tabs.Screen 
-          name="dashboard" 
+    <ThemeProvider>
+      <Tabs
+        tabBar={props => <CustomBottomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
+        }}>
+        <Tabs.Screen
+          name="dashboard"
           options={{
             title: undefined,
           }}
         />
-        <Tabs.Screen 
-          name="accounts" 
+        <Tabs.Screen
+          name="accounts"
           options={{
             title: undefined,
           }}
           listeners={{
-            tabPress: (e) => {
+            tabPress: e => {
               e.preventDefault();
               router.navigate('/(tabs)/accounts');
             },
           }}
         />
-        <Tabs.Screen 
-          name="analytics" 
+        <Tabs.Screen
+          name="analytics"
           options={{
             title: undefined,
           }}
         />
-        <Tabs.Screen 
-          name="profile" 
+        <Tabs.Screen
+          name="profile"
           options={{
             title: undefined,
           }}
         />
-    </Tabs>
+      </Tabs>
+    </ThemeProvider>
   );
 }

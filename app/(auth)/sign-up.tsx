@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useCallback} from 'react';
+import React, {useEffect, useState, useCallback, useRef} from 'react';
 
 import {
   View,
@@ -12,6 +12,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 
 import {Link, router} from 'expo-router';
@@ -100,6 +101,16 @@ const SignUpScreen: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // State for resend functionality
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(30);
+  const [showResendSuccess, setShowResendSuccess] = useState(false);
+
+  // Refs for text inputs
+  const emailInputRef = useRef<TextInput>(null);
+  const passwordInputRef = useRef<TextInput>(null);
+  const confirmPasswordInputRef = useRef<TextInput>(null);
+
   const {loading, setLoading, socialLoading, errors, clearError, setFieldErrors, handleOAuth} = useAuthForm();
 
   // 🎯 UPDATED: Removed firstName animation style
@@ -111,6 +122,23 @@ const SignUpScreen: React.FC = () => {
   );
   const codeAnimatedStyle = useInputFocusAnimation(focusedField === 'code');
 
+  // Handle resend countdown timer
+  useEffect(() => {
+    if (!resendDisabled) return;
+
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setResendDisabled(false);
+          return 30; // Reset for next time
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [resendDisabled]);
   // Show loading screen while Clerk initializes
   if (!isLoaded) {
     return (
@@ -245,6 +273,27 @@ const SignUpScreen: React.FC = () => {
     }
   }, [isLoaded, signUp, verification.code, setActive, setLoading, notificationAsync]);
 
+  const onResendCode = useCallback(async (): Promise<void> => {
+    if (!isLoaded || !signUp) return;
+
+    try {
+      setResendDisabled(true);
+      await signUp.prepareEmailAddressVerification({
+        strategy: 'email_code',
+      });
+      // Briefly show a success message instead of an alert
+      setShowResendSuccess(true);
+      setTimeout(() => setShowResendSuccess(false), 2000);
+      notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (err: any) {
+      logErrorPrivately(err, 'resend_verification_code');
+      notificationAsync(Haptics.NotificationFeedbackType.Error);
+      Alert.alert('Resend Failed', 'Could not send a new verification code. Please try again in a moment.');
+      // Allow user to try again immediately on failure
+      setResendDisabled(false);
+    }
+  }, [isLoaded, signUp, notificationAsync]);
+
   const updateCredentials = useCallback(
     (field: keyof typeof credentials, value: string) => {
       setCredentials(prev => ({...prev, [field]: value}));
@@ -298,7 +347,7 @@ const SignUpScreen: React.FC = () => {
         glowColors={onboardingTheme.final.meshBackground.map(color => [color, 'transparent']) as [string, string][]}
         glowDurations={[8000, 10000, 12000]}
       />
-      <View style={[styles.safeArea, {paddingTop: insets.top}]}>
+      <View style={[styles.safeArea, {paddingTop: insets.top, paddingBottom: insets.bottom}]}>
         {/* Header */}
         <View style={styles.headerContainer}>
           <AnimatedButton style={sharedStyles.headerButtonDark} onPress={handleBackPress} hapticType="light">
@@ -317,124 +366,129 @@ const SignUpScreen: React.FC = () => {
           style={styles.keyboardAvoidingView}>
           <TouchableWithoutFeedback onPress={handleDismissKeyboard}>
             <ScrollView
-              contentContainerStyle={styles.scrollContentContainer}
+              contentContainerStyle={[
+                styles.scrollContentContainer,
+                {paddingBottom: responsiveSizes.verticalSpacing * 2 + insets.bottom},
+              ]}
               keyboardShouldPersistTaps="never"
               showsVerticalScrollIndicator={false}
-              bounces={false}
-              scrollEnabled={pendingVerification || Object.keys(errors).length > 0}>
-              {!pendingVerification ? (
-                <>
-                  {/* Titles */}
+              bounces={false}>
+              {!pendingVerification ? (<>
+                <View>
                   <Text style={styles.title} allowFontScaling={false}>
                     Create Account
                   </Text>
                   <Text style={styles.subtitle} allowFontScaling={false}>
                     Sign up to access your account
                   </Text>
-
-                  {/* 🎯 REMOVED: First Name Input Field */}
-
-                  {/* Email Input */}
-                  <Animated.View style={[sharedStyles.inputWrapper, emailAnimatedStyle]}>
-                    <Ionicons
-                      name="mail"
-                      size={responsiveSizes.fontSize}
-                      color="#FFFFFF"
-                      style={sharedStyles.inputIcon}
-                    />
-                    <AnimatedTextInput
-                      placeholder="Enter your email"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
-                      value={credentials.emailAddress}
-                      onChangeText={text => updateCredentials('emailAddress', text)}
-                      onFocus={() => handleFieldFocus('emailAddress')}
-                      onBlur={handleFieldBlur}
-                      style={sharedStyles.input}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      textContentType="emailAddress"
-                      returnKeyType="next"
-                      allowFontScaling={false}
-                      accessibilityLabel="Email address input"
-                      accessibilityHint="Enter your email address to create account"
-                      accessibilityRole="text"
-                      accessible={true}
-                    />
-                  </Animated.View>
+                </View>
+                <View>
+                  <TouchableWithoutFeedback onPress={() => emailInputRef.current?.focus()}>
+                    <Animated.View style={[sharedStyles.inputWrapper, emailAnimatedStyle]}>
+                      <Ionicons
+                        name="mail"
+                        size={responsiveSizes.fontSize}
+                        color="#FFFFFF"
+                        style={sharedStyles.inputIcon}
+                      />
+                      <AnimatedTextInput
+                        ref={emailInputRef}
+                        placeholder="Enter your email"
+                        placeholderTextColor="rgba(255,255,255,0.5)"
+                        value={credentials.emailAddress}
+                        onChangeText={text => updateCredentials('emailAddress', text)}
+                        onFocus={() => handleFieldFocus('emailAddress')}
+                        onBlur={handleFieldBlur}
+                        style={sharedStyles.input}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        textContentType="emailAddress"
+                        returnKeyType="next"
+                        allowFontScaling={false}
+                        accessibilityLabel="Email address input"
+                        accessibilityHint="Enter your email address to create account"
+                        accessibilityRole="text"
+                        accessible={true}
+                      />
+                    </Animated.View>
+                  </TouchableWithoutFeedback>
                   <ErrorMessage message={errors.emailAddress} />
 
-                  {/* Password Input */}
-                  <Animated.View style={[sharedStyles.inputWrapper, passwordAnimatedStyle]}>
-                    <Ionicons
-                      name="lock-closed"
-                      size={responsiveSizes.fontSize}
-                      color="#FFFFFF"
-                      style={sharedStyles.inputIcon}
-                    />
-                    <AnimatedTextInput
-                      placeholder="Create a password"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
-                      value={credentials.password}
-                      onChangeText={text => updateCredentials('password', text)}
-                      onFocus={() => handleFieldFocus('password')}
-                      onBlur={handleFieldBlur}
-                      style={sharedStyles.input}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      textContentType="newPassword"
-                      returnKeyType="next"
-                      allowFontScaling={false}
-                      accessibilityLabel="Password input"
-                      accessibilityHint="Create a secure password"
-                      accessibilityRole="text"
-                      accessible={true}
-                    />
-                    <PasswordToggle showPassword={showPassword} onToggle={togglePasswordVisibility} />
-                  </Animated.View>
+                  <TouchableWithoutFeedback onPress={() => passwordInputRef.current?.focus()}>
+                    <Animated.View style={[sharedStyles.inputWrapper, passwordAnimatedStyle]}>
+                      <Ionicons
+                        name="lock-closed"
+                        size={responsiveSizes.fontSize}
+                        color="#FFFFFF"
+                        style={sharedStyles.inputIcon}
+                      />
+                      <AnimatedTextInput
+                        ref={passwordInputRef}
+                        placeholder="Create a password"
+                        placeholderTextColor="rgba(255,255,255,0.5)"
+                        value={credentials.password}
+                        onChangeText={text => updateCredentials('password', text)}
+                        onFocus={() => handleFieldFocus('password')}
+                        onBlur={handleFieldBlur}
+                        style={sharedStyles.input}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        textContentType="password"
+                        returnKeyType="next"
+                        allowFontScaling={false}
+                        accessibilityLabel="Password input"
+                        accessibilityHint="Create a secure password"
+                        accessibilityRole="text"
+                        accessible={true}
+                      />
+                      <PasswordToggle showPassword={showPassword} onToggle={togglePasswordVisibility} />
+                    </Animated.View>
+                  </TouchableWithoutFeedback>
                   <ErrorMessage message={errors.password} />
 
-                  {/* Confirm Password Input */}
-                  <Animated.View style={[sharedStyles.inputWrapper, confirmPasswordAnimatedStyle]}>
-                    <Ionicons
-                      name="lock-closed"
-                      size={responsiveSizes.fontSize}
-                      color="#FFFFFF"
-                      style={sharedStyles.inputIcon}
-                    />
-                    <AnimatedTextInput
-                      placeholder="Confirm your password"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
-                      value={credentials.confirmPassword}
-                      onChangeText={text => updateCredentials('confirmPassword', text)}
-                      onFocus={() => handleFieldFocus('confirmPassword')}
-                      onBlur={handleFieldBlur}
-                      style={sharedStyles.input}
-                      secureTextEntry={!showConfirmPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      textContentType="newPassword"
-                      returnKeyType="done"
-                      onSubmitEditing={onSignUpPress}
-                      allowFontScaling={false}
-                      accessibilityLabel="Confirm password input"
-                      accessibilityHint="Re-enter your password to confirm"
-                      accessibilityRole="text"
-                      accessible={true}
-                    />
-                    <PasswordToggle showPassword={showConfirmPassword} onToggle={toggleConfirmPasswordVisibility} />
-                  </Animated.View>
+                  <TouchableWithoutFeedback onPress={() => confirmPasswordInputRef.current?.focus()}>
+                    <Animated.View style={[sharedStyles.inputWrapper, confirmPasswordAnimatedStyle]}>
+                      <Ionicons
+                        name="lock-closed"
+                        size={responsiveSizes.fontSize}
+                        color="#FFFFFF"
+                        style={sharedStyles.inputIcon}
+                      />
+                      <AnimatedTextInput
+                        ref={confirmPasswordInputRef}
+                        placeholder="Confirm your password"
+                        placeholderTextColor="rgba(255,255,255,0.5)"
+                        value={credentials.confirmPassword}
+                        onChangeText={text => updateCredentials('confirmPassword', text)}
+                        onFocus={() => handleFieldFocus('confirmPassword')}
+                        onBlur={handleFieldBlur}
+                        style={sharedStyles.input}
+                        secureTextEntry={!showConfirmPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      textContentType="password"
+                        returnKeyType="done"
+                        onSubmitEditing={onSignUpPress}
+                        allowFontScaling={false}
+                        accessibilityLabel="Confirm password input"
+                        accessibilityHint="Re-enter your password to confirm"
+                        accessibilityRole="text"
+                        accessible={true}
+                      />
+                      <PasswordToggle showPassword={showConfirmPassword} onToggle={toggleConfirmPasswordVisibility} />
+                    </Animated.View>
+                  </TouchableWithoutFeedback>
                   <ErrorMessage message={errors.confirmPassword} />
 
-                  {/* Create Account Button */}
                   <GradientButton onPress={onSignUpPress} loading={loading} success={isSuccess}>
                     <Text style={sharedStyles.gradientButtonText} allowFontScaling={false}>
                       Create Account
                     </Text>
                   </GradientButton>
-
-                  {/* Divider */}
+                </View>
+                <View>
                   <View style={sharedStyles.dividerContainer}>
                     <View style={sharedStyles.dividerLine} />
                     <Text style={sharedStyles.dividerText} allowFontScaling={false}>
@@ -443,7 +497,6 @@ const SignUpScreen: React.FC = () => {
                     <View style={sharedStyles.dividerLine} />
                   </View>
 
-                  {/* Social Buttons */}
                   <View style={sharedStyles.socialContainer}>
                     <SocialButton
                       strategy="google"
@@ -459,7 +512,6 @@ const SignUpScreen: React.FC = () => {
                     />
                   </View>
 
-                  {/* Link */}
                   <View style={styles.linkContainer}>
                     <Text style={styles.linkText} allowFontScaling={false}>
                       Already have an account?{' '}
@@ -474,7 +526,7 @@ const SignUpScreen: React.FC = () => {
                       Sign in
                     </Text>
                   </View>
-                </>
+                </View></>
               ) : (
                 <>
                   {/* Verification Step */}
@@ -524,6 +576,23 @@ const SignUpScreen: React.FC = () => {
                     </Text>
                   </GradientButton>
 
+                  {/* Resend Code Link */}
+                  <View style={styles.footerContainer}>
+                    <Text style={styles.footerText}>Didn't receive a code? </Text>
+                    <TouchableOpacity onPress={onResendCode} disabled={resendDisabled}>
+                      <Text style={[styles.footerLink, resendDisabled && styles.footerLinkDisabled]}>
+                        {resendDisabled ? `Resend in ${countdown}s` : 'Resend code'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* Resend Success Message */}
+                  {showResendSuccess && (
+                    <View style={styles.noteContainer}>
+                      <Text style={styles.noteTextSuccess}>A new code has been sent!</Text>
+                    </View>
+                  )}
+
                   {/* Note about profile completion */}
                   <View style={styles.noteContainer}>
                     <Text style={styles.noteText} allowFontScaling={false}>
@@ -549,10 +618,9 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: '6%',
-    paddingVertical: responsiveSizes.verticalSpacing,
-    minHeight: '88%',
+    justifyContent: 'space-between',
+    paddingHorizontal: '6%', // Keep horizontal padding consistent
+    paddingTop: responsiveSizes.verticalSpacing * 3, // Increased space from header
   },
   keyboardAvoidingView: {
     flex: 1,
@@ -568,7 +636,7 @@ const styles = StyleSheet.create({
     fontSize: responsiveSizes.titleSize,
     fontFamily: 'Inter_700Bold',
     color: '#FFFFFF',
-    marginBottom: 4,
+    marginBottom: responsiveSizes.verticalSpacing, // Dynamic spacing for consistency
     textAlign: 'left',
     letterSpacing: 0.3,
   },
@@ -602,6 +670,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_600SemiBold',
     textDecorationLine: 'underline',
   },
+  footerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: responsiveSizes.verticalSpacing * 2,
+  },
+  footerText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: responsiveSizes.fontSize - 1,
+  },
+  footerLink: {
+    color: '#22c55e',
+    fontSize: responsiveSizes.fontSize - 1,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  footerLinkDisabled: {
+    color: 'rgba(255,255,255,0.5)',
+  },
   noteContainer: {
     marginTop: responsiveSizes.verticalSpacing * 2,
     paddingHorizontal: responsiveSizes.verticalSpacing,
@@ -613,6 +699,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter_400Regular',
     textAlign: 'center',
     lineHeight: responsiveSizes.fontSize * 1.3,
+  },
+  noteTextSuccess: {
+    color: '#22c55e',
+    fontSize: responsiveSizes.fontSize - 2,
+    fontFamily: 'Inter_500Medium',
+    textAlign: 'center',
   },
   // Loading screen styles
   loadingContainer: {

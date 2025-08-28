@@ -183,7 +183,7 @@ const WelcomeContent: React.FC = () => {
   };
 
   return (
-    <View style={[styles.contentContainer, {paddingTop: insets.top + 40, paddingBottom: insets.bottom + 40}]}>
+    <View style={[styles.contentContainer, {paddingTop: insets.top + 20, paddingBottom: insets.bottom + 20}]}>
       <View style={styles.headerSection}>
         <AppLogo />
         <Animated.View style={titleStyle}>
@@ -219,7 +219,7 @@ const WelcomeContent: React.FC = () => {
 const WelcomeScreen: React.FC = () => {
   const [showSplash, setShowSplash] = useState(true);
   const handleSplashComplete = useCallback(() => setShowSplash(false), []);
-
+  console.log('WelcomeScreen rendered');
   return (
     <>
       <StatusBar style="light" translucent />
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
     textShadowRadius: 4,
   },
   contentContainer: {flex: 1, paddingHorizontal: sizes.containerPadding, justifyContent: 'space-between'},
-  headerSection: {alignItems: 'center', paddingTop: 20},
+  headerSection: {alignItems: 'center'},
   logoContainer: {marginBottom: 16},
   logoImage: {
     width: sizes.logoSize,
@@ -312,7 +312,10 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.7)',
     lineHeight: sizes.featureSubtitle * 1.3,
   },
-  buttonsSection: {paddingBottom: 20},
+  buttonsSection: {
+    paddingBottom: 20,
+    marginTop: 24, // Add margin to push buttons away from features
+  },
   primaryButton: {
     backgroundColor: '#1a4e8d',
     borderRadius: 28,

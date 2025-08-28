@@ -7,8 +7,7 @@ import {router} from 'expo-router';
 import * as ScreenOrientation from 'expo-screen-orientation';
 import {useAuth} from '@clerk/clerk-expo';
 
-import {Theme} from '@/lib/supabase';
-import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 
 /**
  * Initial route component that handles the app's initial routing
@@ -16,8 +15,6 @@ import {useTheme} from '@/src/styles/theme/ThemeContext';
  */
 export default function Index() {
   const {isSignedIn, isLoaded} = useAuth();
-  const {theme} = useTheme();
-  const styles = getStyles(theme);
 
   useEffect(() => {
     // Fallback for devices that don't respect app.json
@@ -52,23 +49,22 @@ export default function Index() {
   // Show loading state while checking auth status
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color={theme.colors.primary} />
+      <ActivityIndicator size="large" color={onboardingTheme.colors.primary} />
       <Text style={styles.loadingText}>Loading...</Text>
     </View>
   );
 }
 
-const getStyles = (theme: Theme) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background.primary,
-    },
-    loadingText: {
-      marginTop: 16,
-      fontSize: 16,
-      color: theme.colors.text.secondary,
-    },
-  });
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: onboardingTheme.colors.background.primary,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: onboardingTheme.colors.text.secondary,
+  },
+});
