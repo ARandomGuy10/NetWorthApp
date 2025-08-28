@@ -16,33 +16,10 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {StatusBar} from 'expo-status-bar';
 import * as Haptics from 'expo-haptics';
-
 import MeshBackgroundGlow from '@/components/ui/MeshBackgroundGlow';
-import {AnimatedButton, sharedStyles} from '@/components/auth/SharedAuthComponents';
+import {AnimatedButton, sharedStyles, responsiveSizes} from '@/components/auth/SharedAuthComponents';
 import {useHaptics} from '@/hooks/useHaptics';
 import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
-
-// Screen dimensions
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
-
-// Responsive sizing
-const getSizes = () => {
-  const isSmall = screenHeight < 700;
-  return {
-    logoSize: isSmall ? 50 : 60,
-    splashLogo: isSmall ? 120 : 140,
-    splashAppName: isSmall ? 24 : 28,
-    title: isSmall ? 24 : 28,
-    subtitle: isSmall ? 14 : 16,
-    icon: isSmall ? 20 : 24,
-    featureTitle: isSmall ? 14 : 16,
-    featureSubtitle: isSmall ? 12 : 14,
-    verticalSpacing: isSmall ? 12 : 16,
-    containerPadding: isSmall ? 20 : 24,
-    featurePadding: isSmall ? 12 : 16,
-  };
-};
-const sizes = getSizes();
 
 interface Feature {
   icon: keyof typeof Ionicons.glyphMap; // ensures only valid icon names
@@ -118,7 +95,7 @@ const FeatureCard: React.FC<{feature: (typeof features)[0]; index: number}> = ({
     opacity.value = withDelay(delay, withTiming(1, {duration: 400, easing: Easing.out(Easing.quad)}));
     translateY.value = withDelay(delay, withTiming(0, {duration: 400, easing: Easing.out(Easing.quad)}));
     iconScale.value = withRepeat(withTiming(1.05, {duration: 2000, easing: Easing.inOut(Easing.sin)}), -1, true);
-  }, []);
+  }, [index]);
 
   const style = useAnimatedStyle(() => ({opacity: opacity.value, transform: [{translateY: translateY.value}]}));
   const iconStyle = useAnimatedStyle(() => ({transform: [{scale: iconScale.value}]}));
@@ -126,8 +103,8 @@ const FeatureCard: React.FC<{feature: (typeof features)[0]; index: number}> = ({
   return (
     <Animated.View style={[styles.featureCard, style]}>
       <View style={[styles.featureIconContainer, {backgroundColor: `${feature.color}20`}]}>
-        <Animated.View style={iconStyle}>
-          <Ionicons name={feature.icon} size={sizes.icon} color={feature.color} />
+        <Animated.View style={iconStyle} accessibilityRole="image" accessibilityLabel={feature.title}>
+          <Ionicons name={feature.icon} size={responsiveSizes.fontSize + 4} color={feature.color} />
         </Animated.View>
       </View>
       <View style={styles.featureContent}>
@@ -187,10 +164,12 @@ const WelcomeContent: React.FC = () => {
       <View style={styles.headerSection}>
         <AppLogo />
         <Animated.View style={titleStyle}>
-          <Text style={styles.appName}>NetWorthTrackr</Text>
+          <Text style={[sharedStyles.title, {textAlign: 'center'}]}>NetWorthTrackr</Text>
         </Animated.View>
         <Animated.View style={subtitleStyle}>
-          <Text style={styles.tagline}>Track, grow, and visualize your wealth effortlessly.</Text>
+          <Text style={[sharedStyles.subtitle, {textAlign: 'center', marginBottom: 24}]}>
+            Track, grow, and visualize your wealth effortlessly.
+          </Text>
         </Animated.View>
       </View>
 
@@ -236,12 +215,11 @@ const WelcomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {flex: 1},
   splashContainer: {flex: 1, justifyContent: 'center', alignItems: 'center'},
-  splashContentContainer: {alignItems: 'center', justifyContent: 'center'},
+  splashContentContainer: {alignItems: 'center', justifyContent: 'center', gap: 16},
   splashLogoImage: {
-    width: sizes.splashLogo,
-    height: sizes.splashLogo,
+    width: responsiveSizes.titleSize * 4,
+    height: responsiveSizes.titleSize * 4,
     borderRadius: 30,
-    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.1,
@@ -249,7 +227,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   splashAppName: {
-    fontSize: sizes.splashAppName,
+    fontSize: responsiveSizes.titleSize,
     fontFamily: 'Inter_700Bold',
     color: '#FFF',
     textAlign: 'center',
@@ -258,26 +236,21 @@ const styles = StyleSheet.create({
     textShadowOffset: {width: 0, height: 2},
     textShadowRadius: 4,
   },
-  contentContainer: {flex: 1, paddingHorizontal: sizes.containerPadding, justifyContent: 'space-between'},
+  contentContainer: {
+    flex: 1,
+    paddingHorizontal: responsiveSizes.verticalSpacing * 2,
+    justifyContent: 'space-between',
+  },
   headerSection: {alignItems: 'center'},
   logoContainer: {marginBottom: 16},
   logoImage: {
-    width: sizes.logoSize,
-    height: sizes.logoSize,
+    width: responsiveSizes.titleSize * 2,
+    height: responsiveSizes.titleSize * 2,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
-  },
-  appName: {fontSize: sizes.title, fontFamily: 'Inter_700Bold', color: '#FFF', textAlign: 'center', marginBottom: 8},
-  tagline: {
-    fontSize: sizes.subtitle,
-    fontFamily: 'Inter_400Regular',
-    color: 'rgba(255,255,255,0.8)',
-    textAlign: 'center',
-    lineHeight: sizes.subtitle * 1.4,
-    marginBottom: 24,
   },
   featuresSection: {paddingVertical: 20},
   featureCard: {
@@ -285,14 +258,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: 12,
-    padding: sizes.featurePadding,
+    padding: responsiveSizes.verticalSpacing,
     marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
   featureIconContainer: {
-    width: sizes.icon + 12,
-    height: sizes.icon + 12,
+    width: responsiveSizes.fontSize + 20,
+    height: responsiveSizes.fontSize + 20,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -300,17 +273,17 @@ const styles = StyleSheet.create({
   },
   featureContent: {flex: 1},
   featureTitle: {
-    fontSize: sizes.featureTitle,
+    fontSize: responsiveSizes.fontSize,
     fontFamily: 'Inter_600SemiBold',
     color: '#FFF',
     marginBottom: 2,
-    lineHeight: sizes.featureTitle * 1.2,
+    lineHeight: responsiveSizes.fontSize * 1.2,
   },
   featureSubtitle: {
-    fontSize: sizes.featureSubtitle,
+    fontSize: responsiveSizes.fontSize - 2,
     fontFamily: 'Inter_400Regular',
     color: 'rgba(255,255,255,0.7)',
-    lineHeight: sizes.featureSubtitle * 1.3,
+    lineHeight: (responsiveSizes.fontSize - 2) * 1.3,
   },
   buttonsSection: {
     paddingBottom: 20,

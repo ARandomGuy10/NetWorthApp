@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   TouchableOpacityProps,
   ActivityIndicator,
-  Dimensions,
   AccessibilityRole,
   GestureResponderEvent,
 } from 'react-native';
@@ -20,47 +19,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-
-import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 import GoogleIcon from '@/components/ui/GoogleIcon';
 import {useHaptics} from '@/hooks/useHaptics';
+import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 
-// Get screen dimensions for responsive sizing
-const {height: screenHeight} = Dimensions.get('window');
-
-// Responsive sizing for 4-8 inch devices
-const getCompactSizes = () => {
-  if (screenHeight <= 667) {
-    return {
-      titleSize: 26,
-      subtitleSize: 14,
-      inputHeight: 42,
-      buttonHeight: 44,
-      verticalSpacing: 8,
-      fontSize: 14,
-    };
-  } else if (screenHeight <= 812) {
-    return {
-      titleSize: 28,
-      subtitleSize: 15,
-      inputHeight: 44,
-      buttonHeight: 46,
-      verticalSpacing: 10,
-      fontSize: 15,
-    };
-  } else {
-    return {
-      titleSize: 30,
-      subtitleSize: 16,
-      inputHeight: 46,
-      buttonHeight: 48,
-      verticalSpacing: 12,
-      fontSize: 16,
-    };
-  }
-};
-
-const sizes = getCompactSizes();
+// Centralize and export styles and sizes directly from the theme.
+export const {sharedStyles, responsiveSizes} = onboardingTheme;
+// Create local aliases for use within this file.
+const styles = sharedStyles;
+const sizes = responsiveSizes;
 
 // Proper TypeScript interfaces
 export interface AnimatedButtonProps extends TouchableOpacityProps {
@@ -176,7 +143,7 @@ export const useInputFocusAnimation = (focused: boolean, hasError: boolean = fal
           [0, 1],
           ['rgba(24, 60, 109, 0.8)', '#2a5298'] // Darker blue border when focused
         ),
-        onboardingTheme.colors?.border?.error || '#ef4444',
+        onboardingTheme.colors.border.error,
       ]
     );
 
@@ -284,7 +251,8 @@ export const GradientButton: React.FC<{
   disabled?: boolean;
   loading?: boolean;
   success?: boolean;
-}> = ({children, onPress, disabled, loading, success}) => {
+  style?: TouchableOpacityProps['style'];
+}> = ({children, onPress, disabled, loading, success, style}) => {
   const {notificationAsync} = useHaptics();
 
   const handlePress = (event: GestureResponderEvent) => {
@@ -301,7 +269,7 @@ export const GradientButton: React.FC<{
 
   return (
     <AnimatedButton
-      style={styles.gradientButtonContainer}
+      style={[styles.gradientButtonContainer, style]}
       onPress={handlePress}
       disabled={disabled || loading}
       hapticType="heavy"
@@ -336,157 +304,3 @@ export const PasswordToggle: React.FC<{
     </AnimatedButton>
   );
 };
-
-const styles = {
-  // 🎯 UPDATED: Input wrapper with cleaner focus effect
-  inputWrapper: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginVertical: sizes.verticalSpacing / 2,
-    height: sizes.inputHeight,
-    borderRadius: 10,
-    borderWidth: 1.5, // Slightly thicker border for better lift effect
-    borderColor: 'rgba(24, 60, 109, 0.8)',
-    backgroundColor: '#112a52',
-    paddingHorizontal: 14,
-    width: '100%' as const,
-    // 🎯 UPDATED: Default subtle shadow
-    shadowColor: '#000000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-
-  inputIcon: {
-    marginRight: 10,
-    opacity: 0.8,
-  },
-
-  input: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: sizes.fontSize,
-    fontFamily: 'Inter_400Regular',
-    paddingVertical: 0,
-    includeFontPadding: false,
-  },
-
-  socialButtonDark: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    height: sizes.buttonHeight,
-    borderRadius: sizes.buttonHeight / 2,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    gap: 10,
-    marginBottom: sizes.verticalSpacing,
-    width: '100%' as const,
-  },
-  socialButtonBlue: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    height: sizes.buttonHeight,
-    borderRadius: sizes.buttonHeight / 2,
-    backgroundColor: '#1460d8ff',
-    borderWidth: 1,
-    borderColor: '#2563eb',
-    gap: 10,
-    marginBottom: sizes.verticalSpacing,
-    width: '100%' as const,
-  },
-  socialButtonText: {
-    color: '#FFFFFF',
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: sizes.fontSize,
-    fontWeight: '600' as const,
-  },
-
-  gradientButtonContainer: {
-    width: '100%' as const,
-    borderRadius: sizes.buttonHeight / 2,
-    marginTop: sizes.verticalSpacing * 2,
-    marginBottom: sizes.verticalSpacing,
-    overflow: 'hidden' as const,
-    shadowColor: '#22c55e',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-
-  gradientButton: {
-    height: sizes.buttonHeight,
-    borderRadius: sizes.buttonHeight / 2,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: 20,
-  },
-
-  gradientButtonText: {
-    color: '#FFFFFF',
-    fontSize: sizes.fontSize,
-    fontFamily: 'Inter_700Bold',
-    fontWeight: '700' as const,
-  },
-
-  headerButtonDark: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: 18,
-    backgroundColor: '#112a52',
-    borderWidth: 1,
-    borderColor: 'rgba(24, 60, 109, 0.8)',
-    minHeight: 40,
-    minWidth: 40,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-  },
-
-  headerButtonText: {
-    color: '#FFFFFF',
-    fontFamily: 'Inter_600SemiBold',
-    fontSize: sizes.fontSize - 1,
-    fontWeight: '600' as const,
-  },
-
-  errorText: {
-    color: '#ef4444',
-    fontSize: sizes.fontSize - 3,
-    fontFamily: 'Inter_500Medium',
-    marginTop: 2,
-    marginBottom: 4,
-    textAlign: 'left' as const,
-    paddingLeft: 4,
-  },
-
-  dividerContainer: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    marginVertical: sizes.verticalSpacing * 1.5,
-  },
-
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    opacity: 0.5,
-  },
-
-  dividerText: {
-    marginHorizontal: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontFamily: 'Inter_500Medium',
-    fontSize: sizes.fontSize - 1,
-  },
-
-  socialContainer: {
-    flexDirection: 'column' as const,
-    gap: 0,
-  },
-};
-
-export {styles as sharedStyles, sizes as responsiveSizes};

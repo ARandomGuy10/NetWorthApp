@@ -29,6 +29,7 @@ export type Database = {
           remind_after_days: number;
           haptic_feedback_enabled: boolean;
           sounds_enabled: boolean;
+          has_completed_onboarding: boolean;
         };
         Insert: {
           id: string;
@@ -43,6 +44,7 @@ export type Database = {
           remind_after_days?: number;
           haptic_feedback_enabled?: boolean;
           sounds_enabled?: boolean;
+          has_completed_onboarding?: boolean;
         };
         Update: {
           avatar_url?: string | null;
@@ -56,6 +58,7 @@ export type Database = {
           remind_after_days?: number;
           haptic_feedback_enabled?: boolean;
           sounds_enabled?: boolean;
+          has_completed_onboarding?: boolean;
         };
       };
       accounts: {

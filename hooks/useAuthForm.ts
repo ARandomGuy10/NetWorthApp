@@ -32,6 +32,8 @@ export const useAuthForm = () => {
 
       if (createdSessionId && setActive) {
         await setActive({session: createdSessionId});
+        // Redirect all social logins to the main app. The (tabs) layout's
+        // "gatekeeper" logic will handle redirecting new users to onboarding.
         router.replace('/(tabs)/dashboard');
       }
     } catch (err: any) {

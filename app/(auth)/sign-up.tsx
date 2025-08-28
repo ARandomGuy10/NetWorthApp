@@ -256,6 +256,8 @@ const SignUpScreen: React.FC = () => {
         await setActive({session: completeSignUp.createdSessionId});
 
         setTimeout(() => {
+          // Redirect to the main app. The (tabs) layout's "gatekeeper" logic
+          // will handle creating the profile and then redirecting to the setup screen.
           router.replace('/(tabs)/dashboard');
         }, 500);
       }
@@ -375,10 +377,10 @@ const SignUpScreen: React.FC = () => {
               bounces={false}>
               {!pendingVerification ? (<>
                 <View>
-                  <Text style={styles.title} allowFontScaling={false}>
+                  <Text style={sharedStyles.title} allowFontScaling={false}>
                     Create Account
                   </Text>
-                  <Text style={styles.subtitle} allowFontScaling={false}>
+                  <Text style={sharedStyles.subtitle} allowFontScaling={false}>
                     Sign up to access your account
                   </Text>
                 </View>
@@ -530,10 +532,10 @@ const SignUpScreen: React.FC = () => {
               ) : (
                 <>
                   {/* Verification Step */}
-                  <Text style={styles.title} allowFontScaling={false}>
+                  <Text style={sharedStyles.title} allowFontScaling={false}>
                     Verify Your Email
                   </Text>
-                  <Text style={styles.subtitle} allowFontScaling={false}>
+                  <Text style={sharedStyles.subtitle} allowFontScaling={false}>
                     We've sent a verification code to{'\n'}
                     <Text style={styles.emailHighlight}>{credentials.emailAddress}</Text>
                   </Text>
@@ -631,22 +633,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: '6%',
     paddingVertical: responsiveSizes.verticalSpacing,
-  },
-  title: {
-    fontSize: responsiveSizes.titleSize,
-    fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
-    marginBottom: responsiveSizes.verticalSpacing, // Dynamic spacing for consistency
-    textAlign: 'left',
-    letterSpacing: 0.3,
-  },
-  subtitle: {
-    fontSize: responsiveSizes.subtitleSize,
-    fontFamily: 'Inter_400Regular',
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: responsiveSizes.verticalSpacing * 2,
-    textAlign: 'left',
-    lineHeight: responsiveSizes.subtitleSize * 1.4,
   },
   emailHighlight: {
     color: '#22c55e',

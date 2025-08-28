@@ -278,10 +278,10 @@ const SignInScreen: React.FC = () => {
               showsVerticalScrollIndicator={false}
               bounces={false}>
               <View>
-                <Text style={styles.title} allowFontScaling={false}>
+                <Text style={sharedStyles.title} allowFontScaling={false}>
                   Welcome Back!
                 </Text>
-                <Text style={styles.subtitle} allowFontScaling={false}>
+                <Text style={sharedStyles.subtitle} allowFontScaling={false}>
                   Sign in to access your account
                 </Text>
               </View>
@@ -444,22 +444,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: '6%',
     paddingVertical: responsiveSizes.verticalSpacing,
-  },
-  title: {
-    fontSize: responsiveSizes.titleSize,
-    fontFamily: 'Inter_700Bold',
-    color: '#FFFFFF',
-    marginBottom: responsiveSizes.verticalSpacing, // Dynamic spacing for consistency
-    textAlign: 'left',
-    letterSpacing: 0.3,
-  },
-  subtitle: {
-    fontSize: responsiveSizes.subtitleSize,
-    fontFamily: 'Inter_400Regular',
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: responsiveSizes.verticalSpacing * 2,
-    textAlign: 'left',
-    lineHeight: responsiveSizes.subtitleSize * 1.4,
   },
   optionsContainer: {
     flexDirection: 'row',
