@@ -14,9 +14,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "com.lightlabs.studio.networthtrackr",
       "supportsTablet": true
@@ -52,6 +50,6 @@
       }
     },
     "platforms": ["ios", "android", "web"],
-    "plugins": []
+    "plugins": ["expo-font"]
   }
 }

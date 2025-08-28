@@ -22,6 +22,7 @@ export default function RootLayout() {
       <ClerkProvider
         tokenCache={tokenCache}
         publishableKey={publishableKey}
+        telemetry={false}
       >
         <QueryClientProvider client={queryClient}>
           <ThemeProvider>
