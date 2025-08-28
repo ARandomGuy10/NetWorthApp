@@ -1,54 +1,64 @@
-// GradientBackground.tsx
-import React, {useEffect, useRef} from 'react';
-import {StyleSheet, View, Animated, Easing} from 'react-native';
+import React, {useEffect} from 'react';
+import {StyleSheet, View, Dimensions} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  interpolate,
+  Easing,
+} from 'react-native-reanimated';
 import Svg, {Defs, RadialGradient, Stop, Rect} from 'react-native-svg';
 
 type GradientBackgroundProps = {
-  colors: readonly string[]; // array of colors passed from theme
+  colors: readonly string[]; // 1–4 colors
 };
 
 export default function GradientBackground({colors}: GradientBackgroundProps) {
-  const anim1 = useRef(new Animated.Value(0)).current;
-  const anim2 = useRef(new Animated.Value(0)).current;
+  const {width, height} = Dimensions.get('window');
 
-  // Loop animation
+  // Shared values for subtle liquid motion
+  const animX1 = useSharedValue(0);
+  const animY1 = useSharedValue(0);
+  const animScale1 = useSharedValue(0);
+
+  const animX2 = useSharedValue(0);
+  const animY2 = useSharedValue(0);
+  const animScale2 = useSharedValue(0);
+
   useEffect(() => {
-    const loop = (animatedVal: Animated.Value, reverse = false) => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(animatedVal, {
-            toValue: reverse ? -80 : 80,
-            duration: 12000,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(animatedVal, {
-            toValue: reverse ? 20 : -20,
-            duration: 12000,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
+    const loop = (val: typeof animX1, duration: number, range: number) => {
+      val.value = withRepeat(withTiming(range, {duration, easing: Easing.inOut(Easing.sin)}), -1, true);
     };
 
-    loop(anim1);
-    loop(anim2, true);
+    loop(animX1, 12000, 10);
+    loop(animY1, 14000, -8);
+    loop(animScale1, 16000, 4);
+
+    loop(animX2, 14000, -12);
+    loop(animY2, 12000, 10);
+    loop(animScale2, 18000, 6);
   }, []);
 
-  const translate1 = anim1.interpolate({
-    inputRange: [-20, 20],
-    outputRange: ['-10%', '10%'],
-  });
+  const animatedStyle1 = useAnimatedStyle(() => ({
+    transform: [
+      {translateX: interpolate(animX1.value, [-10, 10], [-5, 5])},
+      {translateY: interpolate(animY1.value, [-10, 10], [-5, 5])},
+      {scale: interpolate(animScale1.value, [-4, 4], [0.98, 1.02])},
+    ],
+  }));
 
-  const translate2 = anim2.interpolate({
-    inputRange: [-20, 20],
-    outputRange: ['10%', '-10%'],
-  });
+  const animatedStyle2 = useAnimatedStyle(() => ({
+    transform: [
+      {translateX: interpolate(animX2.value, [-12, 12], [-6, 6])},
+      {translateY: interpolate(animY2.value, [-10, 10], [-5, 5])},
+      {scale: interpolate(animScale2.value, [-6, 6], [0.97, 1.03])},
+    ],
+  }));
 
   return (
     <View style={StyleSheet.absoluteFill}>
-      <Svg height="100%" width="100%">
+      <Svg height={height} width={width}>
         <Defs>
           {colors.map((color, idx) => (
             <RadialGradient
@@ -63,17 +73,19 @@ export default function GradientBackground({colors}: GradientBackgroundProps) {
           ))}
         </Defs>
 
-        {/* Animated rectangles */}
-        <Animated.View style={{transform: [{translateX: anim1}]}}>
-          <Rect width="100%" height="100%" fill="url(#grad0)" />
+        {/* Animated mesh layers */}
+        <Animated.View style={[StyleSheet.absoluteFill, animatedStyle1]}>
+          <Rect width="100%" height="100%" fill={`url(#grad0)`} />
         </Animated.View>
 
-        <Animated.View style={{transform: [{translateY: anim2}]}}>
-          <Rect width="100%" height="100%" fill="url(#grad1)" />
-        </Animated.View>
+        {colors[1] && (
+          <Animated.View style={[StyleSheet.absoluteFill, animatedStyle2]}>
+            <Rect width="100%" height="100%" fill={`url(#grad1)`} />
+          </Animated.View>
+        )}
 
-        {colors[2] && <Rect width="100%" height="100%" fill="url(#grad2)" />}
-        {colors[3] && <Rect width="100%" height="100%" fill="url(#grad3)" />}
+        {colors[2] && <Rect width="100%" height="100%" fill={`url(#grad2)`} />}
+        {colors[3] && <Rect width="100%" height="100%" fill={`url(#grad3)`} />}
       </Svg>
     </View>
   );
