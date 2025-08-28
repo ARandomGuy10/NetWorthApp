@@ -1,5 +1,5 @@
-// sign-up.tsx - UPDATED WITHOUT FIRST NAME FIELD
 import React, {useEffect, useState, useCallback} from 'react';
+
 import {
   View,
   StyleSheet,
@@ -13,16 +13,17 @@ import {
   Keyboard,
   ActivityIndicator,
 } from 'react-native';
+
 import {Link, router} from 'expo-router';
+
+import * as Haptics from 'expo-haptics';
 import Animated, {useSharedValue, useAnimatedStyle, withTiming} from 'react-native-reanimated';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
+import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useSignUp} from '@clerk/clerk-expo';
-import {StatusBar} from 'expo-status-bar';
-import * as Haptics from 'expo-haptics';
 
-import BackgroundGlow from '@/components/ui/BackgroundGlow';
 import {
   AnimatedButton,
   ErrorMessage,
@@ -36,6 +37,8 @@ import {
 import {VerificationData, FormErrors} from '@/src/types/auth';
 import {useAuthForm} from '@/hooks/useAuthForm';
 import {useHaptics} from '@/hooks/useHaptics';
+import MeshBackgroundGlow from '@/components/ui/MeshBackgroundGlow';
+import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
@@ -290,247 +293,249 @@ const SignUpScreen: React.FC = () => {
   return (
     <>
       <StatusBar style="light" translucent />
-      <LinearGradient colors={['#0a1120', '#112a52', '#1a4e8d']} style={styles.container}>
-        <BackgroundGlow />
-        <View style={[styles.safeArea, {paddingTop: insets.top}]}>
-          {/* Header */}
-          <View style={styles.headerContainer}>
-            <AnimatedButton style={sharedStyles.headerButtonDark} onPress={handleBackPress} hapticType="light">
-              <Ionicons name="arrow-back" size={responsiveSizes.fontSize + 2} color="#FFFFFF" />
+      <MeshBackgroundGlow
+        colors={onboardingTheme.intro.meshBackground}
+        glowColors={onboardingTheme.final.meshBackground.map(color => [color, 'transparent']) as [string, string][]}
+        glowDurations={[8000, 10000, 12000]}
+      />
+      <View style={[styles.safeArea, {paddingTop: insets.top}]}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <AnimatedButton style={sharedStyles.headerButtonDark} onPress={handleBackPress} hapticType="light">
+            <Ionicons name="arrow-back" size={responsiveSizes.fontSize + 2} color="#FFFFFF" />
+          </AnimatedButton>
+
+          <Link href="/(auth)/sign-in" asChild>
+            <AnimatedButton style={sharedStyles.headerButtonDark} hapticType="light">
+              <Text style={sharedStyles.headerButtonText}>Login</Text>
             </AnimatedButton>
+          </Link>
+        </View>
 
-            <Link href="/(auth)/sign-in" asChild>
-              <AnimatedButton style={sharedStyles.headerButtonDark} hapticType="light">
-                <Text style={sharedStyles.headerButtonText}>Login</Text>
-              </AnimatedButton>
-            </Link>
-          </View>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoidingView}>
+          <TouchableWithoutFeedback onPress={handleDismissKeyboard}>
+            <ScrollView
+              contentContainerStyle={styles.scrollContentContainer}
+              keyboardShouldPersistTaps="never"
+              showsVerticalScrollIndicator={false}
+              bounces={false}
+              scrollEnabled={pendingVerification || Object.keys(errors).length > 0}>
+              {!pendingVerification ? (
+                <>
+                  {/* Titles */}
+                  <Text style={styles.title} allowFontScaling={false}>
+                    Create Account
+                  </Text>
+                  <Text style={styles.subtitle} allowFontScaling={false}>
+                    Sign up to access your account
+                  </Text>
 
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.keyboardAvoidingView}>
-            <TouchableWithoutFeedback onPress={handleDismissKeyboard}>
-              <ScrollView
-                contentContainerStyle={styles.scrollContentContainer}
-                keyboardShouldPersistTaps="never"
-                showsVerticalScrollIndicator={false}
-                bounces={false}
-                scrollEnabled={pendingVerification || Object.keys(errors).length > 0}>
-                {!pendingVerification ? (
-                  <>
-                    {/* Titles */}
-                    <Text style={styles.title} allowFontScaling={false}>
+                  {/* 🎯 REMOVED: First Name Input Field */}
+
+                  {/* Email Input */}
+                  <Animated.View style={[sharedStyles.inputWrapper, emailAnimatedStyle]}>
+                    <Ionicons
+                      name="mail"
+                      size={responsiveSizes.fontSize}
+                      color="#FFFFFF"
+                      style={sharedStyles.inputIcon}
+                    />
+                    <AnimatedTextInput
+                      placeholder="Enter your email"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      value={credentials.emailAddress}
+                      onChangeText={text => updateCredentials('emailAddress', text)}
+                      onFocus={() => handleFieldFocus('emailAddress')}
+                      onBlur={handleFieldBlur}
+                      style={sharedStyles.input}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      textContentType="emailAddress"
+                      returnKeyType="next"
+                      allowFontScaling={false}
+                      accessibilityLabel="Email address input"
+                      accessibilityHint="Enter your email address to create account"
+                      accessibilityRole="text"
+                      accessible={true}
+                    />
+                  </Animated.View>
+                  <ErrorMessage message={errors.emailAddress} />
+
+                  {/* Password Input */}
+                  <Animated.View style={[sharedStyles.inputWrapper, passwordAnimatedStyle]}>
+                    <Ionicons
+                      name="lock-closed"
+                      size={responsiveSizes.fontSize}
+                      color="#FFFFFF"
+                      style={sharedStyles.inputIcon}
+                    />
+                    <AnimatedTextInput
+                      placeholder="Create a password"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      value={credentials.password}
+                      onChangeText={text => updateCredentials('password', text)}
+                      onFocus={() => handleFieldFocus('password')}
+                      onBlur={handleFieldBlur}
+                      style={sharedStyles.input}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      textContentType="newPassword"
+                      returnKeyType="next"
+                      allowFontScaling={false}
+                      accessibilityLabel="Password input"
+                      accessibilityHint="Create a secure password"
+                      accessibilityRole="text"
+                      accessible={true}
+                    />
+                    <PasswordToggle showPassword={showPassword} onToggle={togglePasswordVisibility} />
+                  </Animated.View>
+                  <ErrorMessage message={errors.password} />
+
+                  {/* Confirm Password Input */}
+                  <Animated.View style={[sharedStyles.inputWrapper, confirmPasswordAnimatedStyle]}>
+                    <Ionicons
+                      name="lock-closed"
+                      size={responsiveSizes.fontSize}
+                      color="#FFFFFF"
+                      style={sharedStyles.inputIcon}
+                    />
+                    <AnimatedTextInput
+                      placeholder="Confirm your password"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      value={credentials.confirmPassword}
+                      onChangeText={text => updateCredentials('confirmPassword', text)}
+                      onFocus={() => handleFieldFocus('confirmPassword')}
+                      onBlur={handleFieldBlur}
+                      style={sharedStyles.input}
+                      secureTextEntry={!showConfirmPassword}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      textContentType="newPassword"
+                      returnKeyType="done"
+                      onSubmitEditing={onSignUpPress}
+                      allowFontScaling={false}
+                      accessibilityLabel="Confirm password input"
+                      accessibilityHint="Re-enter your password to confirm"
+                      accessibilityRole="text"
+                      accessible={true}
+                    />
+                    <PasswordToggle showPassword={showConfirmPassword} onToggle={toggleConfirmPasswordVisibility} />
+                  </Animated.View>
+                  <ErrorMessage message={errors.confirmPassword} />
+
+                  {/* Create Account Button */}
+                  <GradientButton onPress={onSignUpPress} loading={loading} success={isSuccess}>
+                    <Text style={sharedStyles.gradientButtonText} allowFontScaling={false}>
                       Create Account
                     </Text>
-                    <Text style={styles.subtitle} allowFontScaling={false}>
-                      Sign up to access your account
+                  </GradientButton>
+
+                  {/* Divider */}
+                  <View style={sharedStyles.dividerContainer}>
+                    <View style={sharedStyles.dividerLine} />
+                    <Text style={sharedStyles.dividerText} allowFontScaling={false}>
+                      Or
+                    </Text>
+                    <View style={sharedStyles.dividerLine} />
+                  </View>
+
+                  {/* Social Buttons */}
+                  <View style={sharedStyles.socialContainer}>
+                    <SocialButton
+                      strategy="google"
+                      onPress={handleOAuth}
+                      loading={socialLoading === 'google'}
+                      disabled={socialLoading !== null}
+                    />
+                    <SocialButton
+                      strategy="apple"
+                      onPress={handleOAuth}
+                      loading={socialLoading === 'apple'}
+                      disabled={socialLoading !== null}
+                    />
+                  </View>
+
+                  {/* Link */}
+                  <View style={styles.linkContainer}>
+                    <Text style={styles.linkText} allowFontScaling={false}>
+                      Already have an account?{' '}
                     </Text>
 
-                    {/* 🎯 REMOVED: First Name Input Field */}
-
-                    {/* Email Input */}
-                    <Animated.View style={[sharedStyles.inputWrapper, emailAnimatedStyle]}>
-                      <Ionicons
-                        name="mail"
-                        size={responsiveSizes.fontSize}
-                        color="#FFFFFF"
-                        style={sharedStyles.inputIcon}
-                      />
-                      <AnimatedTextInput
-                        placeholder="Enter your email"
-                        placeholderTextColor="rgba(255,255,255,0.5)"
-                        value={credentials.emailAddress}
-                        onChangeText={text => updateCredentials('emailAddress', text)}
-                        onFocus={() => handleFieldFocus('emailAddress')}
-                        onBlur={handleFieldBlur}
-                        style={sharedStyles.input}
-                        keyboardType="email-address"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        textContentType="emailAddress"
-                        returnKeyType="next"
-                        allowFontScaling={false}
-                        accessibilityLabel="Email address input"
-                        accessibilityHint="Enter your email address to create account"
-                        accessibilityRole="text"
-                        accessible={true}
-                      />
-                    </Animated.View>
-                    <ErrorMessage message={errors.emailAddress} />
-
-                    {/* Password Input */}
-                    <Animated.View style={[sharedStyles.inputWrapper, passwordAnimatedStyle]}>
-                      <Ionicons
-                        name="lock-closed"
-                        size={responsiveSizes.fontSize}
-                        color="#FFFFFF"
-                        style={sharedStyles.inputIcon}
-                      />
-                      <AnimatedTextInput
-                        placeholder="Create a password"
-                        placeholderTextColor="rgba(255,255,255,0.5)"
-                        value={credentials.password}
-                        onChangeText={text => updateCredentials('password', text)}
-                        onFocus={() => handleFieldFocus('password')}
-                        onBlur={handleFieldBlur}
-                        style={sharedStyles.input}
-                        secureTextEntry={!showPassword}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        textContentType="newPassword"
-                        returnKeyType="next"
-                        allowFontScaling={false}
-                        accessibilityLabel="Password input"
-                        accessibilityHint="Create a secure password"
-                        accessibilityRole="text"
-                        accessible={true}
-                      />
-                      <PasswordToggle showPassword={showPassword} onToggle={togglePasswordVisibility} />
-                    </Animated.View>
-                    <ErrorMessage message={errors.password} />
-
-                    {/* Confirm Password Input */}
-                    <Animated.View style={[sharedStyles.inputWrapper, confirmPasswordAnimatedStyle]}>
-                      <Ionicons
-                        name="lock-closed"
-                        size={responsiveSizes.fontSize}
-                        color="#FFFFFF"
-                        style={sharedStyles.inputIcon}
-                      />
-                      <AnimatedTextInput
-                        placeholder="Confirm your password"
-                        placeholderTextColor="rgba(255,255,255,0.5)"
-                        value={credentials.confirmPassword}
-                        onChangeText={text => updateCredentials('confirmPassword', text)}
-                        onFocus={() => handleFieldFocus('confirmPassword')}
-                        onBlur={handleFieldBlur}
-                        style={sharedStyles.input}
-                        secureTextEntry={!showConfirmPassword}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        textContentType="newPassword"
-                        returnKeyType="done"
-                        onSubmitEditing={onSignUpPress}
-                        allowFontScaling={false}
-                        accessibilityLabel="Confirm password input"
-                        accessibilityHint="Re-enter your password to confirm"
-                        accessibilityRole="text"
-                        accessible={true}
-                      />
-                      <PasswordToggle showPassword={showConfirmPassword} onToggle={toggleConfirmPasswordVisibility} />
-                    </Animated.View>
-                    <ErrorMessage message={errors.confirmPassword} />
-
-                    {/* Create Account Button */}
-                    <GradientButton onPress={onSignUpPress} loading={loading} success={isSuccess}>
-                      <Text style={sharedStyles.gradientButtonText} allowFontScaling={false}>
-                        Create Account
-                      </Text>
-                    </GradientButton>
-
-                    {/* Divider */}
-                    <View style={sharedStyles.dividerContainer}>
-                      <View style={sharedStyles.dividerLine} />
-                      <Text style={sharedStyles.dividerText} allowFontScaling={false}>
-                        Or
-                      </Text>
-                      <View style={sharedStyles.dividerLine} />
-                    </View>
-
-                    {/* Social Buttons */}
-                    <View style={sharedStyles.socialContainer}>
-                      <SocialButton
-                        strategy="google"
-                        onPress={handleOAuth}
-                        loading={socialLoading === 'google'}
-                        disabled={socialLoading !== null}
-                      />
-                      <SocialButton
-                        strategy="apple"
-                        onPress={handleOAuth}
-                        loading={socialLoading === 'apple'}
-                        disabled={socialLoading !== null}
-                      />
-                    </View>
-
-                    {/* Link */}
-                    <View style={styles.linkContainer}>
-                      <Text style={styles.linkText} allowFontScaling={false}>
-                        Already have an account?{' '}
-                      </Text>
-
-                      <Text
-                        style={styles.linkTextBold}
-                        onPress={() => {
-                          impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          router.push('/(auth)/sign-in');
-                        }}>
-                        Sign in
-                      </Text>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    {/* Verification Step */}
-                    <Text style={styles.title} allowFontScaling={false}>
-                      Verify Your Email
+                    <Text
+                      style={styles.linkTextBold}
+                      onPress={() => {
+                        impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push('/(auth)/sign-in');
+                      }}>
+                      Sign in
                     </Text>
-                    <Text style={styles.subtitle} allowFontScaling={false}>
-                      We've sent a verification code to{'\n'}
-                      <Text style={styles.emailHighlight}>{credentials.emailAddress}</Text>
+                  </View>
+                </>
+              ) : (
+                <>
+                  {/* Verification Step */}
+                  <Text style={styles.title} allowFontScaling={false}>
+                    Verify Your Email
+                  </Text>
+                  <Text style={styles.subtitle} allowFontScaling={false}>
+                    We've sent a verification code to{'\n'}
+                    <Text style={styles.emailHighlight}>{credentials.emailAddress}</Text>
+                  </Text>
+
+                  {/* Verification Code Input */}
+                  <Animated.View style={[sharedStyles.inputWrapper, codeAnimatedStyle]}>
+                    <Ionicons
+                      name="keypad"
+                      size={responsiveSizes.fontSize}
+                      color="#FFFFFF"
+                      style={sharedStyles.inputIcon}
+                    />
+                    <AnimatedTextInput
+                      placeholder="Enter 6-digit code"
+                      placeholderTextColor="rgba(255,255,255,0.5)"
+                      value={verification.code}
+                      onChangeText={text => updateVerification('code', text)}
+                      onFocus={() => handleFieldFocus('code')}
+                      onBlur={handleFieldBlur}
+                      style={sharedStyles.input}
+                      keyboardType="number-pad"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      textContentType="oneTimeCode"
+                      maxLength={6}
+                      returnKeyType="done"
+                      onSubmitEditing={onPressVerify}
+                      allowFontScaling={false}
+                      accessibilityLabel="Verification code input"
+                      accessibilityHint="Enter the 6-digit verification code sent to your email"
+                      accessibilityRole="text"
+                      accessible={true}
+                    />
+                  </Animated.View>
+
+                  {/* Verify Button */}
+                  <GradientButton onPress={onPressVerify} loading={loading} success={isSuccess}>
+                    <Text style={sharedStyles.gradientButtonText} allowFontScaling={false}>
+                      Verify Email
                     </Text>
+                  </GradientButton>
 
-                    {/* Verification Code Input */}
-                    <Animated.View style={[sharedStyles.inputWrapper, codeAnimatedStyle]}>
-                      <Ionicons
-                        name="keypad"
-                        size={responsiveSizes.fontSize}
-                        color="#FFFFFF"
-                        style={sharedStyles.inputIcon}
-                      />
-                      <AnimatedTextInput
-                        placeholder="Enter 6-digit code"
-                        placeholderTextColor="rgba(255,255,255,0.5)"
-                        value={verification.code}
-                        onChangeText={text => updateVerification('code', text)}
-                        onFocus={() => handleFieldFocus('code')}
-                        onBlur={handleFieldBlur}
-                        style={sharedStyles.input}
-                        keyboardType="number-pad"
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        textContentType="oneTimeCode"
-                        maxLength={6}
-                        returnKeyType="done"
-                        onSubmitEditing={onPressVerify}
-                        allowFontScaling={false}
-                        accessibilityLabel="Verification code input"
-                        accessibilityHint="Enter the 6-digit verification code sent to your email"
-                        accessibilityRole="text"
-                        accessible={true}
-                      />
-                    </Animated.View>
-
-                    {/* Verify Button */}
-                    <GradientButton onPress={onPressVerify} loading={loading} success={isSuccess}>
-                      <Text style={sharedStyles.gradientButtonText} allowFontScaling={false}>
-                        Verify Email
-                      </Text>
-                    </GradientButton>
-
-                    {/* Note about profile completion */}
-                    <View style={styles.noteContainer}>
-                      <Text style={styles.noteText} allowFontScaling={false}>
-                        You can complete your profile after verification
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </ScrollView>
-            </TouchableWithoutFeedback>
-          </KeyboardAvoidingView>
-        </View>
-      </LinearGradient>
+                  {/* Note about profile completion */}
+                  <View style={styles.noteContainer}>
+                    <Text style={styles.noteText} allowFontScaling={false}>
+                      You can complete your profile after verification
+                    </Text>
+                  </View>
+                </>
+              )}
+            </ScrollView>
+          </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+      </View>
     </>
   );
 };
