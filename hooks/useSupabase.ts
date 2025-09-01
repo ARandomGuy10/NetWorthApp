@@ -17,7 +17,7 @@ export const useSupabase = () => {
             const token = await getToken();
             if (token) headers.set('Authorization', `Bearer ${token}`);
           }
-          console.log(headers.get('Authorization'));
+          //console.log(headers.get('Authorization'));
           return fetch(url, {...options, headers});
         },
       },
