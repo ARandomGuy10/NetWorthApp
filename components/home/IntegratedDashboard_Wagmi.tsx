@@ -1,14 +1,18 @@
 import React, {useState, useMemo, useCallback} from 'react';
+
 import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Image, ActivityIndicator} from 'react-native';
+
 import {useRouter} from 'expo-router';
+
+import * as Haptics from 'expo-haptics';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {LineChart} from 'react-native-wagmi-charts';
 import {LinearGradient} from 'expo-linear-gradient';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import {useTheme} from '@/src/styles/theme/ThemeContext';
-import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
-import * as Haptics from 'expo-haptics';
+
+import {useHaptics} from '@/hooks/useHaptics';
 import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
-import { useHaptics } from '@/hooks/useHaptics';
+import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -25,7 +29,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   const {theme} = useTheme();
   const [range, setRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
   const {data, isLoading, error} = useNetWorthHistory({period: range});
-  const { impactAsync } = useHaptics();
+  const {impactAsync} = useHaptics();
 
   // State for custom tooltip
   const [tooltipData, setTooltipData] = useState<{
@@ -35,7 +39,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     x: number;
     y: number;
   } | null>(null);
-
 
   const prepared = useMemo(() => {
     const empty = {
@@ -110,7 +113,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   const onCurrentIndexChange = useCallback(
     (index: number) => {
       impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
 
       // Show tooltip with current data point
       if (prepared.chartData[index]) {
@@ -189,10 +191,11 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
               key={`${range}-${prepared.chartData.length}-${prepared.latest}-${prepared.calculatedAt}`}>
               <LineChart height={200} width={screenWidth}>
                 <LineChart.Path color={lineColor} width={3} />
-                  <LineChart.CursorCrosshair color={lineColor} 
-                    onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-                    onEnded={() => {}}
-                  />
+                <LineChart.CursorCrosshair
+                  color={lineColor}
+                  onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)}
+                  onEnded={() => {}}
+                />
               </LineChart>
             </LineChart.Provider>
           )}

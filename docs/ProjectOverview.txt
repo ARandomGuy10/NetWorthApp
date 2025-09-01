@@ -1,0 +1,54 @@
+Application Overview
+You're developing a net worth tracking app built with React Native/Expo that helps users monitor their financial portfolio. The app focuses on organizing assets and liabilities with real-time balance updates and multi-currency support.
+
+Technical Stack & Architecture
+Frontend: React Native with Expo
+
+Backend: Supabase database
+
+State Management: TanStack Query for efficient data access and cache invalidation
+
+Authentication: Clerk for user management
+
+Charts: Wagmi LineChart for displaying net worth history
+
+Monetization: RevenueCat integration with react-native-purchases
+
+Key Features & Screens
+Based on our discussions, your app includes:
+
+Dashboard: Central hub showing net worth overview with charts and asset/liability summaries
+
+Accounts Screen: Fully implemented feature for managing financial accounts
+
+Profile Screen: User profile management (work in progress)
+
+Stock Portfolio Tracking: Integration for monitoring important stocks with updates and analysis
+
+Net Worth History Charts: Visual representation of financial progress over time
+
+Design & User Experience
+Dark Theme: Primary theme with intelligent theming system
+
+Logo & Branding: "NetWorthTrackr" with custom logo designs
+
+UI Components: Focus on user-friendly navigation, sticky headers, and floating card designs
+
+Multi-Currency Support: Handles different currencies with proper conversion
+
+Recent Development Focus
+From our conversations, you've been working on:
+
+UI/UX Improvements: Enhanced dashboard design, component reusability, and visual hierarchy
+
+Technical Issues: Solving scrolling problems, data refresh issues, and TypeScript integration
+
+Feature Development: Completing profile screens and implementing gradient styling
+
+Empty States: Designing appropriate screens for when users have no account data
+
+The app appears to be in active development with a strong foundation in place, focusing on both technical robustness and user experience optimization.
+
+Custom hooks wrap useMutation for add / update / delete flows, invalidating only the affected query keys so the UI refreshes instantly without global refetches.
+
+Bespoke UI kit: dark palette, spacing & radius tokens, soft shadows, animated fade-in cards and haptic feedback.
