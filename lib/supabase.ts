@@ -149,33 +149,140 @@ export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
 export type AccountWithBalance = Database['public']['Functions']['get_accounts_with_balances']['Returns'][0];
 
-// Edge Function Response Types
-export interface DashboardAccount {
-  account_id: string;
-  account_name: string;
-  account_type: 'asset' | 'liability';
+// --- Edge Function v2 Response Types ---
+
+// Analytics-related interfaces from AnalyticsFeature.md and sample responses
+export interface CategoryBreakdown {
   category: string;
+  assets: number;
+  liabilities: number;
+  total: number;
+}
+
+export interface CurrencyExposure {
+  currency: string;
+  assets: number;
+  liabilities: number;
+  total: number;
+}
+
+export interface TopAccount {
+  account_id: string;
+  name: string;
+  type: 'asset' | 'liability';
+  category: string;
+  currency: string;
+  amount: number;
+}
+
+// Main Dashboard Data (from fetch-account-date-and-net-worth-v2)
+export interface DashboardAnalytics {
+  asOfDate: string;
+  daysSinceLastUpdate: number;
+  categoryBreakdown: CategoryBreakdown[];
+  currencyExposure: CurrencyExposure[];
+  topAccounts: TopAccount[];
+  badges: string[];
+  toCurrency: string;
+}
+
+export type DashboardAccount = AccountWithBalance & {
   converted_balance: number;
-  currency: string;
-  include_in_net_worth: boolean | null;
-  is_archived: boolean | null;
-  institution: string;
-  latest_balance: number;
-  latest_balance_date: string;
-}
+};
 
-export interface DashboardResponse {
+export interface DashboardData {
   accounts: DashboardAccount[];
+  totalNetWorth: number;
   totalAssets: number;
   totalLiabilities: number;
-  totalNetWorth: number;
+  analytics: DashboardAnalytics;
 }
 
-export interface NetWorthData {
-  totalAssets: number;
-  totalLiabilities: number;
-  totalNetWorth: number;
+// Net Worth History Insights
+export interface PerformanceSummary {
+  start: number;
+  end: number;
+  change: number;
+  percent: number;
+}
+
+export interface MonthlyDelta {
+  month: string;
+  delta: number;
+  percent: number;
+}
+
+export interface GrowthStreak {
+  current_streak: number;
+  longest_streak: number;
+}
+
+export interface Trend {
+  slope: number;
+  direction: string;
+}
+
+export interface Highs {
+  allTimeHigh: number;
+  isAtAllTimeHigh: boolean;
+}
+
+export interface Volatility {
+  stddevPercent: number;
+}
+
+export interface Extremes {
+  biggestGain: MonthlyDelta;
+  biggestDrop: MonthlyDelta;
+}
+
+export interface NetWorthHistoryInsights {
+  performanceSummary: PerformanceSummary;
+  monthlyDeltas: MonthlyDelta[];
+  growthStreak: GrowthStreak;
+  trend: Trend;
+  highs: Highs;
+  volatility: Volatility;
+  extremes: Extremes;
+}
+
+// Main Net Worth History Data (from get-net-worth-history-edge-function-v2)
+export type Period = '1M' | '3M' | '6M' | '12M' | 'ALL' | 'CUSTOM';
+export type SamplingStrategy = 'daily' | 'weekly' | 'monthly' | 'adaptive';
+
+export interface NetWorthDataPoint {
+  date: string;
+  net_worth: number;
+  total_assets: number;
+  total_liabilities: number;
+}
+
+export interface NetWorthHistoryResponse {
+  period: Period;
+  startDate: string;
+  endDate: string;
   currency: string;
+  samplingStrategy: SamplingStrategy;
+  maxDataPoints: number;
+  actualDataPoints: number;
+  calculatedAt: string;
+  data: NetWorthDataPoint[];
+  insights: NetWorthHistoryInsights;
+  badges: string[];
+  performance: {
+    dbQueryTime: number;
+    rateQueryTime: number;
+    processingTime: number;
+    totalProcessingTime: number;
+    cacheHitRate: boolean;
+    requestId: string;
+  };
+  metadata: {
+    includeAccountBreakdown: boolean;
+    uniqueCurrencies: number;
+    totalAccounts: number;
+  };
+  note: string;
 }
 
 // Custom interface for account creation with initial balance
