@@ -71,7 +71,7 @@ export const useNetWorthHistory = (options: UseNetWorthHistoryOptions) => {
         console.error('Error fetching net worth history:', error);
         throw error;
       }
-      console.log('🔥 Net Worth History:', JSON.stringify(data, null, 2));
+      //console.log('🔥 Net Worth History:', JSON.stringify(data, null, 2));
       return data;
     },
     enabled: !!user?.id && !!profile && enabled,

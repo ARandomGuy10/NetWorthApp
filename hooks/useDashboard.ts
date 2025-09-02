@@ -22,7 +22,7 @@ export const useDashboardData = () => {
       });
 
       if (error) throw error;
-      console.log('🔥 Dashboard Data:', JSON.stringify(data, null, 2));
+      //console.log('🔥 Dashboard Data:', JSON.stringify(data, null, 2));
       return data;
     },
     enabled: !!user?.id && !!profile, // Wait for both user and profile to be loaded
