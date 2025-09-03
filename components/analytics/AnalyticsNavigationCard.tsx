@@ -18,6 +18,7 @@ interface AnalyticsNavigationCardProps {
     type: string;
   };
   variant?: 'premium' | 'gradient';
+  fullWidth?: boolean; // ✅ NEW: Toggle for full-width vs padded
 }
 
 // Custom gradient colors for gradient variant
@@ -34,7 +35,11 @@ const getCardGradient = (type: string) => {
   return gradients[type as keyof typeof gradients] || (['#6366F1', '#8B5CF6'] as const);
 };
 
-const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item, variant = 'gradient'}) => {
+const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({
+  item,
+  variant = 'premium',
+  fullWidth = true, // ✅ DEFAULT: Full width (current behavior)
+}) => {
   const {theme} = useTheme();
   const {impactAsync} = useHaptics();
   const router = useRouter();
@@ -68,15 +73,13 @@ const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item, 
     }
   };
 
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, fullWidth); // ✅ Pass fullWidth to styles
 
   // Get colors based on variant
   const getCardColors = () => {
     if (variant === 'premium') {
-      // Premium uses theme colors
       return theme.colors.gradient?.card || ([theme.colors.background.card, theme.colors.background.elevated] as const);
     } else {
-      // Gradient uses custom colors
       return getCardGradient(item.type);
     }
   };
@@ -165,21 +168,29 @@ const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item, 
   );
 };
 
-const getStyles = (theme: any) =>
+// ✅ UPDATED: Styles with fullWidth parameter
+const getStyles = (theme: any, fullWidth: boolean) =>
   StyleSheet.create({
-    // ✅ FIXED: True full-width card - edge to edge
     card: {
-      width: '100%',
-      alignSelf: 'stretch',
+      // ✅ CONDITIONAL: Full width vs padded layout
+      ...(fullWidth
+        ? {
+            width: '100%',
+            alignSelf: 'stretch',
+            borderRadius: 0, // No border radius for edge-to-edge
+          }
+        : {
+            marginHorizontal: theme.spacing.sm, // Original padded layout
+            borderRadius: theme.borderRadius.xl,
+            maxWidth: 500, // ✅ Prevents too-wide cards on tablets
+          }),
       marginBottom: theme.spacing.md,
-      borderRadius: 0, // Remove border radius for true edge-to-edge
       overflow: 'hidden',
       elevation: 4,
       shadowColor: theme.colors.text.primary,
       shadowOffset: {width: 0, height: 3},
       shadowOpacity: 0.12,
       shadowRadius: 10,
-      // ❌ REMOVED: All horizontal margins/padding
     },
     touchable: {
       flex: 1,

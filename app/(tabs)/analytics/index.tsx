@@ -98,7 +98,7 @@ const analyticsItems: AnalyticsNavItem[] = [
   },
 ];
 
-// Premium Achievement Badge with Shine Effect - Fixed TS
+// Premium Achievement Badge with Shine Effect
 const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
   const {theme} = useTheme();
   const {impactAsync} = useHaptics();
@@ -134,12 +134,12 @@ const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
       performer: ['#F59E0B', '#D97706', '#B45309'] as const,
     };
     return (
- gradients[badgeId as keyof typeof gradients] ||
+      gradients[badgeId as keyof typeof gradients] ||
       ([`${theme.colors.primary}40`, `${theme.colors.primary}20`, `${theme.colors.primary}10`] as const)
     );
   };
 
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, true); // Pass true for fullWidth default
 
   return (
     <Animated.View style={[styles.achievementBadge, animatedStyle]}>
@@ -162,7 +162,7 @@ const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
 
 // Premium Badges Strip
 const BadgesStrip = ({theme, badges}: {theme: any; badges: any[]}) => {
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, true); // Pass true for fullWidth default
 
   return (
     <View style={styles.badgesContainer}>
@@ -179,29 +179,26 @@ const BadgesStrip = ({theme, badges}: {theme: any; badges: any[]}) => {
   );
 };
 
-// Enhanced Hero Section - Fixed to Full Width
-const HeroSection = ({theme}: {theme: any}) => {
+// Enhanced Hero Section with fullWidth prop
+const HeroSection = ({theme, fullWidth = true}: {theme: any; fullWidth?: boolean}) => {
   const {data: dashboardData} = useDashboardData();
   const {data: historyData} = useNetWorthHistory({period: '12M'});
 
   const netWorth = dashboardData?.totalNetWorth || 0;
   const change = historyData?.insights?.performanceSummary?.percent || 0;
-
-  // Get last update info
   const daysSince = dashboardData?.analytics?.daysSinceLastUpdate || 0;
 
   const headerGradient =
     theme.colors.gradient?.header ||
     ([theme.colors.background.primary, theme.colors.background.secondary, `${theme.colors.primary}08`] as const);
 
-  // Color-coded freshness
   const getFreshnessColor = (days: number) => {
     if (days <= 1) return theme.colors.success;
     if (days <= 7) return theme.colors.warning;
     return theme.colors.error;
   };
 
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, fullWidth);
 
   return (
     <View style={styles.heroContainer}>
@@ -209,12 +206,10 @@ const HeroSection = ({theme}: {theme: any}) => {
         <View style={styles.heroContent}>
           <Text style={[styles.heroLabel, {color: theme.colors.text.secondary}]}>Your Portfolio</Text>
 
-          {/* Large Net Worth Display */}
           <Text style={[styles.heroAmount, {color: theme.colors.text.primary}]}>
             {formatSmartNumber(netWorth, dashboardData?.analytics?.toCurrency || 'EUR')}
           </Text>
 
-          {/* Performance Row */}
           <View style={styles.performanceContainer}>
             <View style={styles.performanceRow}>
               <TrendingUpIcon
@@ -236,7 +231,6 @@ const HeroSection = ({theme}: {theme: any}) => {
               </Text>
             </View>
 
-            {/* Enhanced Data Freshness Indicator */}
             <View
               style={[
                 styles.freshnessContainer,
@@ -267,8 +261,16 @@ const HeroSection = ({theme}: {theme: any}) => {
   );
 };
 
-// Animated Card
-const AnimatedCard = ({item, index}: {item: AnalyticsNavItem; index: number}) => {
+// Animated Card with fullWidth prop
+const AnimatedCard = ({
+  item,
+  index,
+  fullWidth = true,
+}: {
+  item: AnalyticsNavItem;
+  index: number;
+  fullWidth?: boolean;
+}) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(30);
 
@@ -285,14 +287,14 @@ const AnimatedCard = ({item, index}: {item: AnalyticsNavItem; index: number}) =>
 
   return (
     <Animated.View style={animatedStyle}>
-      <AnalyticsNavigationCard item={item} variant="premium" />
+      <AnalyticsNavigationCard item={item} variant="premium" fullWidth={fullWidth} />
     </Animated.View>
   );
 };
 
 // Motivational Footer
 const MotivationalFooter = ({theme}: {theme: any}) => {
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, true); // Pass true for fullWidth default
 
   return (
     <View style={styles.motivationFooter}>
@@ -311,6 +313,10 @@ export default function AnalyticsIndexScreen() {
   const {theme} = useTheme();
   const insets = useSafeAreaInsets();
 
+  // ✅ EASY TOGGLE: Change these to false for original padded layout
+  const FULL_WIDTH_CARDS = false; // Set to false for original card layout
+  const FULL_WIDTH_HEADER = false; // Set to false for original header layout
+
   if (!theme || !theme.colors) {
     return (
       <View
@@ -325,9 +331,7 @@ export default function AnalyticsIndexScreen() {
     );
   }
 
-  const styles = getStyles(theme);
-
-  // Premium badges
+  const styles = getStyles(theme, FULL_WIDTH_CARDS);
   const badges = [
     {id: 'streak', label: 'Streak', value: '7d'},
     {id: 'high', label: 'All-time High'},
@@ -342,19 +346,18 @@ export default function AnalyticsIndexScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[styles.contentContainer, {paddingBottom: insets.bottom + 120}]}
         showsVerticalScrollIndicator={false}>
-        {/* Screen Title - Keep with padding for readability */}
         <Text style={[styles.screenTitle, {color: theme.colors.text.primary}]}>Analytics</Text>
         <Text style={[styles.screenSubtitle, {color: theme.colors.text.secondary}]}>
           A clear view of progress and opportunities
         </Text>
 
-        <HeroSection theme={theme} />
+        <HeroSection theme={theme} fullWidth={FULL_WIDTH_HEADER} />
         <BadgesStrip theme={theme} badges={badges} />
 
         <View style={{height: theme.spacing.lg}} />
 
         {analyticsItems.map((item, index) => (
-          <AnimatedCard key={item.href} item={item} index={index} />
+          <AnimatedCard key={item.href} item={item} index={index} fullWidth={FULL_WIDTH_CARDS} />
         ))}
 
         <MotivationalFooter theme={theme} />
@@ -363,8 +366,8 @@ export default function AnalyticsIndexScreen() {
   );
 }
 
-// Complete Styles with Full-Width Layout
-const getStyles = (theme: any) =>
+// Complete Styles with fullWidth parameter
+const getStyles = (theme: any, fullWidth: boolean = true) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -374,12 +377,11 @@ const getStyles = (theme: any) =>
       flex: 1,
       backgroundColor: 'transparent',
     },
-    // ✅ FIXED: Zero horizontal padding for full-width content
     contentContainer: {
-      paddingHorizontal: 0,
+      paddingHorizontal: fullWidth ? 0 : theme.spacing.sm,
     },
 
-    // Screen Header - Keep padding only for text readability
+    // Screen titles always have padding for readability
     screenTitle: {
       fontSize: 28,
       fontWeight: '800',
@@ -397,14 +399,20 @@ const getStyles = (theme: any) =>
       paddingHorizontal: theme.spacing.lg,
     },
 
-    // ✅ FIXED: Hero Section - Full Width
+    // Hero section layout
     heroContainer: {
-      width: '100%',
-      alignSelf: 'stretch',
+      ...(fullWidth
+        ? {
+            width: '100%',
+            alignSelf: 'stretch',
+          }
+        : {
+            marginHorizontal: theme.spacing.sm,
+          }),
       marginBottom: theme.spacing.lg,
     },
     heroCard: {
-      borderRadius: 0, // Remove border radius for edge-to-edge
+      borderRadius: fullWidth ? 0 : theme.borderRadius.xl,
       overflow: 'hidden',
       elevation: 8,
       shadowColor: theme.colors.primary,
@@ -443,8 +451,6 @@ const getStyles = (theme: any) =>
       fontSize: 16,
       fontWeight: '600',
     },
-
-    // Enhanced Freshness Indicator
     freshnessContainer: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -517,7 +523,7 @@ const getStyles = (theme: any) =>
       textShadowRadius: 2,
     },
 
-    // Footer - Keep margin for text content
+    // Footer
     motivationFooter: {
       marginTop: theme.spacing.xxl,
       marginHorizontal: theme.spacing.lg,
