@@ -1,17 +1,28 @@
 import React, {useEffect} from 'react';
-import {ScrollView, StyleSheet, View, Text, Dimensions} from 'react-native';
-import {Activity, TrendingUp, BarChart3, PieChart, Award, Landmark, Globe} from 'lucide-react-native';
-import Animated, {useSharedValue, useAnimatedStyle, withDelay, withTiming, withRepeat} from 'react-native-reanimated';
+
+import {ScrollView, StyleSheet, View, Text} from 'react-native';
+
+import Animated, {useSharedValue, useAnimatedStyle, withDelay, withTiming} from 'react-native-reanimated';
+import {Activity, Award, BarChart3, Globe, Landmark, PieChart, TrendingUp} from 'lucide-react-native';
 import {LinearGradient} from 'expo-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
 import AnalyticsNavigationCard from '@/components/analytics/AnalyticsNavigationCard';
-import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {formatSmartNumber} from '@/src/utils/formatters';
 import {useDashboardData} from '@/hooks/useDashboard';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
-import {formatSmartNumber} from '@/src/utils/formatters';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 
-const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+type AnalyticsNavItem = {
+  href: string;
+  icon: React.ElementType;
+  title: string;
+  description: string;
+  accent: string;
+  type: 'performance' | 'trends' | 'monthly' | 'categories' | 'accounts' | 'currency' | 'achievements';
+};
 
-const analyticsItems = [
+const analyticsItems: AnalyticsNavItem[] = [
   {
     href: '/analytics/performance',
     icon: Activity,
@@ -70,65 +81,58 @@ const analyticsItems = [
   },
 ];
 
-// Fixed: Responsive AnimatedOrb using theme spacing
-const AnimatedOrb = ({theme}: {theme: any}) => {
-  const rotation = useSharedValue(0);
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    rotation.value = withRepeat(withTiming(360, {duration: 30000}), -1, false);
-    scale.value = withRepeat(withTiming(1.2, {duration: 4000}), -1, true);
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{rotate: `${rotation.value}deg`}, {scale: scale.value}],
-  }));
-
-  // Fixed: Responsive dimensions using screen width and theme spacing
-  const orbSize = Math.min(screenWidth * 0.4, 150); // Max 150px, responsive to screen
-
+const BadgesStrip = ({theme, badges}: {theme: any; badges: {label: string; value?: string}[]}) => {
   return (
-    <Animated.View
-      style={[
-        {
-          position: 'absolute',
-          top: -orbSize / 3,
-          right: -orbSize / 3,
-          width: orbSize,
-          height: orbSize,
-        },
-        animatedStyle,
-      ]}>
-      <LinearGradient
-        colors={[`${theme.colors.primary}20`, `${theme.colors.primary}05`]}
-        style={{flex: 1, borderRadius: orbSize / 2}}
-      />
-    </Animated.View>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingHorizontal: theme.spacing.lg,
+        gap: theme.spacing.sm,
+      }}
+      style={{zIndex: 2}} // sit above header
+    >
+      {badges.map((b, i) => (
+        <View
+          key={`${b.label}-${i}`}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: 8,
+            borderRadius: 16,
+            backgroundColor: theme.colors.background.card, // higher contrast
+            borderWidth: 1,
+            borderColor: theme.colors.border.primary,
+            gap: 6,
+          }}>
+          <Text style={{fontWeight: '600', color: theme.colors.text.primary}}>{b.label}</Text>
+          {b.value ? <Text style={{color: theme.colors.text.secondary}}>{b.value}</Text> : null}
+        </View>
+      ))}
+    </ScrollView>
   );
 };
 
 const HeroSection = ({theme, styles}: {theme: any; styles: any}) => {
   const {data: dashboardData} = useDashboardData();
   const {data: historyData} = useNetWorthHistory({period: '1M'});
-
   const netWorth = dashboardData?.totalNetWorth || 0;
   const change = historyData?.insights?.performanceSummary?.percent || 0;
   const accountsCount = dashboardData?.accounts?.length || 0;
 
-  // Fixed: Safe gradient access with fallbacks
-  const headerGradient = theme.gradient?.header || [
+  const headerGradient: [string, string, string] = [
     theme.colors.background.primary,
     theme.colors.background.secondary,
-    `${theme.colors.primary}20`,
+    `${theme.colors.primary}14`,
   ];
 
   return (
     <View style={styles.heroSection}>
-      <LinearGradient colors={headerGradient as [string, string, ...string[]]} style={styles.heroGradient}>
-        <AnimatedOrb theme={theme} />
-        <Text style={[styles.heroTitle, {color: theme.colors.text.primary}]}>Your Financial Command Center</Text>
+      <LinearGradient colors={headerGradient} style={styles.heroGradient}>
+        <Text style={[styles.heroTitle, {color: theme.colors.text.primary}]}>Analytics</Text>
         <Text style={[styles.heroSubtitle, {color: theme.colors.text.secondary}]}>
-          Discover patterns, celebrate wins, and unlock your wealth potential
+          A clear view of progress and opportunities
         </Text>
 
         <View style={styles.statsRow}>
@@ -136,20 +140,18 @@ const HeroSection = ({theme, styles}: {theme: any; styles: any}) => {
             <Text style={[styles.statValue, {color: theme.colors.text.primary}]}>
               {formatSmartNumber(netWorth, dashboardData?.analytics?.toCurrency || 'EUR')}
             </Text>
-            <Text style={[styles.statLabel, {color: theme.colors.text.tertiary}]}>Total Worth</Text>
+            <Text style={[styles.statLabel, {color: theme.colors.text.secondary}]}>Total Worth</Text>
           </View>
-
           <View style={styles.statCard}>
             <Text style={[styles.statValue, {color: change >= 0 ? theme.colors.success : theme.colors.error}]}>
               {change >= 0 ? '+' : ''}
               {change.toFixed(1)}%
             </Text>
-            <Text style={[styles.statLabel, {color: theme.colors.text.tertiary}]}>This Month</Text>
+            <Text style={[styles.statLabel, {color: theme.colors.text.secondary}]}>This Month</Text>
           </View>
-
           <View style={styles.statCard}>
             <Text style={[styles.statValue, {color: theme.colors.text.primary}]}>{accountsCount}</Text>
-            <Text style={[styles.statLabel, {color: theme.colors.text.tertiary}]}>Accounts</Text>
+            <Text style={[styles.statLabel, {color: theme.colors.text.secondary}]}>Accounts</Text>
           </View>
         </View>
       </LinearGradient>
@@ -157,14 +159,14 @@ const HeroSection = ({theme, styles}: {theme: any; styles: any}) => {
   );
 };
 
-const AnimatedCard = ({item, index}: {item: (typeof analyticsItems)[0]; index: number}) => {
+const AnimatedCard = ({item, index}: {item: AnalyticsNavItem; index: number}) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(30);
 
   useEffect(() => {
-    const delay = 200 + index * 100;
-    opacity.value = withDelay(delay, withTiming(1, {duration: 600}));
-    translateY.value = withDelay(delay, withTiming(0, {duration: 600}));
+    const delay = 150 + index * 80;
+    opacity.value = withDelay(delay, withTiming(1, {duration: 450}));
+    translateY.value = withDelay(delay, withTiming(0, {duration: 450}));
   }, [index, opacity, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -173,8 +175,8 @@ const AnimatedCard = ({item, index}: {item: (typeof analyticsItems)[0]; index: n
   }));
 
   return (
-    <Animated.View style={animatedStyle}>
-      <AnalyticsNavigationCard item={item} />
+    <Animated.View style={[animatedStyle, {marginBottom: 12}]}>
+      <AnalyticsNavigationCard item={item} variant="neutral" />
     </Animated.View>
   );
 };
@@ -185,7 +187,7 @@ const MotivationalFooter = ({theme, styles}: {theme: any; styles: any}) => {
       <Text style={[styles.motivationText, {color: theme.colors.text.primary}]}>
         💡 "Every financial decision shapes your future. Make them count."
       </Text>
-      <Text style={[styles.footerSubtext, {color: theme.colors.text.tertiary}]}>
+      <Text style={[styles.footerSubtext, {color: theme.colors.text.secondary}]}>
         Check back daily for new insights and celebrate your progress
       </Text>
     </View>
@@ -194,97 +196,89 @@ const MotivationalFooter = ({theme, styles}: {theme: any; styles: any}) => {
 
 export default function AnalyticsIndexScreen() {
   const {theme} = useTheme();
+  const insets = useSafeAreaInsets();
 
-  // Don't render until theme is loaded
   if (!theme || !theme.colors) {
     return (
-      <View style={{flex: 1, backgroundColor: '#0A0E28', justifyContent: 'center', alignItems: 'center'}}>
-        <Text style={{color: 'white'}}>Loading...</Text>
+      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#000'}}>
+        <Text>Loading...</Text>
       </View>
     );
   }
 
   const styles = getStyles(theme);
 
+  const badges = [
+    {label: 'Streak', value: '7d'},
+    {label: 'All‑time High'},
+    {label: 'Savings Rate', value: '18%'},
+    {label: 'Top Performer', value: 'ETF A'},
+  ];
+
   return (
-    <View style={[styles.container, {backgroundColor: theme.colors.background.primary}]}>
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} bounces={true}>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={[styles.contentContainer, {paddingBottom: insets.bottom + 96}]}
+        showsVerticalScrollIndicator={false}>
         <HeroSection theme={theme} styles={styles} />
-
-        <View style={styles.contentContainer}>
-          {analyticsItems.map((item, index) => (
-            <AnimatedCard key={item.href} item={item} index={index} />
-          ))}
-
-          <MotivationalFooter theme={theme} styles={styles} />
-        </View>
+        <BadgesStrip theme={theme} badges={badges} />
+        <View style={{height: theme.spacing.md}} />
+        {analyticsItems.map((item, index) => (
+          <AnimatedCard key={item.href} item={item} index={index} />
+        ))}
+        <MotivationalFooter theme={theme} styles={styles} />
       </ScrollView>
     </View>
   );
 }
 
-// Fixed: Responsive styles using theme spacing and screen dimensions
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
+      backgroundColor: theme.colors.background.primary, // dark screen bg
     },
     scrollView: {
       flex: 1,
+      backgroundColor: 'transparent', // avoid white default
     },
     heroSection: {
-      height: Math.max(screenHeight * 0.25, 200), // Responsive: 25% of screen or min 200px
-      marginBottom: theme.spacing.xl,
+      marginHorizontal: theme.spacing.lg,
+      marginTop: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
+      borderRadius: theme.borderRadius.lg,
+      overflow: 'hidden', // clip gradient
+      ...theme.shadows.md,
     },
     heroGradient: {
-      flex: 1,
+      // no background here, gradient provides it
       justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: theme.spacing.xl,
-      position: 'relative',
+      paddingVertical: theme.spacing.xl,
     },
-    heroTitle: {
-      fontSize: screenWidth > 400 ? 24 : 20, // Responsive font size
-      fontWeight: 'bold',
-      textAlign: 'center',
-      marginBottom: theme.spacing.sm,
-      letterSpacing: -0.5,
-    },
+    heroTitle: {fontSize: 22, fontWeight: '800', letterSpacing: -0.2},
     heroSubtitle: {
-      fontSize: screenWidth > 400 ? 16 : 14, // Responsive font size
+      marginTop: 6,
+      fontSize: 14,
+      opacity: 0.9,
       textAlign: 'center',
-      marginBottom: theme.spacing.xl,
-      lineHeight: 22,
-      paddingHorizontal: theme.spacing.md,
+      marginBottom: theme.spacing.lg,
     },
     statsRow: {
       flexDirection: 'row',
       justifyContent: 'space-around',
       width: '100%',
-      paddingHorizontal: theme.spacing.xl,
-    },
-    statCard: {
-      alignItems: 'center',
-      flex: 1,
-      minWidth: 0, // Prevent overflow
-    },
-    statValue: {
-      fontSize: screenWidth > 400 ? 18 : 16, // Responsive font size
-      fontWeight: 'bold',
-      marginBottom: theme.spacing.xs,
-      textAlign: 'center',
-    },
-    statLabel: {
-      fontSize: 12,
-      fontWeight: '500',
-      textAlign: 'center',
-    },
-    contentContainer: {
       paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.xxxl,
     },
+    statCard: {alignItems: 'center', flex: 1, minWidth: 0},
+    statValue: {fontSize: 16, fontWeight: '700', marginBottom: 4, textAlign: 'center'},
+    statLabel: {fontSize: 12, fontWeight: '500', opacity: 0.8, textAlign: 'center'},
+    contentContainer: {paddingHorizontal: theme.spacing.lg},
     motivationFooter: {
-      marginTop: theme.spacing.xxxl,
+      marginTop: theme.spacing.xxl,
       padding: theme.spacing.xl,
       borderRadius: theme.borderRadius?.lg || 16,
       backgroundColor: `${theme.colors.primary}08`,
@@ -292,15 +286,11 @@ const getStyles = (theme: any) =>
       borderColor: `${theme.colors.primary}20`,
     },
     motivationText: {
-      fontSize: screenWidth > 400 ? 16 : 14, // Responsive font size
+      fontSize: 14,
       fontWeight: '600',
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
-      lineHeight: 24,
+      lineHeight: 22,
     },
-    footerSubtext: {
-      fontSize: screenWidth > 400 ? 14 : 12, // Responsive font size
-      textAlign: 'center',
-      lineHeight: 20,
-    },
+    footerSubtext: {fontSize: 12, textAlign: 'center', lineHeight: 18},
   });
