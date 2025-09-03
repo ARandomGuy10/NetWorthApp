@@ -17,6 +17,7 @@ import {
   PieChart,
   TrendingUp,
   TrendingUp as TrendingUpIcon,
+  Clock,
 } from 'lucide-react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -28,7 +29,7 @@ import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useHaptics} from '@/hooks/useHaptics';
 
-// Analytics items array (same as before)
+// Analytics items array
 type AnalyticsNavItem = {
   href: string;
   icon: React.ElementType;
@@ -97,14 +98,19 @@ const analyticsItems: AnalyticsNavItem[] = [
   },
 ];
 
-// Fixed Achievement Badge Component - No truncation, proper sizing
+// Premium Achievement Badge with Shine Effect - Fixed TS
 const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
   const {theme} = useTheme();
   const {impactAsync} = useHaptics();
   const scale = useSharedValue(1);
+  const shine = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{scale: scale.value}],
+  }));
+
+  const shineStyle = useAnimatedStyle(() => ({
+    opacity: shine.value,
   }));
 
   const handlePress = useCallback(async () => {
@@ -114,8 +120,24 @@ const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
       withTiming(1, {duration: 100})
     );
 
+    shine.value = withSequence(withTiming(0.3, {duration: 150}), withTiming(0, {duration: 300}));
+
     await impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, [impactAsync, scale]);
+  }, [impactAsync, scale, shine]);
+
+  // Premium gradient based on badge type - Fixed TS
+  const getPremiumGradient = (badgeId: string) => {
+    const gradients = {
+      streak: ['#FFD700', '#FFA500', '#FF8C00'] as const,
+      high: ['#20E3B2', '#1BC49A', '#16A085'] as const,
+      savings: ['#6366F1', '#8B5CF6', '#A855F7'] as const,
+      performer: ['#F59E0B', '#D97706', '#B45309'] as const,
+    };
+    return (
+ gradients[badgeId as keyof typeof gradients] ||
+      ([`${theme.colors.primary}40`, `${theme.colors.primary}20`, `${theme.colors.primary}10`] as const)
+    );
+  };
 
   const styles = getStyles(theme);
 
@@ -123,17 +145,22 @@ const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
     <Animated.View style={[styles.achievementBadge, animatedStyle]}>
       <TouchableOpacity onPress={handlePress} style={styles.badgeContent}>
         <LinearGradient
-          colors={[`${theme.colors.primary}15`, `${theme.colors.primary}08`]}
-          style={styles.badgeGradient}>
+          colors={getPremiumGradient(badge.id)}
+          style={styles.badgeGradient}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}>
+          {/* Shine overlay */}
+          <Animated.View style={[styles.shineOverlay, shineStyle]} />
+
           <Text style={[styles.badgeLabel, {color: theme.colors.text.primary}]}>{badge.label}</Text>
-          {badge.value && <Text style={[styles.badgeValue, {color: theme.colors.primary}]}>{badge.value}</Text>}
+          {badge.value && <Text style={[styles.badgeValue, {color: theme.colors.text.primary}]}>{badge.value}</Text>}
         </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
-// Fixed Badges Strip - No truncation, proper horizontal scroll
+// Premium Badges Strip
 const BadgesStrip = ({theme, badges}: {theme: any; badges: any[]}) => {
   const styles = getStyles(theme);
 
@@ -152,23 +179,27 @@ const BadgesStrip = ({theme, badges}: {theme: any; badges: any[]}) => {
   );
 };
 
-// Improved Hero Section - Better metrics, cleaner design
+// Enhanced Hero Section - Fixed to Full Width
 const HeroSection = ({theme}: {theme: any}) => {
   const {data: dashboardData} = useDashboardData();
   const {data: historyData} = useNetWorthHistory({period: '12M'});
-  console.log('Dashboard Data:', JSON.stringify(dashboardData));
+
   const netWorth = dashboardData?.totalNetWorth || 0;
   const change = historyData?.insights?.performanceSummary?.percent || 0;
 
   // Get last update info
-  const lastUpdate = dashboardData?.analytics?.asOfDate;
   const daysSince = dashboardData?.analytics?.daysSinceLastUpdate || 0;
 
-  const headerGradient = theme.colors.gradient?.header || [
-    theme.colors.background.primary,
-    theme.colors.background.secondary,
-    `${theme.colors.primary}08`,
-  ];
+  const headerGradient =
+    theme.colors.gradient?.header ||
+    ([theme.colors.background.primary, theme.colors.background.secondary, `${theme.colors.primary}08`] as const);
+
+  // Color-coded freshness
+  const getFreshnessColor = (days: number) => {
+    if (days <= 1) return theme.colors.success;
+    if (days <= 7) return theme.colors.warning;
+    return theme.colors.error;
+  };
 
   const styles = getStyles(theme);
 
@@ -205,16 +236,30 @@ const HeroSection = ({theme}: {theme: any}) => {
               </Text>
             </View>
 
-            {/* Last Updated Info */}
-            {daysSince !== undefined && (
-              <Text style={[styles.lastUpdateText, {color: theme.colors.text.tertiary}]}>
+            {/* Enhanced Data Freshness Indicator */}
+            <View
+              style={[
+                styles.freshnessContainer,
+                {
+                  backgroundColor: `${getFreshnessColor(daysSince)}15`,
+                  borderColor: `${getFreshnessColor(daysSince)}25`,
+                },
+              ]}>
+              <Clock size={12} color={getFreshnessColor(daysSince)} />
+              <Text
+                style={[
+                  styles.freshnessText,
+                  {
+                    color: getFreshnessColor(daysSince),
+                  },
+                ]}>
                 {daysSince === 0
                   ? 'Updated today'
                   : daysSince === 1
                     ? 'Updated yesterday'
                     : `Updated ${daysSince} days ago`}
               </Text>
-            )}
+            </View>
           </View>
         </View>
       </LinearGradient>
@@ -222,7 +267,7 @@ const HeroSection = ({theme}: {theme: any}) => {
   );
 };
 
-// Animated Card (same as before)
+// Animated Card
 const AnimatedCard = ({item, index}: {item: AnalyticsNavItem; index: number}) => {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(30);
@@ -240,12 +285,12 @@ const AnimatedCard = ({item, index}: {item: AnalyticsNavItem; index: number}) =>
 
   return (
     <Animated.View style={animatedStyle}>
-      <AnalyticsNavigationCard item={item} />
+      <AnalyticsNavigationCard item={item} variant="premium" />
     </Animated.View>
   );
 };
 
-// Motivational Footer (same as before)
+// Motivational Footer
 const MotivationalFooter = ({theme}: {theme: any}) => {
   const styles = getStyles(theme);
 
@@ -282,7 +327,7 @@ export default function AnalyticsIndexScreen() {
 
   const styles = getStyles(theme);
 
-  // Better badges - shorter, more meaningful
+  // Premium badges
   const badges = [
     {id: 'streak', label: 'Streak', value: '7d'},
     {id: 'high', label: 'All-time High'},
@@ -297,6 +342,7 @@ export default function AnalyticsIndexScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[styles.contentContainer, {paddingBottom: insets.bottom + 120}]}
         showsVerticalScrollIndicator={false}>
+        {/* Screen Title - Keep with padding for readability */}
         <Text style={[styles.screenTitle, {color: theme.colors.text.primary}]}>Analytics</Text>
         <Text style={[styles.screenSubtitle, {color: theme.colors.text.secondary}]}>
           A clear view of progress and opportunities
@@ -317,7 +363,7 @@ export default function AnalyticsIndexScreen() {
   );
 }
 
-// Updated Styles with Fixed Badge Sizing
+// Complete Styles with Full-Width Layout
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
@@ -328,11 +374,12 @@ const getStyles = (theme: any) =>
       flex: 1,
       backgroundColor: 'transparent',
     },
+    // ✅ FIXED: Zero horizontal padding for full-width content
     contentContainer: {
-      paddingHorizontal: theme.spacing.lg,
+      paddingHorizontal: 0,
     },
 
-    // Screen Header
+    // Screen Header - Keep padding only for text readability
     screenTitle: {
       fontSize: 28,
       fontWeight: '800',
@@ -340,28 +387,30 @@ const getStyles = (theme: any) =>
       textAlign: 'center',
       marginTop: theme.spacing.lg,
       marginBottom: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.lg,
     },
     screenSubtitle: {
       fontSize: 15,
       textAlign: 'center',
       marginBottom: theme.spacing.xl,
       opacity: 0.8,
+      paddingHorizontal: theme.spacing.lg,
     },
 
-    // Improved Hero Section
+    // ✅ FIXED: Hero Section - Full Width
     heroContainer: {
+      width: '100%',
+      alignSelf: 'stretch',
       marginBottom: theme.spacing.lg,
     },
     heroCard: {
-      borderRadius: theme.borderRadius.xl,
+      borderRadius: 0, // Remove border radius for edge-to-edge
       overflow: 'hidden',
-      elevation: 6,
+      elevation: 8,
       shadowColor: theme.colors.primary,
-      shadowOffset: {width: 0, height: 3},
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
-      borderWidth: 1,
-      borderColor: `${theme.colors.primary}12`,
+      shadowOffset: {width: 0, height: 4},
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
     },
     heroContent: {
       padding: theme.spacing.xxl,
@@ -383,7 +432,7 @@ const getStyles = (theme: any) =>
     },
     performanceContainer: {
       alignItems: 'center',
-      gap: theme.spacing.xs,
+      gap: theme.spacing.md,
     },
     performanceRow: {
       flexDirection: 'row',
@@ -394,13 +443,23 @@ const getStyles = (theme: any) =>
       fontSize: 16,
       fontWeight: '600',
     },
-    lastUpdateText: {
+
+    // Enhanced Freshness Indicator
+    freshnessContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: theme.spacing.xs,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.full,
+      borderWidth: 1,
+    },
+    freshnessText: {
       fontSize: 12,
-      fontWeight: '500',
-      opacity: 0.7,
+      fontWeight: '600',
     },
 
-    // Fixed Badge Styles - No truncation
+    // Premium Badge Styles
     badgesContainer: {
       marginBottom: theme.spacing.md,
     },
@@ -414,14 +473,14 @@ const getStyles = (theme: any) =>
       paddingVertical: theme.spacing.sm,
     },
     achievementBadge: {
-      elevation: 2,
+      elevation: 4,
       shadowColor: theme.colors.primary,
-      shadowOffset: {width: 0, height: 1},
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
     },
     badgeContent: {
-      // No fixed width - let content determine size
+      borderRadius: theme.borderRadius.lg,
     },
     badgeGradient: {
       borderRadius: theme.borderRadius.lg,
@@ -431,22 +490,37 @@ const getStyles = (theme: any) =>
       alignItems: 'center',
       gap: theme.spacing.xs,
       borderWidth: 1,
-      borderColor: `${theme.colors.primary}20`,
-      // Allow natural sizing - no width constraints
+      borderColor: 'rgba(255,255,255,0.2)',
+      position: 'relative',
+    },
+    shineOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(255,255,255,0.3)',
+      borderRadius: theme.borderRadius.lg,
     },
     badgeLabel: {
       fontSize: 13,
-      fontWeight: '600',
-      // No maxWidth - let it size naturally
+      fontWeight: '700',
+      textShadowColor: 'rgba(0,0,0,0.3)',
+      textShadowOffset: {width: 0, height: 1},
+      textShadowRadius: 2,
     },
     badgeValue: {
       fontSize: 13,
-      fontWeight: '700',
+      fontWeight: '800',
+      textShadowColor: 'rgba(0,0,0,0.3)',
+      textShadowOffset: {width: 0, height: 1},
+      textShadowRadius: 2,
     },
 
-    // Footer
+    // Footer - Keep margin for text content
     motivationFooter: {
       marginTop: theme.spacing.xxl,
+      marginHorizontal: theme.spacing.lg,
       padding: theme.spacing.xl,
       borderRadius: theme.borderRadius.lg,
       backgroundColor: `${theme.colors.primary}06`,

@@ -17,9 +17,24 @@ interface AnalyticsNavigationCardProps {
     accent: string;
     type: string;
   };
+  variant?: 'premium' | 'gradient';
 }
 
-const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item}) => {
+// Custom gradient colors for gradient variant
+const getCardGradient = (type: string) => {
+  const gradients = {
+    performance: ['#FF6B6B', '#FF8E53'] as const,
+    trends: ['#4ECDC4', '#44A08D'] as const,
+    monthly: ['#A8E6CF', '#7FCDCD'] as const,
+    categories: ['#FFD93D', '#6BCF7F'] as const,
+    accounts: ['#6C5CE7', '#A29BFE'] as const,
+    currency: ['#FD79A8', '#FDCB6E'] as const,
+    achievements: ['#00CEC9', '#55A3FF'] as const,
+  };
+  return gradients[type as keyof typeof gradients] || (['#6366F1', '#8B5CF6'] as const);
+};
+
+const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item, variant = 'gradient'}) => {
   const {theme} = useTheme();
   const {impactAsync} = useHaptics();
   const router = useRouter();
@@ -55,6 +70,36 @@ const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item})
 
   const styles = getStyles(theme);
 
+  // Get colors based on variant
+  const getCardColors = () => {
+    if (variant === 'premium') {
+      // Premium uses theme colors
+      return theme.colors.gradient?.card || ([theme.colors.background.card, theme.colors.background.elevated] as const);
+    } else {
+      // Gradient uses custom colors
+      return getCardGradient(item.type);
+    }
+  };
+
+  const getTextColors = () => {
+    if (variant === 'premium') {
+      return {
+        title: theme.colors.text.primary,
+        description: theme.colors.text.secondary,
+        icon: theme.colors.primary,
+      };
+    } else {
+      return {
+        title: 'white',
+        description: 'rgba(255,255,255,0.9)',
+        icon: 'white',
+      };
+    }
+  };
+
+  const cardColors = getCardColors();
+  const textColors = getTextColors();
+
   return (
     <Animated.View style={[styles.card, animatedStyle]}>
       <TouchableOpacity
@@ -63,29 +108,43 @@ const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item})
         onPress={handlePress}
         style={styles.touchable}
         activeOpacity={1}>
-        <LinearGradient
-          colors={[theme.colors.background.card, theme.colors.background.elevated]}
-          style={styles.cardGradient}>
+        <LinearGradient colors={cardColors} style={styles.cardGradient} start={{x: 0, y: 0}} end={{x: 1, y: 1}}>
           <View style={styles.cardContent}>
-            {/* Single Icon Section */}
+            {/* Icon Section */}
             <View style={styles.iconContainer}>
               <LinearGradient
-                colors={[`${theme.colors.primary}20`, `${theme.colors.primary}10`]}
+                colors={
+                  variant === 'premium'
+                    ? ([`${theme.colors.primary}25`, `${theme.colors.primary}10`] as const)
+                    : (['rgba(255,255,255,0.25)', 'rgba(255,255,255,0.10)'] as const)
+                }
                 style={styles.iconGradient}>
-                <Icon size={22} color={theme.colors.primary} />
+                <Icon size={24} color={textColors.icon} />
               </LinearGradient>
             </View>
 
-            {/* Text Section - Single Line Enforcement */}
+            {/* Text Section */}
             <View style={styles.textSection}>
               <Text
-                style={[styles.cardTitle, {color: theme.colors.text.primary}]}
+                style={[
+                  styles.cardTitle,
+                  {
+                    color: textColors.title,
+                    textShadowColor: variant === 'gradient' ? 'rgba(0,0,0,0.3)' : 'transparent',
+                  },
+                ]}
                 numberOfLines={1}
                 ellipsizeMode="tail">
                 {item.title}
               </Text>
               <Text
-                style={[styles.cardDescription, {color: theme.colors.text.secondary}]}
+                style={[
+                  styles.cardDescription,
+                  {
+                    color: textColors.description,
+                    textShadowColor: variant === 'gradient' ? 'rgba(0,0,0,0.2)' : 'transparent',
+                  },
+                ]}
                 numberOfLines={1}
                 ellipsizeMode="tail">
                 {item.description}
@@ -94,7 +153,10 @@ const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item})
 
             {/* Action Section */}
             <View style={styles.actionSection}>
-              <ChevronRight size={18} color={theme.colors.text.tertiary} />
+              <ChevronRight
+                size={20}
+                color={variant === 'premium' ? theme.colors.text.tertiary : 'rgba(255,255,255,0.8)'}
+              />
             </View>
           </View>
         </LinearGradient>
@@ -105,30 +167,32 @@ const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item})
 
 const getStyles = (theme: any) =>
   StyleSheet.create({
+    // ✅ FIXED: True full-width card - edge to edge
     card: {
+      width: '100%',
+      alignSelf: 'stretch',
       marginBottom: theme.spacing.md,
-      borderRadius: theme.borderRadius.xl,
+      borderRadius: 0, // Remove border radius for true edge-to-edge
       overflow: 'hidden',
-      elevation: 3,
+      elevation: 4,
       shadowColor: theme.colors.text.primary,
-      shadowOffset: {width: 0, height: 2},
-      shadowOpacity: 0.08,
-      shadowRadius: 8,
+      shadowOffset: {width: 0, height: 3},
+      shadowOpacity: 0.12,
+      shadowRadius: 10,
+      // ❌ REMOVED: All horizontal margins/padding
     },
     touchable: {
       flex: 1,
     },
     cardGradient: {
-      borderRadius: theme.borderRadius.xl,
-      borderWidth: 1,
-      borderColor: `${theme.colors.primary}12`,
+      flex: 1,
     },
     cardContent: {
       flexDirection: 'row',
       alignItems: 'center',
       padding: theme.spacing.xl,
       gap: theme.spacing.lg,
-      minHeight: 80,
+      minHeight: 90,
     },
     iconContainer: {
       width: 50,
@@ -146,14 +210,17 @@ const getStyles = (theme: any) =>
       gap: 4,
     },
     cardTitle: {
-      fontSize: 17,
+      fontSize: 18,
       fontWeight: '700',
-      letterSpacing: -0.2,
+      letterSpacing: -0.3,
+      textShadowOffset: {width: 0, height: 1},
+      textShadowRadius: 2,
     },
     cardDescription: {
       fontSize: 14,
       lineHeight: 18,
-      opacity: 0.8,
+      textShadowOffset: {width: 0, height: 1},
+      textShadowRadius: 1,
     },
     actionSection: {
       justifyContent: 'center',
