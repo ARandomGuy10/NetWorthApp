@@ -314,8 +314,8 @@ export default function AnalyticsIndexScreen() {
   const insets = useSafeAreaInsets();
 
   // ✅ EASY TOGGLE: Change these to false for original padded layout
-  const FULL_WIDTH_CARDS = false; // Set to false for original card layout
-  const FULL_WIDTH_HEADER = false; // Set to false for original header layout
+  const FULL_WIDTH_CARDS = true; // Set to false for original card layout
+  const FULL_WIDTH_HEADER = true; // Set to false for original header layout
 
   if (!theme || !theme.colors) {
     return (
@@ -378,7 +378,7 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
       backgroundColor: 'transparent',
     },
     contentContainer: {
-      paddingHorizontal: fullWidth ? 0 : theme.spacing.sm,
+      paddingHorizontal: fullWidth ? 0 : theme.spacing.lg,
     },
 
     // Screen titles always have padding for readability
@@ -407,7 +407,7 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
             alignSelf: 'stretch',
           }
         : {
-            marginHorizontal: theme.spacing.sm,
+            marginHorizontal: theme.spacing.xs,
           }),
       marginBottom: theme.spacing.lg,
     },

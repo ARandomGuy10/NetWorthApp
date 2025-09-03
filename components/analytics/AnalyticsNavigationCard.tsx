@@ -180,7 +180,6 @@ const getStyles = (theme: any, fullWidth: boolean) =>
             borderRadius: 0, // No border radius for edge-to-edge
           }
         : {
-            marginHorizontal: theme.spacing.sm, // Original padded layout
             borderRadius: theme.borderRadius.xl,
             maxWidth: 500, // ✅ Prevents too-wide cards on tablets
           }),
