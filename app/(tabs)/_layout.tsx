@@ -1,9 +1,13 @@
 import {useEffect} from 'react';
+
 import {View, ActivityIndicator} from 'react-native';
+
 import {Tabs, router} from 'expo-router';
+
 import {useAuth} from '@clerk/clerk-expo';
 
 import {ThemeProvider, useTheme} from '@/src/styles/theme/ThemeContext';
+
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
 import {useProfile, useCreateProfile} from '../../hooks/useProfile';
 
@@ -96,6 +100,12 @@ function ProtectedLayout() {
         name="analytics"
         options={{
           title: undefined,
+        }}
+        listeners={{
+          tabPress: e => {
+            e.preventDefault();
+            router.navigate('/(tabs)/analytics');
+          },
         }}
       />
       <Tabs.Screen

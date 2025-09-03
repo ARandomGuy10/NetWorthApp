@@ -7,6 +7,7 @@ export default function AnalyticsLayout() {
   return (
     <Stack
       screenOptions={{
+        headerShown: false,
         headerStyle: {
           backgroundColor: theme.colors.background.primary,
         },
