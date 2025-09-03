@@ -1,16 +1,12 @@
 import React from 'react';
-
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
-
 import {useRouter} from 'expo-router';
-
-import * as Haptics from 'expo-haptics';
-import Animated, {useSharedValue, useAnimatedStyle, withSpring} from 'react-native-reanimated';
 import {ChevronRight} from 'lucide-react-native';
+import Animated, {useSharedValue, useAnimatedStyle, withTiming, withSpring} from 'react-native-reanimated';
 import {LinearGradient} from 'expo-linear-gradient';
-
-import {useHaptics} from '@/hooks/useHaptics';
+import * as Haptics from 'expo-haptics';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {useHaptics} from '@/hooks/useHaptics';
 
 interface AnalyticsNavigationCardProps {
   item: {
@@ -21,115 +17,87 @@ interface AnalyticsNavigationCardProps {
     accent: string;
     type: string;
   };
-  variant?: 'gradient' | 'neutral';
 }
 
-const getCardGradient = (type: string, theme: any): [string, string] => {
-  const gradients: Record<string, [string, string]> = {
-    performance: ['#FF6B6B', '#FF8E53'],
-    trends: ['#4ECDC4', '#44A08D'],
-    monthly: ['#A8E6CF', '#7FCDCD'],
-    categories: ['#FFD93D', '#6BCF7F'],
-    accounts: ['#6C5CE7', '#A29BFE'],
-    currency: ['#FD79A8', '#FDCB6E'],
-    achievements: ['#00CEC9', '#55A3FF'],
-  };
-  return gradients[type] || [theme.colors.primary, theme.colors.background.secondary];
-};
-
-const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item, variant = 'neutral'}) => {
+const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item}) => {
   const {theme} = useTheme();
   const {impactAsync} = useHaptics();
   const router = useRouter();
   const Icon = item.icon;
 
-  const isPressed = useSharedValue(false);
+  const scale = useSharedValue(1);
+  const pressed = useSharedValue(0);
+
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{scale: withSpring(isPressed.value ? 0.97 : 1)}, {translateY: withSpring(isPressed.value ? -1 : 0)}],
-    shadowOpacity: withSpring(isPressed.value ? 0.25 : 0.12),
+    transform: [{scale: scale.value}],
+    opacity: 1 - pressed.value * 0.1,
   }));
+
+  const handlePressIn = async () => {
+    scale.value = withTiming(0.98, {duration: 100});
+    pressed.value = withTiming(1, {duration: 100});
+    await impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, {damping: 15, stiffness: 150});
+    pressed.value = withTiming(0, {duration: 100});
+  };
 
   const handlePress = async () => {
     try {
-      isPressed.value = true;
-      await impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setTimeout(() => {
-        isPressed.value = false;
-        router.push(item.href as any);
-      }, 80);
-    } catch {
-      isPressed.value = false;
+      await impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      router.push(item.href as any);
+    } catch (error) {
+      console.error('Navigation error:', error);
     }
   };
 
-  const cardGradient = getCardGradient(item.type, theme);
   const styles = getStyles(theme);
-
-  const Title = (
-    <View style={styles.titleRow}>
-      <Text style={styles.accent}>{item.accent}</Text>
-      <Text style={[styles.title, variant === 'neutral' && {color: theme.colors.text.primary}]} numberOfLines={1}>
-        {item.title}
-      </Text>
-    </View>
-  );
-
-  const Description = (
-    <Text style={[styles.description, variant === 'neutral' && {color: theme.colors.text.secondary}]} numberOfLines={2}>
-      {item.description}
-    </Text>
-  );
-
-  const RightChevron = (
-    <View style={styles.chevronContainer}>
-      <ChevronRight color={variant === 'neutral' ? theme.colors.text.primary : 'white'} size={20} />
-    </View>
-  );
 
   return (
     <Animated.View style={[styles.card, animatedStyle]}>
-      <TouchableOpacity style={styles.touchable} onPress={handlePress} activeOpacity={0.9}>
-        {variant === 'neutral' ? (
-          <View
-            style={[
-              styles.cardGradient,
-              {
-                backgroundColor: theme.colors.background.card,
-                borderWidth: 1,
-                borderColor: `${theme.colors.primary}22`,
-              },
-            ]}>
-            <View style={styles.cardInner}>
-              <View style={styles.iconContainer}>
-                <View style={[styles.iconGradient, {backgroundColor: `${theme.colors.primary}1A`}]}>
-                  <Icon color={theme.colors.text.primary} size={20} />
-                </View>
-              </View>
-              <View style={styles.textSection}>
-                {Title}
-                {Description}
-              </View>
-              {RightChevron}
+      <TouchableOpacity
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        onPress={handlePress}
+        style={styles.touchable}
+        activeOpacity={1}>
+        <LinearGradient
+          colors={[theme.colors.background.card, theme.colors.background.elevated]}
+          style={styles.cardGradient}>
+          <View style={styles.cardContent}>
+            {/* Single Icon Section */}
+            <View style={styles.iconContainer}>
+              <LinearGradient
+                colors={[`${theme.colors.primary}20`, `${theme.colors.primary}10`]}
+                style={styles.iconGradient}>
+                <Icon size={22} color={theme.colors.primary} />
+              </LinearGradient>
+            </View>
+
+            {/* Text Section - Single Line Enforcement */}
+            <View style={styles.textSection}>
+              <Text
+                style={[styles.cardTitle, {color: theme.colors.text.primary}]}
+                numberOfLines={1}
+                ellipsizeMode="tail">
+                {item.title}
+              </Text>
+              <Text
+                style={[styles.cardDescription, {color: theme.colors.text.secondary}]}
+                numberOfLines={1}
+                ellipsizeMode="tail">
+                {item.description}
+              </Text>
+            </View>
+
+            {/* Action Section */}
+            <View style={styles.actionSection}>
+              <ChevronRight size={18} color={theme.colors.text.tertiary} />
             </View>
           </View>
-        ) : (
-          <LinearGradient colors={cardGradient} style={styles.cardGradient}>
-            <View style={styles.cardInner}>
-              <View style={styles.iconContainer}>
-                <LinearGradient
-                  colors={['rgba(255,255,255,0.18)', 'rgba(255,255,255,0.06)']}
-                  style={styles.iconGradient}>
-                  <Icon color="white" size={20} />
-                </LinearGradient>
-              </View>
-              <View style={styles.textSection}>
-                {Title}
-                <Text style={styles.description}>{item.description}</Text>
-              </View>
-              {RightChevron}
-            </View>
-          </LinearGradient>
-        )}
+        </LinearGradient>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -138,34 +106,61 @@ const AnalyticsNavigationCard: React.FC<AnalyticsNavigationCardProps> = ({item, 
 const getStyles = (theme: any) =>
   StyleSheet.create({
     card: {
-      marginBottom: theme.spacing.lg,
-      borderRadius: theme.borderRadius.lg,
+      marginBottom: theme.spacing.md,
+      borderRadius: theme.borderRadius.xl,
       overflow: 'hidden',
-      ...theme.shadows.md,
+      elevation: 3,
+      shadowColor: theme.colors.text.primary,
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
     },
-    touchable: {flex: 1},
-    cardGradient: {flex: 1, minHeight: 90},
-    cardInner: {
+    touchable: {
       flex: 1,
+    },
+    cardGradient: {
+      borderRadius: theme.borderRadius.xl,
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}12`,
+    },
+    cardContent: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing.xl,
-      paddingVertical: theme.spacing.lg,
+      padding: theme.spacing.xl,
+      gap: theme.spacing.lg,
+      minHeight: 80,
     },
-    iconContainer: {marginRight: theme.spacing.lg},
+    iconContainer: {
+      width: 50,
+      height: 50,
+      borderRadius: theme.borderRadius.lg,
+      overflow: 'hidden',
+    },
     iconGradient: {
-      width: theme.spacing.xxxl + theme.spacing.lg,
-      height: theme.spacing.xxxl + theme.spacing.lg,
-      borderRadius: (theme.spacing.xxxl + theme.spacing.lg) / 2,
+      flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
     },
-    textSection: {flex: 1},
-    titleRow: {flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs},
-    accent: {fontSize: 16, marginRight: theme.spacing.sm},
-    title: {fontSize: 18, fontWeight: 'bold', color: 'white', letterSpacing: -0.3, flex: 1},
-    description: {fontSize: 14, color: 'rgba(255,255,255,0.9)', lineHeight: 20},
-    chevronContainer: {marginLeft: theme.spacing.md},
+    textSection: {
+      flex: 1,
+      gap: 4,
+    },
+    cardTitle: {
+      fontSize: 17,
+      fontWeight: '700',
+      letterSpacing: -0.2,
+    },
+    cardDescription: {
+      fontSize: 14,
+      lineHeight: 18,
+      opacity: 0.8,
+    },
+    actionSection: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      width: 24,
+      height: 24,
+    },
   });
 
 export default AnalyticsNavigationCard;
