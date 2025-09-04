@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";  -- Enables gen_random_uuid()
 CREATE TYPE public.theme AS ENUM (
   'LIGHT', 
   'DARK', 
-  'SYSTEM', 
+  'BARBIE', 
   'MODERN_FINANCE', 
   'WARM_LUXURY', 
   'NEO_BANKING', 

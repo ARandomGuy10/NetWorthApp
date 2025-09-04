@@ -196,6 +196,73 @@ export const LIGHT_THEME = createTheme(
   'LIGHT'
 );
 
+// BARBIE_THEME - Light Barbie pink theme with good contrast
+export const BARBIE_THEME = createTheme(
+  {
+    primary: '#E0218A', // Official Barbie Pink
+    primaryDark: '#AD166A',
+    primaryLight: '#F399CD',
+    meshBackground: ['#FACDE5', '#F7B9D7', '#F18DBC', '#ED5C9B'],
+    gradient: {
+      // ✅ Soft pink progression for backgrounds
+      primary: ['#FFF5F9', '#FECDD3', '#FDA4AF'],
+      // ✅ Elevated card backgrounds with pink tints
+      card: ['#FFF1F2', '#FECDD3', '#FDA4AF'],
+      // ✅ Vibrant Barbie pink button gradient
+      button: ['#F399CD', '#E0218A', '#AD166A'],
+      // ✅ Light to pink accent header
+      header: ['#FFF5F9', '#FECDD3', 'rgba(224, 33, 138, 0.25)'],
+      // ✅ Green success (complements pink well)
+      success: ['#4ADE80', '#22C55E', '#16A34A'],
+      // ✅ Warm amber warning
+      warning: ['#FBBF24', '#F59E0B', '#D97706'],
+      // ✅ Coral error (softer than harsh red)
+      error: ['#FB7185', '#F43F5E', '#E11D48'],
+      // ✅ Very light pink subtle variations
+      subtle: ['#FFF5F9', '#FECDD3', '#FDA4AF'],
+      // ✅ Soft Barbie pink overlay
+      accent: ['rgba(224, 33, 138, 0.08)', 'rgba(224, 33, 138, 0.04)', 'rgba(224, 33, 138, 0.02)'],
+    },
+    background: {
+      primary: '#FFF5F9',
+      secondary: '#FECDD3',
+      tertiary: '#FDA4AF',
+      card: '#FFF1F2',
+      elevated: '#FECDD3',
+      navBarBackground: '#FFF5F9',
+    },
+    text: {
+      primary: '#881337', // Deep pink for good contrast
+      secondary: '#BE185D',
+      tertiary: '#E0218A',
+      disabled: '#F9A8D4',
+      inverse: '#FFFFFF',
+      onGradient: '#881337',
+      onPrimary: '#FFFFFF',
+      onCard: '#881337',
+      onSuccess: '#FFFFFF',
+      onError: '#FFFFFF',
+    },
+    success: '#22C55E',
+    warning: '#F59E0B',
+    error: '#F43F5E',
+    info: '#E0218A',
+    asset: '#22C55E',
+    liability: '#F43F5E',
+    border: {
+      primary: '#FDA4AF',
+      secondary: '#F9A8D4',
+      focus: '#E0218A',
+    },
+    interactive: {
+      hover: 'rgba(224, 33, 138, 0.1)',
+      pressed: 'rgba(224, 33, 138, 0.2)',
+      disabled: 'rgba(0, 0, 0, 0.05)',
+    },
+  },
+  'BARBIE'
+);
+
 // MODERN_FINANCE_THEME - Purple business theme
 export const MODERN_FINANCE_THEME = createTheme(
   {
@@ -888,6 +955,7 @@ export const PLATINUM_ELEGANCE_THEME = createTheme(
 const allThemes = {
   DARK: DARK_THEME,
   LIGHT: LIGHT_THEME,
+  BARBIE: BARBIE_THEME,
   MODERN_FINANCE: MODERN_FINANCE_THEME,
   WARM_LUXURY: WARM_LUXURY_THEME,
   NEO_BANKING: NEO_BANKING_THEME,
