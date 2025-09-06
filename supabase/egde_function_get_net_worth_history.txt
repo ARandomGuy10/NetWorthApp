@@ -1,23 +1,22 @@
+// /functions/get-net-worth-history-edge-function/index.ts
 import { createClient } from 'jsr:@supabase/supabase-js@^2';
-
-enum ApiErrorType {
-  BAD_REQUEST = 'BAD_REQUEST',
-  UNAUTHORIZED = 'UNAUTHORIZED',
-  NOT_FOUND = 'NOT_FOUND',
-  RATE_LIMIT = 'RATE_LIMIT',
-  SERVER_ERROR = 'SERVER_ERROR'
-}
-
+var ApiErrorType;
+(function(ApiErrorType) {
+  ApiErrorType["BAD_REQUEST"] = "BAD_REQUEST";
+  ApiErrorType["UNAUTHORIZED"] = "UNAUTHORIZED";
+  ApiErrorType["NOT_FOUND"] = "NOT_FOUND";
+  ApiErrorType["RATE_LIMIT"] = "RATE_LIMIT";
+  ApiErrorType["SERVER_ERROR"] = "SERVER_ERROR";
+})(ApiErrorType || (ApiErrorType = {}));
 class ApiError extends Error {
-  constructor(
-    public status: number, 
-    public message: string, 
-    public type: ApiErrorType = ApiErrorType.SERVER_ERROR
-  ) {
+  status;
+  type;
+  constructor(status, message, type = ApiErrorType.SERVER_ERROR){
     super(message);
+    this.status = status;
+    this.type = type;
     this.name = 'ApiError';
   }
-
   toJSON() {
     return {
       status: this.status,
@@ -26,41 +25,11 @@ class ApiError extends Error {
     };
   }
 }
-
-interface NetWorthHistoryParams {
-  period: '1M' | '3M' | '6M' | '12M' | 'ALL' | 'CUSTOM';
-  startDate?: string;
-  endDate?: string;
-  toCurrency: string;
-  samplingStrategy?: 'daily' | 'weekly' | 'monthly' | 'adaptive';
-  maxDataPoints?: number;
-  includeAccountBreakdown?: boolean;
-}
-
-interface AccountData {
-  account_id: string;
-  account_name: string;
-  account_type: 'asset' | 'liability';
-  currency: string;
-  category: string;
-  institution: string;
-  include_in_net_worth: boolean;
-  balance: number;
-}
-
-interface NetWorthDataPoint {
-  date: string;
-  net_worth: number;
-  total_assets: number;
-  total_liabilities: number;
-  accounts?: AccountData[];
-}
-
 const CONFIG = {
-  RATE_CACHE_TTL: 60 * 60 * 1000, // 1 hour - only for exchange rates
+  RATE_CACHE_TTL: 60 * 60 * 1000,
   DEFAULT_MAX_POINTS: {
     '1M': 60,
-    '3M': 90,
+    '3M': 15,
     '6M': 30,
     '12M': 60,
     'ALL': 120
@@ -72,13 +41,12 @@ const CONFIG = {
     '12M': 'weekly',
     'ALL': 'monthly'
   },
-  FETCH_TIMEOUT: 5000, // 5 seconds
-  RATE_LIMIT: 100, // requests per hour
+  FETCH_TIMEOUT: 5000,
+  RATE_LIMIT: 100,
   RATE_LIMIT_WINDOW: 60 * 60 * 1000 // 1 hour
 };
-
 // Structured logging function
-function logEvent(requestId: string, event: string, metadata: Record<string, any> = {}) {
+function logEvent(requestId, event, metadata = {}) {
   console.log(JSON.stringify({
     requestId,
     timestamp: new Date().toISOString(),
@@ -86,119 +54,138 @@ function logEvent(requestId: string, event: string, metadata: Record<string, any
     ...metadata
   }));
 }
-
 // Get supported currencies from your database enum
-async function getSupportedCurrencies(supabaseClient: any): Promise<string[]> {
+async function getSupportedCurrencies(supabaseClient1) {
   try {
-    const { data, error } = await supabaseClient.rpc('get_supported_currencies');
+    const { data, error } = await supabaseClient1.rpc('get_supported_currencies');
     if (error) throw error;
     return data;
   } catch (error) {
     console.warn('Failed to fetch supported currencies from enum, using fallback');
     // Fallback list in case of database issues
-    return ['AUD', 'BGN', 'BRL', 'CAD', 'CHF', 'CNY', 'CZK', 'DKK', 
-    'EUR', 'GBP', 'HKD', 'HUF', 'IDR', 'ILS', 'INR', 'ISK', 
-    'JPY', 'KRW', 'MXN', 'MYR', 'NOK', 'NZD', 'PHP', 'PLN', 
-    'RON', 'SEK', 'SGD', 'THB', 'TRY', 'USD', 'ZAR'];
+    return [
+      'AUD',
+      'BGN',
+      'BRL',
+      'CAD',
+      'CHF',
+      'CNY',
+      'CZK',
+      'DKK',
+      'EUR',
+      'GBP',
+      'HKD',
+      'HUF',
+      'IDR',
+      'ILS',
+      'INR',
+      'ISK',
+      'JPY',
+      'KRW',
+      'MXN',
+      'MYR',
+      'NOK',
+      'NZD',
+      'PHP',
+      'PLN',
+      'RON',
+      'SEK',
+      'SGD',
+      'THB',
+      'TRY',
+      'USD',
+      'ZAR'
+    ];
   }
 }
-
 // Input validation with dynamic currency check
-async function validateNetWorthParams(params: NetWorthHistoryParams, supabaseClient: any) {
-  const validPeriods: string[] = ['1M', '3M', '6M', '12M', 'ALL', 'CUSTOM'];
-  const validSamplingStrategies: string[] = ['daily', 'weekly', 'monthly', 'adaptive'];
-
+async function validateNetWorthParams(params, supabaseClient1) {
+  const validPeriods = [
+    '1M',
+    '3M',
+    '6M',
+    '12M',
+    'ALL',
+    'CUSTOM'
+  ];
+  const validSamplingStrategies = [
+    'daily',
+    'weekly',
+    'monthly',
+    'adaptive'
+  ];
   if (!validPeriods.includes(params.period)) {
     throw new ApiError(400, `Invalid period. Must be one of: ${validPeriods.join(', ')}`, ApiErrorType.BAD_REQUEST);
   }
-
   if (params.samplingStrategy && !validSamplingStrategies.includes(params.samplingStrategy)) {
     throw new ApiError(400, `Invalid sampling strategy. Must be one of: ${validSamplingStrategies.join(', ')}`, ApiErrorType.BAD_REQUEST);
   }
-
   if (!params.toCurrency) {
     throw new ApiError(400, 'toCurrency is required', ApiErrorType.BAD_REQUEST);
   }
-
   // Get supported currencies from your database enum
-  const supportedCurrencies = await getSupportedCurrencies(supabaseClient);
+  const supportedCurrencies = await getSupportedCurrencies(supabaseClient1);
   if (!supportedCurrencies.includes(params.toCurrency)) {
     throw new ApiError(400, `Unsupported currency: ${params.toCurrency}. Supported: ${supportedCurrencies.join(', ')}`, ApiErrorType.BAD_REQUEST);
   }
 }
-
 // Rate limiting with cleanup
-const requestCounts = new Map<string, { count: number, resetTime: number }>();
-
+const requestCounts = new Map();
 // Cleanup old entries every hour
-setInterval(() => {
+setInterval(()=>{
   const now = Date.now();
-  for (const [userId, data] of requestCounts.entries()) {
+  for (const [userId, data] of requestCounts.entries()){
     if (now > data.resetTime) {
       requestCounts.delete(userId);
     }
   }
 }, CONFIG.RATE_LIMIT_WINDOW);
-
-function checkRateLimit(userId: string) {
+function checkRateLimit(userId) {
   const now = Date.now();
-  const userRequestData = requestCounts.get(userId) || { count: 0, resetTime: now + CONFIG.RATE_LIMIT_WINDOW };
-
+  const userRequestData = requestCounts.get(userId) || {
+    count: 0,
+    resetTime: now + CONFIG.RATE_LIMIT_WINDOW
+  };
   if (now > userRequestData.resetTime) {
     userRequestData.count = 0;
     userRequestData.resetTime = now + CONFIG.RATE_LIMIT_WINDOW;
   }
-
   if (userRequestData.count >= CONFIG.RATE_LIMIT) {
     throw new ApiError(429, 'Too many requests', ApiErrorType.RATE_LIMIT);
   }
-
   userRequestData.count++;
   requestCounts.set(userId, userRequestData);
 }
-
 // Exchange rate caching (ONLY cache exchange rates, not financial data)
-const rateCache = new Map<string, { 
-  rates: Record<string, number>; 
-  timestamp: number; 
-}>();
-
-async function getLiveRates(fromCurrencies: string[], toCurrency: string, retries = 2): Promise<Record<string, number>> {
-  const fromSymbols = fromCurrencies.filter(c => c !== toCurrency).sort();
-  
+const rateCache = new Map();
+async function getLiveRates(fromCurrencies, toCurrency, retries = 2) {
+  const fromSymbols = fromCurrencies.filter((c)=>c !== toCurrency).sort();
   if (fromSymbols.length === 0) return {};
-
   // Check cache with consistent key
   const cacheKey = `${toCurrency}-${fromSymbols.join(',')}`;
   const cachedEntry = rateCache.get(cacheKey);
-
   if (cachedEntry && Date.now() - cachedEntry.timestamp < CONFIG.RATE_CACHE_TTL) {
     return cachedEntry.rates;
   }
-  
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), CONFIG.FETCH_TIMEOUT);
+    const timeoutId = setTimeout(()=>controller.abort(), CONFIG.FETCH_TIMEOUT);
     const apiUrl = `https://api.frankfurter.app/latest?from=${toCurrency}&to=${fromSymbols.join(',')}`;
-    
-    const response = await fetch(apiUrl, { signal: controller.signal });
+    const response = await fetch(apiUrl, {
+      signal: controller.signal
+    });
     clearTimeout(timeoutId);
-    
     if (!response.ok) throw new Error('Failed to fetch exchange rates');
-    
     const data = await response.json();
-    const invertedRates: Record<string, number> = {};
-    
-    for (const [currency, rate] of Object.entries(data.rates)) {
-      invertedRates[currency] = 1 / (rate as number);
+    const invertedRates = {};
+    for (const [currency, rate] of Object.entries(data.rates)){
+      invertedRates[currency] = 1 / rate;
     }
-    
     // Cache with consistent key
-    rateCache.set(cacheKey, { 
-      rates: invertedRates, 
+    rateCache.set(cacheKey, {
+      rates: invertedRates,
       timestamp: Date.now()
     });
-
     return invertedRates;
   } catch (error) {
     if (retries > 0) {
@@ -208,11 +195,10 @@ async function getLiveRates(fromCurrencies: string[], toCurrency: string, retrie
     throw new ApiError(500, 'Could not fetch exchange rates', ApiErrorType.SERVER_ERROR);
   }
 }
-
 // Dynamic earliest date fetching for ALL period
-async function getEarliestBalanceDate(supabaseClient: any): Promise<Date> {
+async function getEarliestBalanceDate(supabaseClient1) {
   try {
-    const { data, error } = await supabaseClient.rpc('get_earliest_balance_date');
+    const { data, error } = await supabaseClient1.rpc('get_earliest_balance_date');
     if (error) throw error;
     return new Date(data);
   } catch (error) {
@@ -222,59 +208,44 @@ async function getEarliestBalanceDate(supabaseClient: any): Promise<Date> {
     return fallbackDate;
   }
 }
-
 // Dynamic date range calculation with smart earliest balance date fallback
-async function calculateDateRange(period: string, supabaseClient: any) {
+async function calculateDateRange(period, supabaseClient1) {
   if (period === 'ALL') {
     // For ALL, always use the earliest balance date
-    const earliestDate = await getEarliestBalanceDate(supabaseClient);
-    return { 
-      startDate: earliestDate, 
-      defaultSampling: CONFIG.FALLBACK_SAMPLING['ALL'], 
-      defaultMaxPoints: CONFIG.DEFAULT_MAX_POINTS['ALL'] 
+    const earliestDate = await getEarliestBalanceDate(supabaseClient1);
+    return {
+      startDate: earliestDate,
+      defaultSampling: CONFIG.FALLBACK_SAMPLING['ALL'],
+      defaultMaxPoints: CONFIG.DEFAULT_MAX_POINTS['ALL']
     };
   }
-
   // Calculate the intended start date based on period
   const months = parseInt(period.replace('M', ''));
   const calculatedStartDate = new Date();
   calculatedStartDate.setMonth(calculatedStartDate.getMonth() - months);
-
   // Get the user's earliest balance date
-  const earliestBalanceDate = await getEarliestBalanceDate(supabaseClient);
-
+  const earliestBalanceDate = await getEarliestBalanceDate(supabaseClient1);
   // Use the later date (more recent) between calculated start date and earliest balance date
-  const actualStartDate = calculatedStartDate > earliestBalanceDate 
-    ? calculatedStartDate  // User has data going back further than the requested period
-    : earliestBalanceDate; // User doesn't have data going back that far, use earliest available
-
-  const periodKey = period as keyof typeof CONFIG.DEFAULT_MAX_POINTS;
-  return { 
-    startDate: actualStartDate, 
-    defaultSampling: CONFIG.FALLBACK_SAMPLING[periodKey], 
-    defaultMaxPoints: CONFIG.DEFAULT_MAX_POINTS[periodKey] 
+  const actualStartDate = calculatedStartDate > earliestBalanceDate ? calculatedStartDate // User has data going back further than the requested period
+   : earliestBalanceDate; // User doesn't have data going back that far, use earliest available
+  const periodKey = period;
+  return {
+    startDate: actualStartDate,
+    defaultSampling: CONFIG.FALLBACK_SAMPLING[periodKey],
+    defaultMaxPoints: CONFIG.DEFAULT_MAX_POINTS[periodKey]
   };
 }
-
 // Data processing utility
-function processHistoricalData(
-  historicalData: any[], 
-  rates: Record<string, number>, 
-  toCurrency: string,
-  includeAccountBreakdown: boolean = false
-): NetWorthDataPoint[] {
-  return historicalData.map(day => {
+function processHistoricalData(historicalData, rates, toCurrency, includeAccountBreakdown = false) {
+  return historicalData.map((day)=>{
     let totalNetWorth = 0;
     let totalAssets = 0;
     let totalLiabilities = 0;
-    const processedAccounts: AccountData[] = [];
-
-    day.accounts_data.forEach((account: AccountData) => {
+    const processedAccounts = [];
+    day.accounts_data.forEach((account)=>{
       if (!account.include_in_net_worth) return;
-
       const rate = account.currency === toCurrency ? 1 : rates[account.currency] || 1;
       const convertedBalance = account.balance * rate;
-
       if (account.account_type === 'asset') {
         totalNetWorth += convertedBalance;
         totalAssets += convertedBalance;
@@ -282,7 +253,6 @@ function processHistoricalData(
         totalNetWorth -= convertedBalance;
         totalLiabilities += convertedBalance;
       }
-
       if (includeAccountBreakdown) {
         processedAccounts.push({
           ...account,
@@ -290,27 +260,23 @@ function processHistoricalData(
         });
       }
     });
-
-    const result: NetWorthDataPoint = {
+    const result = {
       date: day.date,
       net_worth: Math.round(totalNetWorth * 100) / 100,
       total_assets: Math.round(totalAssets * 100) / 100,
-      total_liabilities: Math.round(totalLiabilities * 100) / 100,
+      total_liabilities: Math.round(totalLiabilities * 100) / 100
     };
-
     if (includeAccountBreakdown) {
       result.accounts = processedAccounts;
     }
-
     return result;
   });
 }
-
 // JSON response utility - always return fresh financial data
-function jsonResponse(data: any, status = 200) {
+function jsonResponse(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       // Always return fresh financial data - no caching
       'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
@@ -319,55 +285,93 @@ function jsonResponse(data: any, status = 200) {
     }
   });
 }
-
-Deno.serve(async (req) => {
-  // Generate unique request ID for tracing
-  const requestId = crypto.randomUUID();
-
-  try {
-    if (req.method !== 'POST') {
-      throw new ApiError(405, 'Method Not Allowed', ApiErrorType.BAD_REQUEST);
+// Utility: monthly series from daily/weekly/adaptive points (last value per calendar month)
+function toMonthlySeries(points) {
+  const byMonth = new Map();
+  for (const p of points){
+    const month = p.date.slice(0, 7); // YYYY-MM
+    // always keep the latest encountered date within the month
+    const existing = byMonth.get(month);
+    if (!existing || new Date(p.date) >= new Date(existing.date)) {
+      byMonth.set(month, p);
     }
-
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization') ?? '' }
+  }
+  return [
+    ...byMonth.entries()
+  ].sort(([a], [b])=>a < b ? -1 : 1).map(([, v])=>v);
+}
+// Utility: deltas between consecutive points
+function deltas(series) {
+  const out = [];
+  for(let i = 1; i < series.length; i++){
+    const prev = series[i - 1].net_worth;
+    const curr = series[i].net_worth;
+    const d = Math.round((curr - prev) * 100) / 100;
+    const pct = prev ? Math.round(d / prev * 100 * 100) / 100 : 0;
+    out.push({
+      month: series[i].date.slice(0, 7),
+      delta: d,
+      percent: pct
+    });
+  }
+  return out;
+}
+// Utility: streak from positive deltas
+function streak(deltaSeries) {
+  let current = 0, longest = 0;
+  for (const d of deltaSeries){
+    if (d.delta > 0) {
+      current += 1;
+      if (current > longest) longest = current;
+    } else if (d.delta < 0) {
+      current = 0;
+    }
+  }
+  return {
+    current_streak: current,
+    longest_streak: longest
+  };
+}
+// Utility: standard deviation of percent changes
+function stdDev(values) {
+  if (!values.length) return 0;
+  const mean = values.reduce((s, v)=>s + v, 0) / values.length;
+  const variance = values.reduce((s, v)=>s + (v - mean) ** 2, 0) / values.length;
+  return Math.sqrt(variance);
+}
+Deno.serve(async (req)=>{
+  // same structure as your original function
+  const requestId = crypto.randomUUID();
+  try {
+    if (req.method !== 'POST') throw new ApiError(405, 'Method Not Allowed', ApiErrorType.BAD_REQUEST);
+    const supabase = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_ANON_KEY') ?? '', {
+      global: {
+        headers: {
+          Authorization: req.headers.get('Authorization') ?? ''
         }
       }
-    );
-
-    const params: NetWorthHistoryParams = await req.json();
-    
-    // Validate input parameters (includes currency validation against your enum)
-    await validateNetWorthParams(params, supabaseClient);
-
-    // Clerk authentication - use get_user_id() function
-    let userId: string;
+    });
+    const params = await req.json();
+    // NEW: optional pro flag from client (will be resolved server-side)
+    const clientPro = params?.pro;
+    // (validateNetWorthParams etc.) — keep your existing logic
+    await validateNetWorthParams(params, supabase);
+    // auth & rate limiting (unchanged)
+    let userId;
     try {
-      const { data: userIdData, error } = await supabaseClient.rpc('get_user_id');
-      if (error || !userIdData) {
-        throw new ApiError(401, 'Authentication required', ApiErrorType.UNAUTHORIZED);
-      }
+      const { data: userIdData, error } = await supabase.rpc('get_user_id');
+      if (error || !userIdData) throw new ApiError(401, 'Authentication required', ApiErrorType.UNAUTHORIZED);
       userId = userIdData;
-    } catch (error) {
+    } catch  {
       throw new ApiError(401, 'Invalid authentication token', ApiErrorType.UNAUTHORIZED);
     }
-
-    // Rate limiting with Clerk userId
     checkRateLimit(userId);
-
-    // Log the request
-    logEvent(requestId, 'net_worth_request', {
-      period: params.period,
-      toCurrency: params.toCurrency,
-      userId: userId
-    });
-
-    let startDate: Date, endDate: Date, defaultSampling: string, defaultMaxPoints: number;
-    
+    // Resolve pro securely
+    const { data: profile, error: profileError } = await supabase.from('profiles').select('subscription_tier').single();
+    if (profileError) throw profileError;
+    const isPro = profile?.subscription_tier === 'pro';
+    // Calculate dates (unchanged)
+    let startDate, endDate, defaultSampling, defaultMaxPoints;
     if (params.period === 'CUSTOM') {
       if (!params.startDate || !params.endDate) {
         throw new ApiError(400, 'Start and end dates required for custom period', ApiErrorType.BAD_REQUEST);
@@ -377,33 +381,23 @@ Deno.serve(async (req) => {
       defaultSampling = 'adaptive';
       defaultMaxPoints = 100;
     } else {
-      const dateRange = await calculateDateRange(params.period, supabaseClient);
+      const dateRange = await calculateDateRange(params.period, supabase);
       startDate = dateRange.startDate;
       endDate = new Date();
       defaultSampling = dateRange.defaultSampling;
       defaultMaxPoints = dateRange.defaultMaxPoints;
     }
-
     const samplingStrategy = params.samplingStrategy || defaultSampling;
     const maxDataPoints = params.maxDataPoints || defaultMaxPoints;
-
+    // DB fetch (unchanged)
     const startTime = Date.now();
-    
-    // Always fetch fresh data from database (no result caching)
-    const { data: historicalData, error } = await supabaseClient.rpc(
-      'get_net_worth_history',
-      {
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
-        sampling_strategy: samplingStrategy,
-        max_points: maxDataPoints,
-      }
-    );
-
-    if (error) {
-      throw new ApiError(500, `Database error: ${error.message}`, ApiErrorType.SERVER_ERROR);
-    }
-
+    const { data: historicalData, error } = await supabase.rpc('get_net_worth_history', {
+      start_date: startDate.toISOString().split('T')[0],
+      end_date: endDate.toISOString().split('T')[0],
+      sampling_strategy: samplingStrategy,
+      max_points: maxDataPoints
+    });
+    if (error) throw new ApiError(500, `Database error: ${error.message}`, ApiErrorType.SERVER_ERROR);
     if (!historicalData?.length) {
       return jsonResponse({
         period: params.period,
@@ -417,35 +411,24 @@ Deno.serve(async (req) => {
         message: 'No historical data found'
       });
     }
-
-    // Get unique currencies for exchange rate fetching
-    const allCurrencies = new Set<string>();
-    historicalData.forEach(day => {
-      day.accounts_data.forEach((account: AccountData) => {
-        if (account.currency && account.include_in_net_worth) {
-          allCurrencies.add(account.currency);
-        }
+    // Rates (unchanged)
+    const allCurrencies = new Set();
+    historicalData.forEach((day)=>{
+      day.accounts_data.forEach((account)=>{
+        if (account.currency && account.include_in_net_worth) allCurrencies.add(account.currency);
       });
     });
-
     const rateStartTime = Date.now();
-    const uniqueCurrencies = Array.from(allCurrencies).filter(c => c !== params.toCurrency);
+    const uniqueCurrencies = Array.from(allCurrencies).filter((c)=>c !== params.toCurrency);
     const rates = await getLiveRates(uniqueCurrencies, params.toCurrency);
     const rateQueryTime = Date.now() - rateStartTime;
-
-    // Process historical data and calculate net worth
+    // Processed series (unchanged)
     const processStartTime = Date.now();
-    const processedData = processHistoricalData(
-      historicalData, 
-      rates, 
-      params.toCurrency,
-      params.includeAccountBreakdown
-    );
+    const processedData = processHistoricalData(historicalData, rates, params.toCurrency, params.includeAccountBreakdown);
     const processingTime = Date.now() - processStartTime;
-
     const totalTime = Date.now() - startTime;
-
-    return jsonResponse({
+    // Base payload (unchanged keys)
+    const payload = {
       period: params.period,
       startDate: startDate.toISOString().split('T')[0],
       endDate: endDate.toISOString().split('T')[0],
@@ -461,30 +444,112 @@ Deno.serve(async (req) => {
         processingTime,
         totalProcessingTime: totalTime,
         cacheHitRate: rateCache.has(`${params.toCurrency}-${uniqueCurrencies.sort().join(',')}`),
-        requestId: requestId
+        requestId
       },
       metadata: {
         includeAccountBreakdown: params.includeAccountBreakdown || false,
         uniqueCurrencies: uniqueCurrencies.length,
-        totalAccounts: historicalData[0]?.accounts_data?.length || 0,
+        totalAccounts: historicalData[0]?.accounts_data?.length || 0
       },
       note: 'Calculated using current exchange rates'
-    });
-
+    };
+    // ---- PRO INSIGHTS (additive) ----
+    // ---- PRO INSIGHTS (additive) ----
+    if (isPro) {
+      // Build a monthly series from whatever sampling was returned
+      const monthlySeries = toMonthlySeries(processedData);
+      const monthlyDeltas = deltas(monthlySeries);
+      const streaks = streak(monthlyDeltas);
+      const startNW = monthlySeries[0]?.net_worth ?? processedData[0].net_worth;
+      const endNW = monthlySeries.at(-1)?.net_worth ?? processedData.at(-1).net_worth;
+      const change = Math.round((endNW - startNW) * 100) / 100;
+      const percent = startNW ? Math.round(change / startNW * 100 * 100) / 100 : 0;
+      const perfSummary = {
+        start: startNW,
+        end: endNW,
+        change,
+        percent
+      };
+      // Simple trend (slope across monthly points)
+      const slope = monthlySeries.length > 1 ? (endNW - startNW) / (monthlySeries.length - 1) : 0;
+      const trend = {
+        slope: Math.round(slope * 100) / 100,
+        direction: slope >= 0 ? "up" : "down"
+      };
+      // Highs, gains/drops
+      const allTimeHigh = Math.max(...processedData.map((p)=>p.net_worth));
+      const isAtAllTimeHigh = Math.abs(endNW - allTimeHigh) < 1e-6;
+      const biggestGain = monthlyDeltas.length ? monthlyDeltas.reduce((a, b)=>b.delta > a.delta ? b : a) : null;
+      const biggestDrop = monthlyDeltas.length ? monthlyDeltas.reduce((a, b)=>b.delta < a.delta ? b : a) : null;
+      // Volatility (std dev of monthly percent changes)
+      const pctChanges = monthlyDeltas.map((d)=>d.percent);
+      const volatility = {
+        stddevPercent: Math.round(stdDev(pctChanges) * 100) / 100
+      };
+      const badges = [];
+      const addBadge = (title, description, icon)=>badges.push({
+          title,
+          description,
+          icon
+        });
+      // Growth streaks
+      if (streaks.current_streak >= 3) addBadge("3-Month Growth Streak", "You’ve grown your net worth for 3 months in a row.", "📈");
+      if (streaks.current_streak >= 5) addBadge("5-Month Streak", "You’ve kept growing for 5 months straight.", "🔥");
+      if (streaks.longest_streak >= 12) addBadge("Perfect Year", "12 months of uninterrupted growth. Amazing!", "🌟");
+      // Highs
+      if (isAtAllTimeHigh && monthlySeries.length >= 3) addBadge("All-Time High", "You’ve reached the highest net worth ever recorded.", "🏆");
+      // Momentum
+      if (biggestGain && monthlyDeltas.at(-1)?.month === biggestGain.month && biggestGain.delta > 0) addBadge("Momentum Month", "Your most recent month had the biggest gain yet.", "⚡");
+      if (biggestGain && biggestGain.percent >= 20) addBadge("Rocket Month", "One month saw explosive 20%+ growth.", "🚀");
+      // Progression
+      if (endNW >= 2 * startNW) addBadge("Double Up", "You doubled your net worth over this period.", "💰");
+      if (endNW >= 3 * startNW) addBadge("Wealth Tripler", "You tripled your net worth over this period.", "📊");
+      if (startNW < 0 && endNW > 0) addBadge("Comeback", "You turned your net worth positive from negative.", "🔄");
+      // Stability / risk
+      if (volatility.stddevPercent <= 2 && monthlyDeltas.length >= 4) addBadge("Steady Climber", "Your growth has been smooth and consistent.", "🧭");
+      if (volatility.stddevPercent < 1) addBadge("Stable Wealth", "Very low volatility in your net worth changes.", "💎");
+      if (volatility.stddevPercent > 10) addBadge("Risk Taker", "Your net worth swings wildly each month.", "⚠️");
+      if (monthlyDeltas.length && monthlyDeltas.every((d)=>d.delta >= 0)) addBadge("No Red Months", "Every single month this period was positive.", "🟩");
+      // Milestones
+      if (startNW < 10_000 && endNW >= 10_000) addBadge("First 10K", "You crossed the $10,000 net worth milestone.", "🔟");
+      if (startNW < 100_000 && endNW >= 100_000) addBadge("First 100K", "Huge achievement: $100,000 net worth.", "💯");
+      if (startNW < 500_000 && endNW >= 500_000) addBadge("Half Millionaire", "You reached $500,000 net worth.", "💎");
+      if (startNW < 1_000_000 && endNW >= 1_000_000) addBadge("Millionaire Club", "Welcome to the $1,000,000 club.", "🤑");
+      // Recovery & drops
+      if (biggestDrop && biggestGain && biggestGain.delta > Math.abs(biggestDrop.delta)) addBadge("Bounce Back", "You bounced back stronger after a major drop.", "🔙");
+      if (endNW > allTimeHigh * 0.9 && !isAtAllTimeHigh) addBadge("Strong Recovery", "You’re close to reclaiming your all-time high.", "📉");
+      if (change > 0 && monthlyDeltas.some((d)=>d.delta < 0)) addBadge("Survivor", "Despite setbacks, you ended higher than you started.", "🏅");
+      payload.insights = {
+        performanceSummary: perfSummary,
+        monthlyDeltas,
+        growthStreak: streaks,
+        trend,
+        highs: {
+          allTimeHigh,
+          isAtAllTimeHigh
+        },
+        volatility,
+        extremes: {
+          biggestGain,
+          biggestDrop
+        }
+      };
+      payload.badges = badges;
+    }
+    return jsonResponse(payload);
   } catch (error) {
     console.error('Net Worth History Error:', error);
-    
-    // Log error events
-    logEvent(requestId, 'net_worth_error', {
-      errorMessage: error.message,
-      errorType: error instanceof ApiError ? error.type : 'UNKNOWN'
-    });
-
-    return jsonResponse({
+    // logEvent(requestId, 'net_worth_error', ...) // keep your logging if desired
+    return new Response(JSON.stringify({
       error: error.message || 'Internal server error',
       type: error instanceof ApiError ? error.type : ApiErrorType.SERVER_ERROR,
-      requestId: requestId,
-      details: error instanceof Error ? error.stack : undefined,
-    }, error instanceof ApiError ? error.status : 500);
+      requestId,
+      details: error instanceof Error ? error.stack : undefined
+    }), {
+      status: error instanceof ApiError ? error.status : 500,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
   }
 });

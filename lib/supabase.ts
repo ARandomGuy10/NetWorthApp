@@ -257,6 +257,12 @@ export interface NetWorthDataPoint {
   total_liabilities: number;
 }
 
+export interface Badge {
+  title: string;
+  description: string;
+  icon: string;
+}
+
 export interface NetWorthHistoryResponse {
   period: Period;
   startDate: string;
@@ -268,7 +274,7 @@ export interface NetWorthHistoryResponse {
   calculatedAt: string;
   data: NetWorthDataPoint[];
   insights: NetWorthHistoryInsights;
-  badges: string[];
+  badges: Badge[];
   performance: {
     dbQueryTime: number;
     rateQueryTime: number;
@@ -396,4 +402,35 @@ export type Theme = {
   spacing: Record<string, number>;
   borderRadius: Record<string, number>;
   shadows: Record<string, any>;
+  // ✅ NEW: Add font size tokens
+  fontSizes: {
+    xs: number;
+    sm: number;
+    md: number;
+    lg: number;
+    xl: number;
+    xxl: number;
+    xxxl: number;
+    caption: number;
+    body: number;
+    subtitle: number;
+    title: number;
+    heading: number;
+    display: number;
+  };
+  // ✅ NEW: Add responsive scaling
+  responsive: {
+    small: {
+      fontScale: number;
+      spacingScale: number;
+    };
+    medium: {
+      fontScale: number;
+      spacingScale: number;
+    };
+    large: {
+      fontScale: number;
+      spacingScale: number;
+    };
+  };
 };

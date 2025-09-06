@@ -415,6 +415,8 @@ BEGIN
       FROM (
         SELECT anchor_date FROM anchor_dates
         UNION
+        select start_date as anchor_date
+        UNION
         SELECT end_date AS anchor_date
       ) combined
       WHERE anchor_date BETWEEN start_date AND end_date
