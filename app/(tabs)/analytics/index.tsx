@@ -36,55 +36,47 @@ type AnalyticsNavItem = {
   title: string;
   description: string;
   accent: string;
-  type: 'performance' | 'trends' | 'monthly' | 'categories' | 'accounts' | 'currency' | 'achievements';
+  type: 'performance' | 'monthly' | 'accounts' | 'categories' | 'currency' | 'achievements';
 };
 
 const analyticsItems: AnalyticsNavItem[] = [
   {
     href: '/analytics/performance',
     icon: Activity,
-    title: 'Performance Summary',
-    description: 'Track your wealth growth journey',
+    title: 'Performance Overview',
+    description: 'Complete wealth growth journey & trends',
     accent: '🚀',
     type: 'performance',
-  },
-  {
-    href: '/analytics/trends',
-    icon: TrendingUp,
-    title: 'Growth Trends',
-    description: 'Visualize your financial momentum',
-    accent: '📈',
-    type: 'trends',
   },
   {
     href: '/analytics/monthly-changes',
     icon: BarChart3,
     title: 'Monthly Changes',
-    description: 'See month-over-month progress',
+    description: 'Month-over-month detailed progress',
     accent: '📊',
     type: 'monthly',
+  },
+  {
+    href: '/analytics/accounts',
+    icon: Landmark,
+    title: 'Account Analysis',
+    description: 'Individual account performance & drill-down',
+    accent: '🏆',
+    type: 'accounts',
   },
   {
     href: '/analytics/categories',
     icon: PieChart,
     title: 'Category Breakdown',
-    description: 'Analyze your asset distribution',
+    description: 'Asset distribution & portfolio allocation',
     accent: '🎯',
     type: 'categories',
-  },
-  {
-    href: '/analytics/top-accounts',
-    icon: Landmark,
-    title: 'Top Accounts',
-    description: 'Identify your wealth drivers',
-    accent: '🏆',
-    type: 'accounts',
   },
   {
     href: '/analytics/currency',
     icon: Globe,
     title: 'Currency Exposure',
-    description: 'Global portfolio breakdown',
+    description: 'Multi-currency portfolio breakdown',
     accent: '🌍',
     type: 'currency',
   },
@@ -92,7 +84,7 @@ const analyticsItems: AnalyticsNavItem[] = [
     href: '/analytics/achievements',
     icon: Award,
     title: 'Achievements',
-    description: 'Celebrate your financial wins',
+    description: 'Financial milestones & gamification',
     accent: '🏅',
     type: 'achievements',
   },

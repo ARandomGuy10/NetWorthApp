@@ -18,13 +18,12 @@ export default function AnalyticsLayout() {
         },
       }}>
       <Stack.Screen name="index" options={{title: 'Analytics'}} />
-      <Stack.Screen name="performance" options={{title: 'Performance Summary'}} />
-      <Stack.Screen name="trends" options={{title: 'Growth Trends'}} />
+      <Stack.Screen name="performance" options={{title: 'Performance Overview'}} />
       <Stack.Screen name="monthly-changes" options={{title: 'Monthly Changes'}} />
+      <Stack.Screen name="accounts" options={{title: 'Account Analysis'}} />
       <Stack.Screen name="categories" options={{title: 'Category Breakdown'}} />
-      <Stack.Screen name="top-accounts" options={{title: 'Top Accounts'}} />
-      <Stack.Screen name="achievements" options={{title: 'Achievements'}} />
       <Stack.Screen name="currency" options={{title: 'Currency Exposure'}} />
+      <Stack.Screen name="achievements" options={{title: 'Achievements'}} />
     </Stack>
   );
 }
