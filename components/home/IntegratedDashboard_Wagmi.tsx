@@ -1,6 +1,16 @@
 import React, {useState, useMemo, useCallback} from 'react';
 
-import {View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform, Image, ActivityIndicator} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  Platform,
+  Image,
+  ActivityIndicator,
+  useWindowDimensions, // ✅ ONLY ADDITION: Add this import
+} from 'react-native';
 
 import {useRouter} from 'expo-router';
 
@@ -9,8 +19,8 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {LineChart} from 'react-native-wagmi-charts';
 import {LinearGradient} from 'expo-linear-gradient';
 
-import {useHaptics} from '@/hooks/useHaptics';
 import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
+import {useHaptics} from '@/hooks/useHaptics';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 
@@ -24,10 +34,20 @@ const ranges = [
   {label: 'All', value: 'ALL'},
 ];
 
-const IntegratedDashboard_Wagmi: React.FC = () => {
+interface IntegratedDashboardProps {
+  onPeriodChange?: (period: '1M' | '3M' | '6M' | '12M' | 'ALL') => void;
+  currentPeriod?: '1M' | '3M' | '6M' | '12M' | 'ALL';
+}
+
+const IntegratedDashboard_Wagmi: React.FC<IntegratedDashboardProps> = ({onPeriodChange, currentPeriod}) => {
   const router = useRouter();
   const {theme} = useTheme();
-  const [range, setRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
+  const {height} = useWindowDimensions(); // ✅ ONLY ADDITION: Add missing height
+
+  // ✅ ONLY CHANGE: Use controlled or internal state
+  const [internalRange, setInternalRange] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
+  const range = currentPeriod || internalRange;
+
   const {data, isLoading, error} = useNetWorthHistory({period: range});
   const {impactAsync} = useHaptics();
 
@@ -50,6 +70,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
       currency: 'EUR',
       calculatedAt: '',
     };
+
     if (!data || !data.data || !data.data.length) return empty;
 
     let raw = [];
@@ -80,7 +101,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     // Filter consecutive duplicates
     const filtered = [];
     for (let i = 0; i < raw.length; i++) {
-      if (i === 0 || raw[i].net_worth !== raw[i - 1].net_worth) {
+      if (i === 0 || i == raw.length - 1 || raw[i].net_worth !== raw[i - 1].net_worth) {
         filtered.push(raw[i]);
       }
     }
@@ -113,12 +134,10 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
   const onCurrentIndexChange = useCallback(
     (index: number) => {
       impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
       // Show tooltip with current data point
       if (prepared.chartData[index]) {
         const dataPoint = prepared.chartData[index];
         const date = new Date(dataPoint.timestamp);
-
         setTooltipData({
           visible: true,
           value: dataPoint.value,
@@ -130,7 +149,6 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
           x: 50, // You can calculate actual position if needed
           y: 50,
         });
-
         // Hide tooltip after 3 seconds
         setTimeout(() => {
           setTooltipData(null);
@@ -140,8 +158,23 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
     [impactAsync, prepared.chartData]
   );
 
+  // ✅ ONLY ADDITION: Period change handler
+  const handlePeriodChange = useCallback(
+    (newRange: '1M' | '3M' | '6M' | '12M' | 'ALL') => {
+      impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (onPeriodChange) {
+        onPeriodChange(newRange);
+      } else {
+        setInternalRange(newRange);
+      }
+    },
+    [onPeriodChange, impactAsync]
+  );
+
   const lineColor = theme.colors.asset || theme.colors.primary;
   const liabilityColor = theme.colors.liability || theme.colors.error;
+  const chartHeight = Math.max(180, Math.min(250, height * 0.25)); // ✅ ONLY ADDITION: Add chart height calc
+
   const styles = getStyles(theme);
 
   return (
@@ -154,7 +187,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
         end={{x: 0, y: 1}}>
         {/* Centered Net Worth Display */}
         <View style={styles.netWorthContainer}>
-          <Text style={[styles.netWorthText, {color: theme.colors.text.primary}]}>
+          <Text style={styles.netWorthText} numberOfLines={1} adjustsFontSizeToFit>
             {formatSmartNumber(prepared.latest, prepared.currency)}
           </Text>
 
@@ -173,14 +206,14 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
         </View>
 
         {/* Enhanced Chart Container */}
-        <View style={styles.improvedChartContainer}>
+        <View style={[styles.improvedChartContainer, {height: chartHeight}]}>
           {isLoading ? (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
           ) : error || prepared.chartData.length === 0 ? (
             <View style={styles.loadingOverlay}>
-              <Text style={[styles.placeholderText, {color: theme.colors.text.primary}]}>
+              <Text style={[styles.placeholderText, {color: theme.colors.text.secondary}]}>
                 {error ? 'Unable to load data' : 'Add assets to start tracking'}
               </Text>
             </View>
@@ -190,7 +223,7 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
               onCurrentIndexChange={onCurrentIndexChange}
               key={`${range}-${prepared.chartData.length}-${prepared.latest}-${prepared.calculatedAt}`}>
               <LineChart height={200} width={screenWidth}>
-                <LineChart.Path color={lineColor} width={3} />
+                <LineChart.Path color={lineColor} width={theme.responsive.isSmallScreen ? 2 : 3} />
                 <LineChart.CursorCrosshair
                   color={lineColor}
                   onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)}
@@ -223,10 +256,10 @@ const IntegratedDashboard_Wagmi: React.FC = () => {
           {ranges.map(option => (
             <TouchableOpacity
               key={option.value}
-              style={[styles.enhancedPeriodButton, option.value === range && styles.selectedPeriodButton]}
+              style={[styles.enhancedPeriodButton, range === option.value && styles.selectedPeriodButton]}
               onPress={() => {
                 impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                setRange(option.value as any);
+                handlePeriodChange(option.value as any);
               }}>
               <Text
                 style={[
@@ -257,10 +290,11 @@ const getStyles = (theme: any) =>
       marginVertical: 20,
     },
     netWorthText: {
-      fontSize: 30,
+      fontSize: theme.fontSizes?.display || 30, // ✅ ONLY CHANGE: Responsive with fallback
       fontWeight: '700',
       letterSpacing: -0.8,
-      marginBottom: 8,
+      marginBottom: theme.spacing?.sm || 8, // ✅ ONLY CHANGE: Responsive with fallback
+      color: theme.colors.text.primary,
     },
     netWorthChangeContainer: {
       paddingHorizontal: 16,
@@ -268,7 +302,7 @@ const getStyles = (theme: any) =>
       borderRadius: 20,
     },
     netWorthChangeText: {
-      fontSize: 12,
+      fontSize: theme.fontSizes?.sm || 12, // ✅ ONLY CHANGE: Responsive with fallback
       fontWeight: '600',
     },
     customTooltip: {
@@ -320,7 +354,7 @@ const getStyles = (theme: any) =>
     },
     periodButtonText: {
       fontWeight: '600',
-      fontSize: 14,
+      fontSize: theme.fontSizes?.sm || 14, // ✅ ONLY CHANGE: Responsive with fallback
       letterSpacing: -0.2,
     },
     placeholderText: {
@@ -349,7 +383,6 @@ const getStyles = (theme: any) =>
       padding: 4,
       marginTop: 16,
     },
-
     enhancedPeriodButton: {
       flex: 1,
       paddingVertical: 10,
