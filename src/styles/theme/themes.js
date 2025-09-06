@@ -10,6 +10,40 @@ const createTheme = (colors, name) => ({
     xxl: 24,
     xxxl: 32,
   },
+  fontSizes: {
+    xs: 10,
+    sm: 12,
+    md: 14,
+    lg: 16,
+    xl: 18,
+    xxl: 20,
+    xxxl: 24,
+    // Semantic font sizes
+    caption: 12,
+    body: 14,
+    subtitle: 16,
+    title: 18,
+    heading: 24,
+    display: 32,
+  },
+  // ✅ NEW: Add responsive scaling factors
+  responsive: {
+    small: {
+      // < 375px (iPhone SE, small phones)
+      fontScale: 0.9,
+      spacingScale: 0.95,
+    },
+    medium: {
+      // 375px - 414px (iPhone 11, most phones)
+      fontScale: 1.0,
+      spacingScale: 1.0,
+    },
+    large: {
+      // > 414px (iPhone Plus, large phones, tablets)
+      fontScale: 1.1,
+      spacingScale: 1.05,
+    },
+  },
   borderRadius: {
     sm: 8,
     md: 12,
