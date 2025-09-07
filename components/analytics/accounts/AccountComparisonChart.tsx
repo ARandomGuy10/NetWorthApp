@@ -1,6 +1,7 @@
-// components/analytics/accounts/AccountComparisonChart.tsx
 import React, {useState, useMemo, useCallback, useEffect} from 'react';
+
 import {
+  Platform,
   View,
   Text,
   TouchableOpacity,
@@ -12,19 +13,19 @@ import {
   Pressable, // Keep Pressable for modal overlay
   FlatList,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {LineChart} from 'react-native-wagmi-charts';
-import {LinearGradient} from 'expo-linear-gradient';
 import {Ionicons} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+import type {Period, AccountSnapshot} from '@/lib/supabase';
 import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
+import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
 import {useHaptics} from '@/hooks/useHaptics';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
-import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
+import {useProfile} from '@/hooks/useProfile';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
-import type {Period, AccountSnapshot} from '@/lib/supabase';
-import {Platform} from 'react-native'; // Import Platform separately
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -69,23 +70,36 @@ const getAccountIcon = (category: string): keyof typeof Ionicons.glyphMap => {
   return iconMap[category] || 'ellipse-outline';
 };
 
+// ✅ Define a more robust, theme-aware color palette function
+const getComparisonColors = (theme: any) => {
+  return [
+    '#3498db', // Bright Blue
+    '#e74c3c', // Alizarin Red
+    '#2ecc71', // Emerald Green
+    '#f1c40f', // Sunflower Yellow
+    '#9b59b6', // Amethyst Purple
+    '#e67e22', // Carrot Orange
+  ];
+};
+
 const AccountComparisonChart: React.FC = () => {
   const {theme} = useTheme();
+  const lineColors = useMemo(() => getComparisonColors(theme), [theme]);
   const {height} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const {impactAsync} = useHaptics();
+  const {data: profile} = useProfile();
 
   // State
   const [period, setPeriod] = useState<Period>('3M');
-  const [selectedAccountId, setSelectedAccountId] = useState<string>('');
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [tooltipData, setTooltipData] = useState<{
-    visible: boolean;
-    value: number;
+    // Updated tooltip state
     date: string;
-    x: number;
-    y: number;
+    values: {name: string; value: number; color: string; currency: string}[];
   } | null>(null);
+  const tooltipTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Data
   const {data: rawAccounts} = useAccountsWithBalances();
@@ -101,8 +115,7 @@ const AccountComparisonChart: React.FC = () => {
   // Process accounts data
   const accounts = useMemo(() => {
     if (!rawAccounts) return [];
-    const flatAccounts = Array.isArray(rawAccounts[0]) ? rawAccounts.flat() : rawAccounts;
-    return flatAccounts as SingleAccount[];
+    return (Array.isArray(rawAccounts) ? rawAccounts.flat() : []) as SingleAccount[];
   }, [rawAccounts]);
 
   // Available accounts for selection
@@ -122,73 +135,98 @@ const AccountComparisonChart: React.FC = () => {
 
   // Auto-select top account on first load
   useEffect(() => {
-    if (availableAccounts.length > 0 && !selectedAccountId) {
-      setSelectedAccountId(availableAccounts[0].id);
+    if (availableAccounts.length > 0 && selectedAccountIds.length === 0) {
+      setSelectedAccountIds([availableAccounts[0].id]);
     }
-  }, [availableAccounts, selectedAccountId]);
+  }, [availableAccounts, selectedAccountIds]);
 
   // Clear tooltip when period changes - FIX #1
   useEffect(() => {
     setTooltipData(null);
   }, [period]);
 
-  // Get selected account info
-  const selectedAccount = availableAccounts.find(acc => acc.id === selectedAccountId);
+  // Get selected account info (for now, we'll use the first selected for the header)
+  const selectedAccounts = useMemo(
+    () =>
+      selectedAccountIds
+        .map(id => availableAccounts.find(acc => acc.id === id))
+        .filter(Boolean) as typeof availableAccounts,
+    [selectedAccountIds, availableAccounts]
+  );
 
   // Calculate performance for selected account - like IntegratedDashboard_Wagmi
   const prepared = useMemo(() => {
-    const empty = {
-      chartData: [],
-      latest: 0,
-      first: 0,
-      delta: 0,
-      pct: 0,
-      currency: selectedAccount?.currency || 'EUR',
-    };
-
-    if (!historyData || !historyData.metadata?.includeAccountBreakdown || !historyData.data || !selectedAccountId) {
-      return empty;
+    if (
+      !historyData ||
+      !historyData.metadata?.includeAccountBreakdown ||
+      !historyData.data ||
+      selectedAccountIds.length === 0
+    ) {
+      return {
+        yRange: {min: 0, max: 0},
+        chartDataSets: [],
+        latest: 0,
+        first: 0,
+        delta: 0,
+        pct: 0,
+        currency: profile?.preferred_currency || 'EUR',
+      };
     }
 
-    // 1. Extract the raw series for the selected account
-    const accountHistory: {timestamp: number; value: number}[] = [];
-    for (const dataPoint of historyData.data) {
-      const accountSnap = dataPoint.accounts.find((snap: AccountSnapshot) => snap.account_id === selectedAccountId);
-      if (accountSnap) {
-        accountHistory.push({
-          timestamp: new Date(dataPoint.date).getTime(),
-          value: accountSnap.balance,
-        });
+    // 1. Create a separate chart dataset for each selected account
+    const chartDataSets = selectedAccountIds.map(id => {
+      const accountHistory: {timestamp: number; value: number}[] = [];
+      historyData.data.forEach(dataPoint => {
+        const accountSnap = dataPoint.accounts.find(snap => snap.account_id === id);
+        if (accountSnap) {
+          accountHistory.push({
+            timestamp: new Date(dataPoint.date).getTime(),
+            value: accountSnap.balance,
+          });
+        }
+      });
+      return {
+        id,
+        data: accountHistory,
+      };
+    });
+
+    // 1.5 Calculate the min and max range across ALL datasets for uniform scaling
+    let yMin = Infinity;
+    let yMax = -Infinity;
+    chartDataSets.forEach(dataSet => {
+      dataSet.data.forEach(point => {
+        if (point.value < yMin) yMin = point.value;
+        if (point.value > yMax) yMax = point.value;
+      });
+    });
+
+    const yRange = {min: yMin, max: yMax};
+
+    // 2. Calculate aggregate performance stats (based on the sum of selected accounts)
+    let totalLatest = 0;
+    let totalFirst = 0;
+
+    chartDataSets.forEach(dataSet => {
+      if (dataSet.data.length > 0) {
+        totalFirst += dataSet.data[0].value;
+        totalLatest += dataSet.data[dataSet.data.length - 1].value;
       }
-    }
+    });
 
-    if (accountHistory.length === 0) return empty;
-
-    // Filter consecutive duplicates like IntegratedDashboard_Wagmi
-    const filtered = [];
-    for (let i = 0; i < accountHistory.length; i++) {
-      if (i === 0 || i === accountHistory.length - 1 || accountHistory[i].value !== accountHistory[i - 1].value) {
-        filtered.push(accountHistory[i]);
-      }
-    }
-
-    if (filtered.length === 0) return empty;
-
-    const values = filtered.map(d => d.value);
-    const latest = values[values.length - 1];
-    const first = values[0];
-    const delta = latest - first;
-    const pct = first !== 0 ? (delta / Math.abs(first)) * 100 : 0;
+    const totalDelta = totalLatest - totalFirst;
+    const totalPct = totalFirst !== 0 ? (totalDelta / Math.abs(totalFirst)) * 100 : 0;
 
     return {
-      chartData: filtered,
-      latest,
-      first,
-      delta,
-      pct,
-      currency: selectedAccount?.currency || 'EUR',
+      yRange,
+      chartDataSets,
+      latest: totalLatest,
+      first: totalFirst,
+      delta: totalDelta,
+      pct: totalPct,
+      currency: profile?.preferred_currency || 'EUR',
     };
-  }, [historyData, selectedAccountId, selectedAccount]);
+  }, [historyData, selectedAccountIds, profile?.preferred_currency]);
 
   // Period change handler
   const handlePeriodChange = useCallback(
@@ -200,11 +238,20 @@ const AccountComparisonChart: React.FC = () => {
   );
 
   // Account selection
-  const selectAccount = useCallback(
+  const toggleAccountSelection = useCallback(
     (accountId: string) => {
-      setSelectedAccountId(accountId);
-      setShowAccountPicker(false);
       impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedAccountIds(prevSelected => {
+        const isSelected = prevSelected.includes(accountId);
+        if (isSelected) {
+          // Deselect if already selected
+          return prevSelected.filter(id => id !== accountId);
+        } else if (prevSelected.length < 3) {
+          // Select if not selected and under the limit
+          return [...prevSelected, accountId];
+        }
+        return prevSelected; // Do nothing if at the limit of 3
+      });
     },
     [impactAsync]
   );
@@ -213,51 +260,60 @@ const AccountComparisonChart: React.FC = () => {
   const onCurrentIndexChange = useCallback(
     (index: number) => {
       impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      // ✅ Clear any existing timeout to prevent premature hiding
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+        tooltipTimeoutRef.current = null;
+      }
 
-      if (prepared.chartData[index]) {
-        const dataPoint = prepared.chartData[index];
+      if (index === -1 || prepared.chartDataSets.length === 0) {
+        setTooltipData(null);
+        return;
+      }
+
+      // Since all datasets are aligned by date, we can use the same index for all.
+      // We just need one data point to get the master timestamp.
+      const dataPoint = prepared.chartDataSets[0]?.data[index];
+
+      if (dataPoint) {
         const date = new Date(dataPoint.timestamp);
+        const values = prepared.chartDataSets.map((dataSet, i) => {
+          const account = availableAccounts.find(a => a.id === dataSet.id);
+          const point = dataSet.data[index];
+
+          return {
+            name: account?.name || 'Unknown',
+            value: point?.value ?? 0,
+            color: lineColors[i % lineColors.length],
+            // The history data is already converted to the user's preferred currency.
+            // Use the currency from the main `prepared` object for all values.
+            currency: prepared.currency,
+          };
+        });
 
         setTooltipData({
-          visible: true,
-          value: dataPoint.value,
-          date: date.toLocaleDateString('en', {
-            weekday: 'short',
-            month: 'short',
-            day: 'numeric',
-          }),
-          x: 0, // Add x, even if unused
-          y: 0, // Add y, even if unused
+          date: date.toLocaleDateString('en', {weekday: 'short', month: 'short', day: 'numeric'}),
+          values,
         });
 
         // Hide tooltip after 3 seconds
-        setTimeout(() => {
+        tooltipTimeoutRef.current = setTimeout(() => {
           setTooltipData(null);
         }, 3000);
       }
     },
-    [impactAsync, prepared.chartData]
+    [impactAsync, prepared, availableAccounts, lineColors, selectedAccountIds]
   );
 
   const chartHeight = Math.max(180, Math.min(250, height * 0.25));
-  const styles = getStyles(theme);
+  const styles = getStyles(theme, insets);
 
-  // Determine line color based on account type
-  const getLineColor = () => {
-    if (!selectedAccount) return theme.colors.asset || theme.colors.primary;
-
-    if (selectedAccount.type === 'asset') {
-      return theme.colors.asset || theme.colors.primary;
-    } else {
-      return theme.colors.liability || theme.colors.error;
-    }
-  };
-
-  const lineColor = getLineColor();
+  // The color for the primary line and summary elements is the first from our palette
+  const lineColor = lineColors[0];
   const liabilityColor = theme.colors.liability || theme.colors.error;
 
   return (
-    <GestureHandlerRootView>
+    <View>
       <LinearGradient
         colors={getGradientColors(theme, 'header')}
         locations={[0, 0.5, 1]} // Keep gradient
@@ -265,26 +321,31 @@ const AccountComparisonChart: React.FC = () => {
         end={{x: 0, y: 1}}
         style={styles.gradientContainer}>
         {/* Header section with padding to avoid the back button */}
-        {selectedAccount ? (
-          <View style={[styles.headerContainer, {paddingTop: insets.top + 10}]}>
-            <TouchableOpacity style={styles.accountSelector} onPress={() => setShowAccountPicker(true)} activeOpacity={0.8}>
-              <View style={styles.accountIcon}>
-                <Ionicons
-                  name={getAccountIcon(selectedAccount.category)}
-                  size={22}
-                  color={selectedAccount.type === 'asset' ? theme.colors.asset : theme.colors.liability}
-                />
-              </View>
-              <View style={styles.accountInfo}>
-                <Text style={styles.accountSelectorTitle}>Selected Account</Text>
-                <Text style={styles.accountName} numberOfLines={1}>
-                  {selectedAccount.name}
-                </Text>
-              </View>
-              <Ionicons name="chevron-down" size={20} color={theme.colors.text.onGradient} />
-            </TouchableOpacity>
-          </View>
-        ) : <View style={{paddingTop: insets.top, height: 60 + theme.spacing.lg}} />}
+        <View style={[styles.headerContainer, {paddingTop: insets.top + 10}]}>
+          <TouchableOpacity
+            style={styles.accountSelector}
+            onPress={() => setShowAccountPicker(true)}
+            activeOpacity={0.8}>
+            <View style={styles.accountInfo}>
+              <Text style={styles.accountSelectorTitle}>Comparing Accounts</Text>
+              {selectedAccounts.length > 0 ? (
+                <View style={styles.selectedAccountsContainer}>
+                  {selectedAccounts.map((account, index) => (
+                    <View key={account.id} style={styles.selectedAccountPill}>
+                      <View style={[styles.colorDot, {backgroundColor: lineColors[index]}]} />
+                      <Text style={styles.accountName} numberOfLines={1}>
+                        {account.name}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.accountName}>Select accounts...</Text>
+              )}
+            </View>
+            <Ionicons name="chevron-down" size={20} color={theme.colors.text.onGradient} />
+          </TouchableOpacity>
+        </View>
 
         {/* Net Worth Display - exactly like IntegratedDashboard_Wagmi */}
         <View style={styles.netWorthContainer}>
@@ -293,11 +354,15 @@ const AccountComparisonChart: React.FC = () => {
           <LinearGradient
             colors={
               prepared.delta >= 0
-                ? [`${lineColor}25`, `${lineColor}15`]
+                ? [`${theme.colors.asset}25`, `${theme.colors.asset}15`]
                 : [`${liabilityColor}25`, `${liabilityColor}15`]
             }
-            style={styles.netWorthChangeContainer}>
-            <Text style={[styles.netWorthChangeText, {color: prepared.delta >= 0 ? lineColor : liabilityColor}]}>
+            style={styles.deltaContainer}>
+            <Text
+              style={[
+                styles.netWorthChangeText,
+                {color: prepared.delta >= 0 ? theme.colors.asset || theme.colors.primary : liabilityColor},
+              ]}>
               {prepared.delta >= 0 ? '+' : ''}
               {formatSmartNumber(prepared.delta, prepared.currency)} ({prepared.pct.toFixed(1)}%)
             </Text>
@@ -313,30 +378,48 @@ const AccountComparisonChart: React.FC = () => {
                 color={theme.colors.primary} // Use lineColor to match chart
               />
             </View>
-          ) : error || prepared.chartData.length === 0 ? (
+          ) : error || prepared.chartDataSets.length === 0 ? (
             <View style={styles.loadingOverlay}>
               <Text style={styles.placeholderText}>
-                {!selectedAccount
+                {!selectedAccounts
                   ? 'Select an account to view its performance'
                   : 'No data available for selected account'}
               </Text>
             </View>
           ) : (
-            <GestureHandlerRootView style={{flex: 1}}>
-              <LineChart.Provider
-                data={prepared.chartData}
-                onCurrentIndexChange={onCurrentIndexChange}
-                key={`${selectedAccountId}-${period}`}>
-                <LineChart height={200}>
-                  <LineChart.Path color={lineColor} width={theme.responsive.isSmallScreen ? 2 : 3} />
-                  <LineChart.CursorCrosshair
-                    color={lineColor}
-                    onActivated={() => impactAsync(Haptics.ImpactFeedbackStyle.Light)}
-                    onEnded={() => {}}
-                  />
-                </LineChart>
-              </LineChart.Provider>
-            </GestureHandlerRootView>
+            <View style={{flex: 1}}>
+              {/* ✅ FIX: Render non-interactive background lines first */}
+              {prepared.chartDataSets.slice(1).map((dataSet, index) => (
+                <View key={dataSet.id} style={StyleSheet.absoluteFill}>
+                  <LineChart.Provider data={dataSet.data} yRange={prepared.yRange}>
+                    <LineChart height={chartHeight}>
+                      <LineChart.Path
+                        color={lineColors[(index + 1) % lineColors.length]}
+                        width={theme.responsive.isSmallScreen ? 2 : 3}
+                      />
+                    </LineChart>
+                  </LineChart.Provider>
+                </View>
+              ))}
+              {/* ✅ FIX: Render the primary, interactive chart last so it's on top */}
+              {prepared.chartDataSets.length > 0 && (
+                <View style={StyleSheet.absoluteFill}>
+                  <LineChart.Provider
+                    data={prepared.chartDataSets[0].data}
+                    yRange={prepared.yRange}
+                    onCurrentIndexChange={onCurrentIndexChange}
+                    // ✅ KEY FIX: Force re-render when data changes to prevent stale tooltip callbacks.
+                    // A unique key ensures the provider and its children re-mount with fresh props.
+                    key={`${period}-${selectedAccountIds.join('-')}`}>
+                    <LineChart height={chartHeight}>
+                      <LineChart.Path color={lineColor} width={theme.responsive.isSmallScreen ? 2 : 3} />
+                      {selectedAccountIds.length === 1 && <LineChart.Gradient color={lineColor} />}
+                      <LineChart.CursorCrosshair color={lineColor} onEnded={() => {}} />
+                    </LineChart>
+                  </LineChart.Provider>
+                </View>
+              )}
+            </View>
           )}
           {/* Custom Tooltip - Safe Implementation */}
           {tooltipData && (
@@ -348,10 +431,16 @@ const AccountComparisonChart: React.FC = () => {
                   borderColor: lineColor,
                 },
               ]}>
-              <Text style={[styles.tooltipValue, {color: theme.colors.text.primary}]}>
-                {formatSmartNumber(tooltipData.value, prepared.currency)}
-              </Text>
               <Text style={[styles.tooltipDate, {color: theme.colors.text.secondary}]}>{tooltipData.date}</Text>
+              {tooltipData.values.map(item => (
+                <View key={item.name} style={styles.tooltipRow}>
+                  <View style={[styles.tooltipColorDot, {backgroundColor: item.color}]} />
+                  <Text style={styles.tooltipName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.tooltipValue}>{formatSmartNumber(item.value, item.currency)}</Text>
+                </View>
+              ))}
               <View style={[styles.tooltipArrow, {borderTopColor: theme.colors.background.secondary}]} />
             </View>
           )}
@@ -374,37 +463,49 @@ const AccountComparisonChart: React.FC = () => {
         {/* Account Picker Modal */}
         <Modal visible={showAccountPicker} transparent animationType="slide">
           <Pressable style={styles.modalOverlay} onPress={() => setShowAccountPicker(false)}>
-            <View style={styles.modalContent}>
+            <Pressable style={styles.modalContent}>
               <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Account</Text>
+                <Text style={styles.modalTitle}>Select Accounts ({selectedAccountIds.length}/3)</Text>
                 <TouchableOpacity onPress={() => setShowAccountPicker(false)} hitSlop={8}>
                   <Ionicons name="close" size={24} color={theme.colors.text.primary} />
                 </TouchableOpacity>
               </View>
 
               <FlatList
+                style={{maxHeight: height * 0.6}}
                 data={availableAccounts}
                 keyExtractor={item => item.id}
-                renderItem={({item}) => (
-                  <TouchableOpacity style={[styles.accountOption]} onPress={() => selectAccount(item.id)}>
-                    <View style={styles.accountOptionIcon}>
-                      <Ionicons
-                        name={getAccountIcon(item.category)}
-                        size={22}
-                        color={item.type === 'asset' ? theme.colors.asset : theme.colors.liability}
-                      />
-                    </View>
-                    <View style={{flex: 1}}>
-                      <Text style={styles.accountOptionName}>{item.name}</Text>
-                      <Text style={styles.accountOptionType}>
-                        {item.type} • {formatSmartNumber(item.balance, item.currency)}
-                      </Text>
-                    </View>
-                    {item.id === selectedAccountId && (
-                      <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />
-                    )}
-                  </TouchableOpacity>
-                )}
+                renderItem={({item}) => {
+                  const isSelected = selectedAccountIds.includes(item.id);
+                  const isDisabled = !isSelected && selectedAccountIds.length >= 3;
+                  return (
+                    <TouchableOpacity
+                      style={[styles.accountOption, isDisabled && styles.accountOptionDisabled]}
+                      onPress={() => toggleAccountSelection(item.id)}
+                      disabled={isDisabled}>
+                      <View style={[styles.accountOptionIcon, isSelected && styles.accountOptionIconSelected]}>
+                        <Ionicons
+                          name={getAccountIcon(item.category)}
+                          size={22}
+                          color={
+                            isSelected
+                              ? theme.colors.text.onPrimary
+                              : item.type === 'asset'
+                                ? theme.colors.asset
+                                : theme.colors.liability
+                          }
+                        />
+                      </View>
+                      <View style={{flex: 1}}>
+                        <Text style={styles.accountOptionName}>{item.name}</Text>
+                        <Text style={styles.accountOptionType}>
+                          {item.type} • {formatSmartNumber(item.balance, item.currency)}
+                        </Text>
+                      </View>
+                      {isSelected && <Ionicons name="checkmark-circle" size={24} color={theme.colors.primary} />}
+                    </TouchableOpacity>
+                  );
+                }}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom: insets.bottom}}
                 ItemSeparatorComponent={() => (
@@ -412,15 +513,15 @@ const AccountComparisonChart: React.FC = () => {
                   <View style={[styles.separator, {backgroundColor: theme.colors.border.primary}]} />
                 )}
               />
-            </View>
+            </Pressable>
           </Pressable>
         </Modal>
       </LinearGradient>
-    </GestureHandlerRootView>
+    </View>
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, insets: any) =>
   StyleSheet.create({
     gradientContainer: {
       width: screenWidth,
@@ -433,7 +534,7 @@ const getStyles = (theme: any) =>
       justifyContent: 'flex-end', // Align the selector to the right
       paddingHorizontal: theme.spacing.md, // Use consistent spacing
       alignItems: 'center',
-      marginBottom: theme.spacing.lg, // Add more space below header
+      marginBottom: theme.spacing.md,
     },
     accountSelector: {
       flexDirection: 'row',
@@ -444,15 +545,7 @@ const getStyles = (theme: any) =>
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.2)',
       width: '80%',
-    },
-    accountIcon: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: 'rgba(255,255,255,0.15)',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginRight: theme.spacing.md,
+      minHeight: theme.spacing.xxxl * 2, // Ensure consistent height
     },
     accountInfo: {
       flex: 1,
@@ -467,48 +560,69 @@ const getStyles = (theme: any) =>
       fontSize: theme.fontSizes.subtitle,
       fontWeight: '600',
       color: theme.colors.text.onGradient,
+      flexShrink: 1, // Allow text to shrink
+    },
+    selectedAccountsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap', // Allow pills to wrap
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+    },
+    selectedAccountPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      borderRadius: theme.borderRadius.sm,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+    },
+    colorDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginRight: theme.spacing.sm,
     },
 
     // Net worth display - exactly like IntegratedDashboard_Wagmi
     netWorthContainer: {
       alignItems: 'center',
-      marginVertical: 20,
+      marginVertical: theme.spacing.xl,
     },
     netWorthText: {
       fontSize: theme.fontSizes?.display || 30,
       fontWeight: '700',
       letterSpacing: -0.8,
-      marginBottom: theme.spacing?.sm || 8,
+      marginBottom: theme.spacing.sm,
       color: theme.colors.text.primary,
     },
-    netWorthChangeContainer: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      borderRadius: 20,
+    deltaContainer: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
     },
     netWorthChangeText: {
-      fontSize: theme.fontSizes?.sm || 12,
+      fontSize: theme.fontSizes.sm,
       fontWeight: '600',
     },
 
     // Chart container - exactly like IntegratedDashboard_Wagmi
     improvedChartContainer: {
-      marginBottom: 20,
-      paddingHorizontal: 8,
-      borderRadius: 16,
+      marginBottom: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.sm,
+      borderRadius: theme.borderRadius.lg,
       backgroundColor: 'transparent',
-      paddingVertical: 16,
+      paddingVertical: theme.spacing.lg,
     },
     loadingOverlay: {
-      height: 200,
+      ...StyleSheet.absoluteFillObject,
       justifyContent: 'center',
       alignItems: 'center',
     },
     placeholderText: {
-      fontSize: 18,
+      fontSize: theme.fontSizes.title,
       fontWeight: '600',
       textAlign: 'center',
-      marginTop: 20,
+      marginTop: theme.spacing.xl,
       color: theme.colors.text.primary,
     },
 
@@ -537,15 +651,34 @@ const getStyles = (theme: any) =>
       }),
     },
     tooltipValue: {
-      fontSize: 16,
+      fontSize: theme.fontSizes.body,
       fontWeight: '700',
-      marginBottom: 4,
-      textAlign: 'center',
+      color: theme.colors.text.primary,
+      marginLeft: 'auto',
     },
     tooltipDate: {
-      fontSize: 12,
+      fontSize: theme.fontSizes.caption,
       fontWeight: '500',
+      color: theme.colors.text.secondary,
       textAlign: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    tooltipRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: '100%',
+      marginBottom: theme.spacing.xs,
+    },
+    tooltipColorDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      marginRight: theme.spacing.sm,
+    },
+    tooltipName: {
+      fontSize: theme.fontSizes.body,
+      color: theme.colors.text.secondary,
+      flex: 1,
     },
     tooltipArrow: {
       position: 'absolute',
@@ -566,15 +699,15 @@ const getStyles = (theme: any) =>
       flexDirection: 'row',
       backgroundColor: 'transparent',
       borderRadius: 16,
-      padding: 4,
-      marginTop: 16,
+      padding: theme.spacing.xs,
+      marginTop: theme.spacing.lg,
     },
     enhancedPeriodButton: {
       flex: 1,
-      paddingVertical: 10,
-      borderRadius: 12,
+      paddingVertical: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
       alignItems: 'center',
-      marginHorizontal: 2,
+      marginHorizontal: theme.spacing.xs / 2,
     },
     selectedPeriodButton: {
       backgroundColor: theme.colors.primary,
@@ -607,7 +740,6 @@ const getStyles = (theme: any) =>
       backgroundColor: theme.colors.background.card,
       borderTopLeftRadius: theme.borderRadius.xl,
       borderTopRightRadius: theme.borderRadius.xl,
-      maxHeight: '70%',
     },
     modalHeader: {
       flexDirection: 'row',
@@ -641,6 +773,13 @@ const getStyles = (theme: any) =>
       marginRight: theme.spacing.md,
       borderWidth: 1,
       borderColor: theme.colors.border.primary,
+    },
+    accountOptionIconSelected: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+    accountOptionDisabled: {
+      opacity: 0.5,
     },
     accountOptionName: {
       fontSize: theme.fontSizes.subtitle,

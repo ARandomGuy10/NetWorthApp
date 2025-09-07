@@ -8,7 +8,10 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 // Simplified base client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Simplified Database type (fixes the generic issues)
+// -----------------------------------------------------------------------------
+// Database type (public schema) – tables + RPC
+// -----------------------------------------------------------------------------
+
 export type Database = {
   public: {
     Tables: {
@@ -61,6 +64,7 @@ export type Database = {
           has_completed_onboarding?: boolean;
         };
       };
+
       accounts: {
         Row: {
           id: string;
@@ -95,6 +99,7 @@ export type Database = {
           is_archived?: boolean | null;
         };
       };
+
       balance_entries: {
         Row: {
           id: string;
@@ -119,6 +124,7 @@ export type Database = {
         };
       };
     };
+
     Functions: {
       get_accounts_with_balances: {
         Args: {};
@@ -147,11 +153,12 @@ export type Balance = Database['public']['Tables']['balance_entries']['Row'];
 export type BalanceInsert = Database['public']['Tables']['balance_entries']['Insert'];
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
-export type AccountWithBalance = Database['public']['Functions']['get_accounts_with_balances']['Returns'][0];
+export type AccountWithBalance = Database['public']['Functions']['get_accounts_with_balances']['Returns'];
 
-// --- Edge Function v2 Response Types ---
+// -----------------------------------------------------------------------------
+// Analytics and Dashboard interfaces
+// -----------------------------------------------------------------------------
 
-// Analytics-related interfaces from AnalyticsFeature.md and sample responses
 export interface CategoryBreakdown {
   category: string;
   assets: number;
@@ -175,7 +182,6 @@ export interface TopAccount {
   amount: number;
 }
 
-// Main Dashboard Data (from fetch-account-date-and-net-worth-v2)
 export interface DashboardAnalytics {
   asOfDate: string;
   daysSinceLastUpdate: number;
@@ -198,7 +204,10 @@ export interface DashboardData {
   analytics: DashboardAnalytics;
 }
 
-// Net Worth History Insights
+// -----------------------------------------------------------------------------
+// Net worth history: insights and data points
+// -----------------------------------------------------------------------------
+
 export interface PerformanceSummary {
   start: number;
   end: number;
@@ -207,7 +216,7 @@ export interface PerformanceSummary {
 }
 
 export interface MonthlyDelta {
-  month: string;
+  month: string; // e.g., '2025-07'
   delta: number;
   percent: number;
 }
@@ -219,7 +228,7 @@ export interface GrowthStreak {
 
 export interface Trend {
   slope: number;
-  direction: string;
+  direction: string; // 'up' | 'down' | 'flat'
 }
 
 export interface Highs {
@@ -246,24 +255,43 @@ export interface NetWorthHistoryInsights {
   extremes: Extremes;
 }
 
-// Main Net Worth History Data (from get-net-worth-history-edge-function-v2)
+// Period and sampling
 export type Period = '1M' | '3M' | '6M' | '12M' | 'ALL' | 'CUSTOM';
 export type SamplingStrategy = 'daily' | 'weekly' | 'monthly' | 'adaptive';
 
-export interface NetWorthDataPoint {
-  date: string;
-  net_worth: number;
-  total_assets: number;
-  total_liabilities: number;
-}
-
+// Badge
 export interface Badge {
   title: string;
   description: string;
   icon: string;
 }
 
-export interface NetWorthHistoryResponse {
+// -----------------------------------------------------------------------------
+// Account-level breakdown types and discriminated response
+// -----------------------------------------------------------------------------
+
+export interface AccountSnapshot {
+  balance: number;
+  category: string;
+  currency: string;
+  account_id: string;
+  institution: string | null;
+  account_name: string;
+  account_type: 'asset' | 'liability';
+  include_in_net_worth: boolean;
+}
+
+// Single data point type - accounts array is always present
+export interface NetWorthDataPoint {
+  date: string;
+  net_worth: number;
+  total_assets: number;
+  total_liabilities: number;
+  accounts: AccountSnapshot[]; // Always present, empty [] if no breakdown
+}
+
+// Common envelope
+interface NetWorthHistoryBase {
   period: Period;
   startDate: string;
   endDate: string;
@@ -272,7 +300,6 @@ export interface NetWorthHistoryResponse {
   maxDataPoints: number;
   actualDataPoints: number;
   calculatedAt: string;
-  data: NetWorthDataPoint[];
   insights: NetWorthHistoryInsights;
   badges: Badge[];
   performance: {
@@ -291,7 +318,40 @@ export interface NetWorthHistoryResponse {
   note: string;
 }
 
-// Custom interface for account creation with initial balance
+// Simple, single response type
+export interface NetWorthHistoryResponse {
+  period: Period;
+  startDate: string;
+  endDate: string;
+  currency: string;
+  samplingStrategy: SamplingStrategy;
+  maxDataPoints: number;
+  actualDataPoints: number;
+  calculatedAt: string;
+  data: NetWorthDataPoint[]; // Always has accounts array
+  insights: NetWorthHistoryInsights;
+  badges: Badge[];
+  performance: {
+    dbQueryTime: number;
+    rateQueryTime: number;
+    processingTime: number;
+    totalProcessingTime: number;
+    cacheHitRate: boolean;
+    requestId: string;
+  };
+  metadata: {
+    includeAccountBreakdown: boolean;
+    uniqueCurrencies: number;
+    totalAccounts: number;
+  };
+  note: string;
+}
+
+// -----------------------------------------------------------------------------
+// App constants and supporting types
+// -----------------------------------------------------------------------------
+
+// Account creation payload
 export interface CreateAccountData {
   name: string;
   type: 'asset' | 'liability';
@@ -393,7 +453,7 @@ type ColorPalette = {
   success: string;
   warning: string;
   info?: string;
-  gradient?: any; // Keep as any for flexibility with gradient arrays
+  gradient?: any;
 };
 
 export type Theme = {
@@ -402,7 +462,6 @@ export type Theme = {
   spacing: Record<string, number>;
   borderRadius: Record<string, number>;
   shadows: Record<string, any>;
-  // ✅ NEW: Add font size tokens
   fontSizes: {
     xs: number;
     sm: number;
@@ -418,19 +477,9 @@ export type Theme = {
     heading: number;
     display: number;
   };
-  // ✅ NEW: Add responsive scaling
   responsive: {
-    small: {
-      fontScale: number;
-      spacingScale: number;
-    };
-    medium: {
-      fontScale: number;
-      spacingScale: number;
-    };
-    large: {
-      fontScale: number;
-      spacingScale: number;
-    };
+    small: {fontScale: number; spacingScale: number};
+    medium: {fontScale: number; spacingScale: number};
+    large: {fontScale: number; spacingScale: number};
   };
 };
