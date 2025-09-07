@@ -148,7 +148,12 @@ import { Theme } from '@/lib/supabase';
       <View style={styles.header}>
         <TouchableOpacity style={styles.hBtn} onPress={() => {
           impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.back();
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            // Fallback: navigate directly to accounts
+            router.push('/(tabs)/accounts');
+          }
         }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="arrow-back" size={22} color={theme.colors.text.primary} />
         </TouchableOpacity>

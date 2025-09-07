@@ -1,9 +1,11 @@
 // components/analytics/accounts/AccountPerformanceList.tsx
 
 import React, {useMemo, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform} from 'react-native';
+import {View, Text, TouchableOpacity, Pressable, StyleSheet, ScrollView, Platform} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
+import {useRouter} from 'expo-router';
+import * as Haptics from 'expo-haptics';
 
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
@@ -17,7 +19,6 @@ interface AccountPerformanceListProps {
 
 type SortOption = 'performance' | 'alphabetical' | 'balance';
 
-// ✅ Updated interface to handle both original and converted values
 interface AccountPerformance {
   id: string;
   name: string;
@@ -25,9 +26,9 @@ interface AccountPerformance {
   category: string;
   originalCurrency: string;
   displayCurrency: string;
-  currentBalance: number; // converted balance
-  startBalance: number; // converted balance
-  change: number; // converted change
+  currentBalance: number;
+  startBalance: number;
+  change: number;
   changePercent: number;
 }
 
@@ -65,6 +66,7 @@ const getSortLabel = (sortBy: SortOption): string => {
 
 const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period}) => {
   const {theme} = useTheme();
+  const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('performance');
 
   const {data: rawAccounts} = useAccountsWithBalances();
@@ -84,29 +86,20 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
     const performances = accounts
       .filter(acc => acc.include_in_net_worth && !acc.is_archived)
       .map(account => {
-        // ✅ Extract converted balance history (all in same currency)
         const convertedBalanceHistory: number[] = [];
 
         historyData.data.forEach(dataPoint => {
           const accountSnap = dataPoint.accounts.find(snap => snap.account_id === account.account_id);
           if (accountSnap) {
-            // ✅ Use convertedBalance for consistent currency
             convertedBalanceHistory.push(accountSnap.convertedBalance);
           }
         });
 
-        // ✅ Get current and start balances (both converted)
         const currentBalance =
-          convertedBalanceHistory.length > 0
-            ? convertedBalanceHistory[convertedBalanceHistory.length - 1] // Latest converted balance
-            : 0;
+          convertedBalanceHistory.length > 0 ? convertedBalanceHistory[convertedBalanceHistory.length - 1] : 0;
 
-        const startBalance =
-          convertedBalanceHistory.length > 0
-            ? convertedBalanceHistory[0] // First converted balance
-            : currentBalance;
+        const startBalance = convertedBalanceHistory.length > 0 ? convertedBalanceHistory[0] : currentBalance;
 
-        // ✅ Calculate change using consistent currency
         const change = currentBalance - startBalance;
         const changePercent = startBalance !== 0 ? (change / Math.abs(startBalance)) * 100 : 0;
 
@@ -115,16 +108,15 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
           name: account.account_name,
           type: account.account_type,
           category: account.category,
-          originalCurrency: account.currency, // Original account currency
-          displayCurrency: historyData.currency, // User's preferred currency
-          currentBalance, // Converted balance
-          startBalance, // Converted balance
-          change, // Converted change
+          originalCurrency: account.currency,
+          displayCurrency: historyData.currency,
+          currentBalance,
+          startBalance,
+          change,
           changePercent,
         };
       });
 
-    // ✅ Updated sorting to use converted balances
     return performances.sort((a, b) => {
       switch (sortBy) {
         case 'performance':
@@ -132,14 +124,29 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
         case 'alphabetical':
           return a.name.localeCompare(b.name);
         case 'balance':
-          return b.currentBalance - a.currentBalance; // Now using converted balance
+          return b.currentBalance - a.currentBalance;
         default:
           return b.changePercent - a.changePercent;
       }
     });
   }, [rawAccounts, historyData, sortBy]);
 
-  const handleSortChange = () => {
+  // ✅ Enhanced tap handler with haptic feedback
+  const handleAccountTap = async (account: AccountPerformance) => {
+    // Haptic feedback for better UX
+    if (Platform.OS === 'ios') {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    // Navigate to account details
+    router.replace(`/accounts/${account.id}`);
+  };
+
+  const handleSortChange = async () => {
+    if (Platform.OS === 'ios') {
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
     const options: SortOption[] = ['performance', 'alphabetical', 'balance'];
     const currentIndex = options.indexOf(sortBy);
     const nextIndex = (currentIndex + 1) % options.length;
@@ -185,16 +192,25 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
         </View>
       </LinearGradient>
 
-      {/* Enhanced Account List */}
+      {/* ✅ Enhanced Account List with Touch Functionality */}
       <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
         {accountPerformances.map((account, index) => {
           const isTopPerformer = index < 3;
           const isPositiveChange = account.change >= 0;
 
           return (
-            <View
+            <Pressable
               key={account.id}
-              style={[styles.accountItem, index === accountPerformances.length - 1 && styles.lastAccountItem]}>
+              style={({pressed}) => [
+                styles.accountItem,
+                index === accountPerformances.length - 1 && styles.lastAccountItem,
+                pressed && {opacity: 0.8}, // ✅ Press feedback
+              ]}
+              onPress={() => handleAccountTap(account)}
+              android_ripple={{
+                color: theme.colors.interactive.hover,
+                borderless: false,
+              }}>
               {/* Enhanced Rank Badge */}
               <View
                 style={[
@@ -252,7 +268,7 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
                 </View>
               </View>
 
-              {/* ✅ Enhanced Performance Metrics - Now using displayCurrency consistently */}
+              {/* Enhanced Performance Metrics */}
               <View style={styles.performanceContainer}>
                 <Text
                   style={[
@@ -288,7 +304,12 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
                   {formatSmartNumber(account.change, account.displayCurrency)}
                 </Text>
               </View>
-            </View>
+
+              {/* ✅ Subtle Tap Indicator */}
+              <View style={styles.tapIndicator}>
+                <Ionicons name="chevron-forward" size={16} color={theme.colors.text.tertiary} />
+              </View>
+            </Pressable>
           );
         })}
 
@@ -299,7 +320,7 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
   );
 };
 
-// ✅ Keep existing styles - no changes needed
+// ✅ Enhanced Styles with Touch States
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
@@ -360,7 +381,7 @@ const getStyles = (theme: any) =>
     periodText: {
       fontSize: theme.fontSizes.xs,
       fontWeight: '600',
-      color: theme.colors.text.inverse,
+      color: theme.colors.text.onPrimary,
     },
 
     subtitle: {
@@ -391,6 +412,7 @@ const getStyles = (theme: any) =>
       maxHeight: 400,
     },
 
+    // ✅ Enhanced accountItem with better touch states
     accountItem: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -399,6 +421,13 @@ const getStyles = (theme: any) =>
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border.primary,
       backgroundColor: theme.colors.background.card,
+      // ✅ Add subtle hover effect
+      ...Platform.select({
+        web: {
+          cursor: 'pointer',
+          transition: 'all 0.2s ease',
+        },
+      }),
     },
 
     lastAccountItem: {
@@ -522,6 +551,7 @@ const getStyles = (theme: any) =>
     performanceContainer: {
       alignItems: 'flex-end',
       minWidth: 100,
+      marginRight: theme.spacing.sm,
     },
 
     changeAmount: {
@@ -560,6 +590,12 @@ const getStyles = (theme: any) =>
       fontSize: theme.fontSizes.xs,
       color: theme.colors.text.tertiary,
       fontWeight: '500',
+    },
+
+    // ✅ NEW: Tap indicator
+    tapIndicator: {
+      marginLeft: theme.spacing.xs,
+      opacity: 0.6,
     },
 
     bottomSpacing: {
