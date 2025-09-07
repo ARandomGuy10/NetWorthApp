@@ -190,7 +190,7 @@ const AccountComparisonChart: React.FC<AccountComparisonChartProps> = ({period: 
         if (accountSnap) {
           accountHistory.push({
             timestamp: new Date(dataPoint.date).getTime(),
-            value: accountSnap.balance,
+            value: accountSnap.convertedBalance,
           });
         }
       });

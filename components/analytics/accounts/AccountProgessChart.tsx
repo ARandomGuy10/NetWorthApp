@@ -157,7 +157,7 @@ const AccountProgressChart: React.FC = () => {
       if (accountSnap) {
         accountHistory.push({
           timestamp: new Date(dataPoint.date).getTime(),
-          value: accountSnap.balance,
+          value: accountSnap.convertedBalance,
         });
       }
     }

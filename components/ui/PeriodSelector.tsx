@@ -1,10 +1,12 @@
-// components/ui/PeriodSelector.tsx
 import React from 'react';
+
 import {View, TouchableOpacity, Text, StyleSheet, Platform} from 'react-native';
-import {useTheme} from '@/src/styles/theme/ThemeContext';
-import {useHaptics} from '@/hooks/useHaptics';
-import type {Period} from '@/lib/supabase';
+
 import * as Haptics from 'expo-haptics';
+
+import type {Period} from '@/lib/supabase';
+import {useHaptics} from '@/hooks/useHaptics';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 interface PeriodSelectorProps {
   selectedPeriod: Period;

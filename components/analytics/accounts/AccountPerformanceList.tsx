@@ -1,8 +1,10 @@
 // components/analytics/accounts/AccountPerformanceList.tsx
 
 import React, {useMemo, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, ScrollView} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, ScrollView, Platform} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
+
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
@@ -15,15 +17,17 @@ interface AccountPerformanceListProps {
 
 type SortOption = 'performance' | 'alphabetical' | 'balance';
 
+// ✅ Updated interface to handle both original and converted values
 interface AccountPerformance {
   id: string;
   name: string;
   type: 'asset' | 'liability';
   category: string;
-  currency: string;
-  currentBalance: number;
-  startBalance: number;
-  change: number;
+  originalCurrency: string;
+  displayCurrency: string;
+  currentBalance: number; // converted balance
+  startBalance: number; // converted balance
+  change: number; // converted change
   changePercent: number;
 }
 
@@ -41,8 +45,22 @@ const getAccountIcon = (category: string): keyof typeof Ionicons.glyphMap => {
     Mortgage: 'home',
     'Auto Loan': 'car-sport',
     'Student Loan': 'school-outline',
+    Brokerage: 'stats-chart-outline',
   };
   return iconMap[category] || 'ellipse-outline';
+};
+
+const getSortLabel = (sortBy: SortOption): string => {
+  switch (sortBy) {
+    case 'performance':
+      return 'Performance';
+    case 'alphabetical':
+      return 'A-Z';
+    case 'balance':
+      return 'Balance';
+    default:
+      return 'Performance';
+  }
 };
 
 const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period}) => {
@@ -55,26 +73,40 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
     includeAccountBreakdown: true,
   });
 
-  // Process accounts with performance metrics
+  // ✅ Updated logic to use convertedBalance for consistent currency calculations
   const accountPerformances = useMemo((): AccountPerformance[] => {
     if (!rawAccounts || !historyData?.data || historyData.data.length === 0) {
       return [];
     }
 
     const accounts = Array.isArray(rawAccounts) ? rawAccounts.flat() : [];
+
     const performances = accounts
       .filter(acc => acc.include_in_net_worth && !acc.is_archived)
       .map(account => {
-        const accountHistory: number[] = [];
+        // ✅ Extract converted balance history (all in same currency)
+        const convertedBalanceHistory: number[] = [];
+
         historyData.data.forEach(dataPoint => {
           const accountSnap = dataPoint.accounts.find(snap => snap.account_id === account.account_id);
           if (accountSnap) {
-            accountHistory.push(accountSnap.balance);
+            // ✅ Use convertedBalance for consistent currency
+            convertedBalanceHistory.push(accountSnap.convertedBalance);
           }
         });
 
-        const currentBalance = account.latest_balance || 0;
-        const startBalance = accountHistory.length > 0 ? accountHistory[0] : currentBalance;
+        // ✅ Get current and start balances (both converted)
+        const currentBalance =
+          convertedBalanceHistory.length > 0
+            ? convertedBalanceHistory[convertedBalanceHistory.length - 1] // Latest converted balance
+            : 0;
+
+        const startBalance =
+          convertedBalanceHistory.length > 0
+            ? convertedBalanceHistory[0] // First converted balance
+            : currentBalance;
+
+        // ✅ Calculate change using consistent currency
         const change = currentBalance - startBalance;
         const changePercent = startBalance !== 0 ? (change / Math.abs(startBalance)) * 100 : 0;
 
@@ -83,15 +115,16 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
           name: account.account_name,
           type: account.account_type,
           category: account.category,
-          currency: account.currency,
-          currentBalance,
-          startBalance,
-          change,
+          originalCurrency: account.currency, // Original account currency
+          displayCurrency: historyData.currency, // User's preferred currency
+          currentBalance, // Converted balance
+          startBalance, // Converted balance
+          change, // Converted change
           changePercent,
         };
       });
 
-    // Apply sorting
+    // ✅ Updated sorting to use converted balances
     return performances.sort((a, b) => {
       switch (sortBy) {
         case 'performance':
@@ -99,7 +132,7 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
         case 'alphabetical':
           return a.name.localeCompare(b.name);
         case 'balance':
-          return b.currentBalance - a.currentBalance;
+          return b.currentBalance - a.currentBalance; // Now using converted balance
         default:
           return b.changePercent - a.changePercent;
       }
@@ -118,9 +151,8 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Account Performance</Text>
-          <Text style={styles.subtitle}>Loading...</Text>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Analyzing account performance...</Text>
         </View>
       </View>
     );
@@ -128,165 +160,421 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* Enhanced Header */}
+      <LinearGradient
+        colors={theme.colors.gradient?.card || [theme.colors.background.card, theme.colors.background.elevated]}
+        style={styles.header}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}>
         <View style={styles.headerTop}>
-          <Text style={styles.title}>Account Performance</Text>
-          <TouchableOpacity style={styles.sortButton} onPress={handleSortChange}>
-            <Ionicons name="swap-vertical" size={16} color={theme.colors.text.secondary} />
-          </TouchableOpacity>
-        </View>
-        <Text style={styles.subtitle}>
-          {period === 'ALL' ? 'All time' : period} • Sort: {sortBy}
-        </Text>
-      </View>
-
-      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
-        {accountPerformances.map((account, index) => (
-          <View key={account.id} style={styles.accountItem}>
-            {/* Rank Badge */}
-            <View style={[styles.rankBadge, index < 3 && styles.topRankBadge]}>
-              <Text style={[styles.rankText, index < 3 && styles.topRankText]}>{index + 1}</Text>
-            </View>
-
-            {/* Account Icon */}
-            <View style={styles.iconContainer}>
-              <Ionicons name={getAccountIcon(account.category)} size={20} color={theme.colors.text.secondary} />
-            </View>
-
-            {/* Account Info */}
-            <View style={styles.accountInfo}>
-              <Text style={styles.accountName}>{account.name}</Text>
-              <Text style={styles.accountDetails}>{account.category}</Text>
-            </View>
-
-            {/* Performance Metrics */}
-            <View style={styles.performanceContainer}>
-              <Text
-                style={[
-                  styles.changeAmount,
-                  {
-                    color: account.change >= 0 ? theme.colors.asset : theme.colors.liability,
-                  },
-                ]}>
-                {formatSmartNumber(account.currentBalance, account.currency)}
-              </Text>
-              <Text
-                style={[
-                  styles.changePercent,
-                  {
-                    color: account.change >= 0 ? theme.colors.asset : theme.colors.liability,
-                  },
-                ]}>
-                {account.change >= 0 ? '+' : ''}
-                {account.changePercent.toFixed(1)}% ({account.change >= 0 ? '+' : ''}
-                {formatSmartNumber(account.change, account.currency)})
-              </Text>
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>Account Performance</Text>
+            <View style={styles.subtitleRow}>
+              <View style={styles.periodBadge}>
+                <Text style={styles.periodText}>{period === 'ALL' ? 'All Time' : period}</Text>
+              </View>
+              <Text style={styles.subtitle}>• Ranked by {getSortLabel(sortBy).toLowerCase()}</Text>
             </View>
           </View>
-        ))}
+
+          {/* Enhanced Sort Button */}
+          <TouchableOpacity onPress={handleSortChange} style={styles.sortButton} activeOpacity={0.7}>
+            <Ionicons name="swap-vertical" size={16} color={theme.colors.text.secondary} />
+            <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
+          </TouchableOpacity>
+        </View>
+      </LinearGradient>
+
+      {/* Enhanced Account List */}
+      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+        {accountPerformances.map((account, index) => {
+          const isTopPerformer = index < 3;
+          const isPositiveChange = account.change >= 0;
+
+          return (
+            <View
+              key={account.id}
+              style={[styles.accountItem, index === accountPerformances.length - 1 && styles.lastAccountItem]}>
+              {/* Enhanced Rank Badge */}
+              <View
+                style={[
+                  styles.rankBadge,
+                  isTopPerformer && styles.topRankBadge,
+                  index === 0 && styles.goldRankBadge,
+                  index === 1 && styles.silverRankBadge,
+                  index === 2 && styles.bronzeRankBadge,
+                ]}>
+                {index < 3 ? (
+                  <Ionicons
+                    name={index === 0 ? 'trophy' : index === 1 ? 'medal' : 'ribbon'}
+                    size={16}
+                    color={index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : '#CD7F32'}
+                  />
+                ) : (
+                  <Text style={[styles.rankText, isTopPerformer && styles.topRankText]}>{index + 1}</Text>
+                )}
+              </View>
+
+              {/* Enhanced Account Icon */}
+              <View
+                style={[
+                  styles.iconContainer,
+                  isPositiveChange && styles.positiveIconContainer,
+                  !isPositiveChange && styles.negativeIconContainer,
+                ]}>
+                <Ionicons
+                  name={getAccountIcon(account.category)}
+                  size={20}
+                  color={isPositiveChange ? theme.colors.asset : theme.colors.liability}
+                />
+              </View>
+
+              {/* Enhanced Account Info */}
+              <View style={styles.accountInfo}>
+                <Text style={styles.accountName} numberOfLines={1}>
+                  {account.name}
+                </Text>
+                <View style={styles.accountDetailsRow}>
+                  <Text style={styles.accountDetails}>{account.category}</Text>
+                  <View
+                    style={[
+                      styles.accountTypeBadge,
+                      account.type === 'asset' ? styles.assetBadge : styles.liabilityBadge,
+                    ]}>
+                    <Text
+                      style={[
+                        styles.accountTypeText,
+                        account.type === 'asset' ? styles.assetText : styles.liabilityText,
+                      ]}>
+                      {account.type === 'asset' ? 'Asset' : 'Liability'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* ✅ Enhanced Performance Metrics - Now using displayCurrency consistently */}
+              <View style={styles.performanceContainer}>
+                <Text
+                  style={[
+                    styles.changeAmount,
+                    {color: isPositiveChange ? theme.colors.asset : theme.colors.liability},
+                  ]}>
+                  {formatSmartNumber(account.currentBalance, account.displayCurrency)}
+                </Text>
+
+                <View
+                  style={[
+                    styles.changeContainer,
+                    isPositiveChange ? styles.positiveChangeContainer : styles.negativeChangeContainer,
+                  ]}>
+                  <Ionicons
+                    name={isPositiveChange ? 'trending-up' : 'trending-down'}
+                    size={12}
+                    color={isPositiveChange ? theme.colors.asset : theme.colors.liability}
+                    style={styles.changeIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.changePercent,
+                      {color: isPositiveChange ? theme.colors.asset : theme.colors.liability},
+                    ]}>
+                    {isPositiveChange ? '+' : ''}
+                    {account.changePercent.toFixed(1)}%
+                  </Text>
+                </View>
+
+                <Text style={styles.changeValue}>
+                  {isPositiveChange ? '+' : ''}
+                  {formatSmartNumber(account.change, account.displayCurrency)}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+
+        {/* Bottom Spacing */}
+        <View style={styles.bottomSpacing} />
       </ScrollView>
     </View>
   );
 };
 
+// ✅ Keep existing styles - no changes needed
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
       backgroundColor: theme.colors.background.card,
-      borderRadius: theme.borderRadius.lg,
+      borderRadius: theme.borderRadius.xl,
       marginTop: theme.spacing.xl,
       overflow: 'hidden',
-
+      ...Platform.select({
+        ios: {
+          shadowColor: theme.colors.text.primary,
+          shadowOffset: {width: 0, height: 4},
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
     },
+
     header: {
-      padding: theme.spacing.lg,
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border.primary,
     },
+
     headerTop: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: theme.spacing.xs,
+      alignItems: 'flex-start',
     },
+
+    titleSection: {
+      flex: 1,
+    },
+
     title: {
       fontSize: theme.fontSizes.title,
-      fontWeight: '700',
+      fontWeight: '800',
       color: theme.colors.text.primary,
+      marginBottom: theme.spacing.xs,
     },
-    sortButton: {
-      padding: theme.spacing.xs,
-      borderRadius: theme.borderRadius.sm,
-      backgroundColor: theme.colors.background.secondary,
+
+    subtitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
     },
+
+    periodBadge: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs / 2,
+      borderRadius: theme.borderRadius.full,
+      marginRight: theme.spacing.xs,
+    },
+
+    periodText: {
+      fontSize: theme.fontSizes.xs,
+      fontWeight: '600',
+      color: theme.colors.text.inverse,
+    },
+
     subtitle: {
       fontSize: theme.fontSizes.caption,
       color: theme.colors.text.tertiary,
+      fontWeight: '500',
     },
-    listContainer: {
-      maxHeight: 400,
-    },
-    accountItem: {
+
+    sortButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      padding: theme.spacing.md,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border.primary,
-    },
-    rankBadge: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
       backgroundColor: theme.colors.background.secondary,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginRight: theme.spacing.md,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
     },
-    topRankBadge: {
-      backgroundColor: theme.colors.primary,
-    },
-    rankText: {
+
+    sortButtonText: {
       fontSize: theme.fontSizes.caption,
       fontWeight: '600',
       color: theme.colors.text.secondary,
+      marginLeft: theme.spacing.xs,
     },
-    topRankText: {
-      color: theme.colors.text.onPrimary,
+
+    listContainer: {
+      maxHeight: 400,
     },
-    iconContainer: {
-      width: 36,
-      height: 36,
-      borderRadius: 18,
+
+    accountItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.primary,
+      backgroundColor: theme.colors.background.card,
+    },
+
+    lastAccountItem: {
+      borderBottomWidth: 0,
+    },
+
+    rankBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
       backgroundColor: theme.colors.background.secondary,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: theme.spacing.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
     },
+
+    topRankBadge: {
+      backgroundColor: theme.colors.primary,
+      borderColor: theme.colors.primary,
+    },
+
+    goldRankBadge: {
+      backgroundColor: '#FFD70015',
+      borderColor: '#FFD700',
+    },
+
+    silverRankBadge: {
+      backgroundColor: '#C0C0C015',
+      borderColor: '#C0C0C0',
+    },
+
+    bronzeRankBadge: {
+      backgroundColor: '#CD7F3215',
+      borderColor: '#CD7F32',
+    },
+
+    rankText: {
+      fontSize: theme.fontSizes.caption,
+      fontWeight: '700',
+      color: theme.colors.text.secondary,
+    },
+
+    topRankText: {
+      color: theme.colors.text.onPrimary,
+    },
+
+    iconContainer: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: theme.colors.background.secondary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: theme.spacing.md,
+      borderWidth: 2,
+      borderColor: 'transparent',
+    },
+
+    positiveIconContainer: {
+      backgroundColor: `${theme.colors.asset}15`,
+      borderColor: `${theme.colors.asset}30`,
+    },
+
+    negativeIconContainer: {
+      backgroundColor: `${theme.colors.liability}15`,
+      borderColor: `${theme.colors.liability}30`,
+    },
+
     accountInfo: {
       flex: 1,
       marginRight: theme.spacing.md,
     },
+
     accountName: {
       fontSize: theme.fontSizes.subtitle,
-      fontWeight: '600',
+      fontWeight: '700',
       color: theme.colors.text.primary,
-      marginBottom: 2,
+      marginBottom: theme.spacing.xs / 2,
     },
+
+    accountDetailsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+
     accountDetails: {
       fontSize: theme.fontSizes.caption,
       color: theme.colors.text.tertiary,
-    },
-    performanceContainer: {
-      alignItems: 'flex-end',
       marginRight: theme.spacing.sm,
     },
+
+    accountTypeBadge: {
+      paddingHorizontal: theme.spacing.xs,
+      paddingVertical: 2,
+      borderRadius: theme.borderRadius.sm,
+    },
+
+    assetBadge: {
+      backgroundColor: `${theme.colors.asset}20`,
+    },
+
+    liabilityBadge: {
+      backgroundColor: `${theme.colors.liability}20`,
+    },
+
+    accountTypeText: {
+      fontSize: theme.fontSizes.xs,
+      fontWeight: '600',
+    },
+
+    assetText: {
+      color: theme.colors.asset,
+    },
+
+    liabilityText: {
+      color: theme.colors.liability,
+    },
+
+    performanceContainer: {
+      alignItems: 'flex-end',
+      minWidth: 100,
+    },
+
     changeAmount: {
       fontSize: theme.fontSizes.subtitle,
       fontWeight: '700',
-      marginBottom: 2,
+      marginBottom: theme.spacing.xs / 2,
     },
+
+    changeContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.xs,
+      paddingVertical: 2,
+      borderRadius: theme.borderRadius.sm,
+      marginBottom: theme.spacing.xs / 2,
+    },
+
+    positiveChangeContainer: {
+      backgroundColor: `${theme.colors.asset}15`,
+    },
+
+    negativeChangeContainer: {
+      backgroundColor: `${theme.colors.liability}15`,
+    },
+
+    changeIcon: {
+      marginRight: theme.spacing.xs / 2,
+    },
+
     changePercent: {
       fontSize: theme.fontSizes.caption,
+      fontWeight: '700',
+    },
+
+    changeValue: {
+      fontSize: theme.fontSizes.xs,
+      color: theme.colors.text.tertiary,
+      fontWeight: '500',
+    },
+
+    bottomSpacing: {
+      height: theme.spacing.xl,
+    },
+
+    loadingContainer: {
+      padding: theme.spacing.xxxl,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    loadingText: {
+      fontSize: theme.fontSizes.body,
+      color: theme.colors.text.secondary,
       fontWeight: '500',
     },
   });

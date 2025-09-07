@@ -272,8 +272,10 @@ export interface Badge {
 
 export interface AccountSnapshot {
   balance: number;
-  category: string;
   currency: string;
+  convertedBalance: number;
+  convertedCurrency: string;
+  category: string;
   account_id: string;
   institution: string | null;
   account_name: string;

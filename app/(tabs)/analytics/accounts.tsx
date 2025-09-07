@@ -42,12 +42,11 @@ const AccountsAnalyticsScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-     
-    
       <ScrollView
         style={styles.scrollContent}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}>
-        
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}
+        contentContainerStyle={{paddingBottom: insets.bottom + 90}}
+        showsVerticalScrollIndicator={false}>
         {/* Account Comparison Chart - controlled by shared period */}
         <AccountComparisonChart period={selectedPeriod} onPeriodChange={setSelectedPeriod} />
 
@@ -67,7 +66,6 @@ const getStyles = (theme: any, insets: any) =>
     scrollContent: {
       flexGrow: 1,
     },
-    
   });
 
 export default AccountsAnalyticsScreen;
