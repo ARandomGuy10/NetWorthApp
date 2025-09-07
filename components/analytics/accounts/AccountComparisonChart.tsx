@@ -22,6 +22,7 @@ import {LineChart} from 'react-native-wagmi-charts';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
+import PeriodSelector from '@/components/ui/PeriodSelector';
 import type {Period, AccountSnapshot} from '@/lib/supabase';
 import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
 import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
@@ -31,6 +32,10 @@ import {useProfile} from '@/hooks/useProfile';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 const {width: screenWidth} = Dimensions.get('window');
+interface AccountComparisonChartProps {
+  period?: Period; // ✅ Add optional period prop
+  onPeriodChange?: (period: Period) => void; // ✅ Add callback prop
+}
 
 const ranges = [
   {label: '1M', value: '1M'},
@@ -85,7 +90,7 @@ const getComparisonColors = (theme: any) => {
   ];
 };
 
-const AccountComparisonChart: React.FC = () => {
+const AccountComparisonChart: React.FC<AccountComparisonChartProps> = ({period: externalPeriod, onPeriodChange}) => {
   const {theme} = useTheme();
   const lineColors = useMemo(() => getComparisonColors(theme), [theme]);
   const {height} = useWindowDimensions();
@@ -95,7 +100,8 @@ const AccountComparisonChart: React.FC = () => {
   const router = useRouter();
 
   // State
-  const [period, setPeriod] = useState<Period>('3M');
+  const [internalPeriod, setInternalPeriod] = useState<Period>('3M');
+  const period = externalPeriod || internalPeriod;
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [tooltipData, setTooltipData] = useState<{
@@ -240,10 +246,16 @@ const AccountComparisonChart: React.FC = () => {
   // Period change handler
   const handlePeriodChange = useCallback(
     (newPeriod: Period) => {
-      setPeriod(newPeriod);
+      if (externalPeriod && onPeriodChange) {
+        // External control - notify parent
+        onPeriodChange(newPeriod);
+      } else {
+        // Internal control
+        setInternalPeriod(newPeriod);
+      }
       impactAsync(Haptics.ImpactFeedbackStyle.Light);
     },
-    [impactAsync]
+    [externalPeriod, onPeriodChange, impactAsync]
   );
 
   // Account selection
@@ -505,17 +517,8 @@ const AccountComparisonChart: React.FC = () => {
         </View>
 
         {/* Period Selector */}
-        <View style={styles.enhancedPeriodSelector}>
-          {ranges.map(option => (
-            <TouchableOpacity
-              key={option.value}
-              style={[styles.enhancedPeriodButton, period === option.value && styles.selectedPeriodButton]}
-              onPress={() => handlePeriodChange(option.value as Period)}>
-              <Text style={[styles.periodButtonText, period === option.value && {color: theme.colors.text.onPrimary}]}>
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        <View>
+          <PeriodSelector selectedPeriod={period} onPeriodChange={handlePeriodChange}  />
         </View>
 
         {/* Account Picker Modal */}

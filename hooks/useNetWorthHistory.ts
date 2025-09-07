@@ -1,8 +1,10 @@
 import {useQuery} from '@tanstack/react-query';
 import {useUser} from '@clerk/clerk-expo';
-import {useSupabase} from './useSupabase';
-import {useProfile} from './useProfile';
+
 import type {NetWorthHistoryResponse, Period, SamplingStrategy} from '@/lib/supabase';
+
+import {useProfile} from './useProfile';
+import {useSupabase} from './useSupabase';
 
 interface UseNetWorthHistoryOptions {
   period: Period;

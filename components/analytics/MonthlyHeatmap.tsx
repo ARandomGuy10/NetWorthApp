@@ -20,7 +20,7 @@ interface Props {
   monthlyDeltas: MonthlyDelta[];
   extremes?: Extremes;
   currency: string;
-  period?: '3M' | '6M' | '12M' | 'ALL';
+  period?: string;
 }
 
 const APressable = Animated.createAnimatedComponent(Pressable);
