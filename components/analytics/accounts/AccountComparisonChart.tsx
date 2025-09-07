@@ -284,7 +284,7 @@ const AccountComparisonChart: React.FC = () => {
               <Ionicons name="chevron-down" size={20} color={theme.colors.text.onGradient} />
             </TouchableOpacity>
           </View>
-        ) : <View style={{paddingTop: insets.top + 10, height: 100}} />}
+        ) : <View style={{paddingTop: insets.top, height: 60 + theme.spacing.lg}} />}
 
         {/* Net Worth Display - exactly like IntegratedDashboard_Wagmi */}
         <View style={styles.netWorthContainer}>
@@ -432,7 +432,8 @@ const getStyles = (theme: any) =>
       flexDirection: 'row',
       justifyContent: 'flex-end', // Align the selector to the right
       paddingHorizontal: theme.spacing.md, // Use consistent spacing
-      marginBottom: theme.spacing.md,
+      alignItems: 'center',
+      marginBottom: theme.spacing.lg, // Add more space below header
     },
     accountSelector: {
       flexDirection: 'row',
@@ -442,7 +443,7 @@ const getStyles = (theme: any) =>
       padding: theme.spacing.md,
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.2)',
-      width: '80%', // Set width to 80% of its container
+      width: '80%',
     },
     accountIcon: {
       width: 44,

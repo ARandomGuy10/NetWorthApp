@@ -23,7 +23,7 @@ const AccountsAnalyticsScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       {/* Only Back Button - positioned absolutely */}
-      <TouchableOpacity onPress={onBack} style={[styles.backBtn, {top: insets.top + 27}]}>
+      <TouchableOpacity onPress={onBack} style={[styles.backBtn, {top: insets.top + 23}]}>
         <Ionicons name="chevron-back" size={22} color={theme.colors.text.onGradient} />
       </TouchableOpacity>
 
@@ -42,8 +42,8 @@ const getStyles = (theme: any) =>
     backBtn: {
       position: 'absolute',
       left: theme.spacing.md,
-      width: theme.spacing.xl + theme.spacing.lg,
-      height: theme.spacing.xl + theme.spacing.lg,
+      width: theme.spacing.xl + theme.spacing.lg, // 36px
+      height: theme.spacing.xl + theme.spacing.lg, // 36px
       borderRadius: (theme.spacing.xl + theme.spacing.lg) / 2,
       alignItems: 'center',
       justifyContent: 'center',
