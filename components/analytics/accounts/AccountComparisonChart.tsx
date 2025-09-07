@@ -10,12 +10,15 @@ import {
   ActivityIndicator,
   useWindowDimensions,
   Modal,
-  Pressable, // Keep Pressable for modal overlay
+  Pressable,
   FlatList,
 } from 'react-native';
-import * as Haptics from 'expo-haptics'; // Keep Haptics import
-import {LineChart} from 'react-native-wagmi-charts';
+
+import {useRouter} from 'expo-router';
+
+import * as Haptics from 'expo-haptics';
 import {Ionicons} from '@expo/vector-icons';
+import {LineChart} from 'react-native-wagmi-charts';
 import {LinearGradient} from 'expo-linear-gradient';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -70,7 +73,7 @@ const getAccountIcon = (category: string): keyof typeof Ionicons.glyphMap => {
   return iconMap[category] || 'ellipse-outline';
 };
 
-// ✅ Define a more robust, theme-aware color palette function
+// Define a more robust, theme-aware color palette function
 const getComparisonColors = (theme: any) => {
   return [
     '#3498db', // Bright Blue
@@ -89,13 +92,13 @@ const AccountComparisonChart: React.FC = () => {
   const insets = useSafeAreaInsets();
   const {impactAsync} = useHaptics();
   const {data: profile} = useProfile();
+  const router = useRouter();
 
   // State
   const [period, setPeriod] = useState<Period>('3M');
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([]);
   const [showAccountPicker, setShowAccountPicker] = useState(false);
   const [tooltipData, setTooltipData] = useState<{
-    // Updated tooltip state
     date: string;
     values: {name: string; value: number; color: string; currency: string}[];
   } | null>(null);
@@ -129,7 +132,7 @@ const AccountComparisonChart: React.FC = () => {
         type: acc.account_type,
         currency: acc.currency,
         balance: acc.latest_balance || 0,
-        category: acc.category, // Add category for icon
+        category: acc.category,
       }));
   }, [accounts]);
 
@@ -140,12 +143,12 @@ const AccountComparisonChart: React.FC = () => {
     }
   }, [availableAccounts, selectedAccountIds]);
 
-  // Clear tooltip when period changes - FIX #1
+  // Clear tooltip when period changes
   useEffect(() => {
     setTooltipData(null);
   }, [period]);
 
-  // Get selected account info (for now, we'll use the first selected for the header)
+  // Get selected account info
   const selectedAccounts = useMemo(
     () =>
       selectedAccountIds
@@ -154,7 +157,7 @@ const AccountComparisonChart: React.FC = () => {
     [selectedAccountIds, availableAccounts]
   );
 
-  // Calculate performance for selected account - like IntegratedDashboard_Wagmi
+  // Calculate performance for selected account
   const prepared = useMemo(() => {
     if (
       !historyData ||
@@ -173,7 +176,7 @@ const AccountComparisonChart: React.FC = () => {
       };
     }
 
-    // 1. Create a separate chart dataset for each selected account
+    // Create a separate chart dataset for each selected account
     const chartDataSets = selectedAccountIds.map(id => {
       const accountHistory: {timestamp: number; value: number}[] = [];
       historyData.data.forEach(dataPoint => {
@@ -191,7 +194,7 @@ const AccountComparisonChart: React.FC = () => {
       };
     });
 
-    // 1.5 Calculate the min and max range across ALL datasets for uniform scaling
+    // Calculate the min and max range across ALL datasets for uniform scaling
     let yMin = Infinity;
     let yMax = -Infinity;
     chartDataSets.forEach(dataSet => {
@@ -203,7 +206,7 @@ const AccountComparisonChart: React.FC = () => {
 
     const yRange = {min: yMin, max: yMax};
 
-    // 2. Calculate aggregate performance stats (based on the sum of selected accounts)
+    // Calculate aggregate performance stats
     let totalLatest = 0;
     let totalFirst = 0;
 
@@ -228,6 +231,12 @@ const AccountComparisonChart: React.FC = () => {
     };
   }, [historyData, selectedAccountIds, profile?.preferred_currency]);
 
+  // Back button handler
+  const handleBack = useCallback(() => {
+    impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.back();
+  }, [impactAsync, router]);
+
   // Period change handler
   const handlePeriodChange = useCallback(
     (newPeriod: Period) => {
@@ -244,23 +253,29 @@ const AccountComparisonChart: React.FC = () => {
       setSelectedAccountIds(prevSelected => {
         const isSelected = prevSelected.includes(accountId);
         if (isSelected) {
-          // Deselect if already selected
           return prevSelected.filter(id => id !== accountId);
         } else if (prevSelected.length < 3) {
-          // Select if not selected and under the limit
           return [...prevSelected, accountId];
         }
-        return prevSelected; // Do nothing if at the limit of 3
+        return prevSelected;
       });
     },
     [impactAsync]
   );
 
-  // Tooltip handler - exactly like IntegratedDashboard_Wagmi with proper positioning
+  // Remove account function
+  const removeAccount = useCallback(
+    (accountId: string) => {
+      setSelectedAccountIds(prev => prev.filter(id => id !== accountId));
+      impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    [impactAsync]
+  );
+
+  // Tooltip handler
   const onCurrentIndexChange = useCallback(
     (index: number) => {
       impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      // ✅ Clear any existing timeout to prevent premature hiding
       if (tooltipTimeoutRef.current) {
         clearTimeout(tooltipTimeoutRef.current);
         tooltipTimeoutRef.current = null;
@@ -271,8 +286,6 @@ const AccountComparisonChart: React.FC = () => {
         return;
       }
 
-      // Since all datasets are aligned by date, we can use the same index for all.
-      // We just need one data point to get the master timestamp.
       const dataPoint = prepared.chartDataSets[0]?.data[index];
 
       if (dataPoint) {
@@ -285,13 +298,10 @@ const AccountComparisonChart: React.FC = () => {
             name: account?.name || 'Unknown',
             value: point?.value ?? 0,
             color: lineColors[i % lineColors.length],
-            // The history data is already converted to the user's preferred currency.
-            // Use the currency from the main `prepared` object for all values.
             currency: prepared.currency,
           };
         });
 
-        // ✅ FIX: Sort values in descending order (highest first)
         values.sort((a, b) => b.value - a.value);
 
         setTooltipData({
@@ -299,7 +309,6 @@ const AccountComparisonChart: React.FC = () => {
           values,
         });
 
-        // Hide tooltip after 3 seconds
         tooltipTimeoutRef.current = setTimeout(() => {
           setTooltipData(null);
         }, 3000);
@@ -311,7 +320,6 @@ const AccountComparisonChart: React.FC = () => {
   const chartHeight = Math.max(180, Math.min(250, height * 0.25));
   const styles = getStyles(theme, insets);
 
-  // The color for the primary line and summary elements is the first from our palette
   const lineColor = lineColors[0];
   const liabilityColor = theme.colors.liability || theme.colors.error;
 
@@ -319,38 +327,85 @@ const AccountComparisonChart: React.FC = () => {
     <View>
       <LinearGradient
         colors={getGradientColors(theme, 'header')}
-        locations={[0, 0.5, 1]} // Keep gradient
+        locations={[0, 0.5, 1]}
         start={{x: 0, y: 0}}
         end={{x: 0, y: 1}}
         style={styles.gradientContainer}>
-        {/* Header section with padding to avoid the back button */}
-        <View style={[styles.headerContainer, {paddingTop: insets.top + 10}]}>
+        {/* ✅ UNIFIED: Header with Back Button, Title, and Add Account Button */}
+        <View style={[styles.headerSection, {paddingTop: insets.top + theme.spacing.md}]}>
+          {/* Back Button */}
+          <TouchableOpacity style={styles.backButton} hitSlop={8} onPress={handleBack}>
+            <Ionicons name="chevron-back" size={20} color={theme.colors.text.onGradient} />
+          </TouchableOpacity>
+
+          {/* Title */}
+          <View style={styles.titleContainer}>
+            <Text style={styles.sectionTitle}>Account Comparison</Text>
+          </View>
+
+          {/* Add Account Button */}
+          {/* ✅ ALTERNATIVE: Compact Pill Style */}
           <TouchableOpacity
-            style={styles.accountSelector}
+            style={[styles.compactAddButton, selectedAccountIds.length >= 3 && styles.compactAddButtonDisabled]}
             onPress={() => setShowAccountPicker(true)}
-            activeOpacity={0.8}>
-            <View style={styles.accountInfo}>
-              <Text style={styles.accountSelectorTitle}>Comparing Accounts</Text>
-              {selectedAccounts.length > 0 ? (
-                <View style={styles.selectedAccountsContainer}>
-                  {selectedAccounts.map((account, index) => (
-                    <View key={account.id} style={styles.selectedAccountPill}>
-                      <View style={[styles.colorDot, {backgroundColor: lineColors[index]}]} />
-                      <Text style={styles.accountName} numberOfLines={1}>
-                        {account.name}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.accountName}>Select accounts...</Text>
-              )}
-            </View>
-            <Ionicons name="chevron-down" size={20} color={theme.colors.text.onGradient} />
+            activeOpacity={0.7}
+            disabled={selectedAccountIds.length >= 3}>
+            <LinearGradient
+              colors={
+                selectedAccountIds.length >= 3
+                  ? ['rgba(255,255,255,0.08)', 'rgba(255,255,255,0.04)']
+                  : [`${theme.colors.primary}CC`, `${theme.colors.primaryDark}CC`] // 80% opacity
+              }
+              style={styles.compactAddGradient}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 0}}>
+              <Ionicons
+                name={selectedAccountIds.length >= 3 ? 'checkmark' : 'add'}
+                size={14}
+                color={theme.colors.text.onPrimary}
+              />
+              <Text style={[styles.compactAddText]}>
+                {selectedAccountIds.length >= 3 ? 'Full' : `Add (${selectedAccountIds.length}/3)`}
+              </Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
 
-        {/* Net Worth Display - exactly like IntegratedDashboard_Wagmi */}
+        {/* Account Pills with 30% Width Each */}
+        {selectedAccounts.length > 0 && (
+          <View
+            style={[
+              styles.accountPillsContainer,
+              {
+                justifyContent:
+                  selectedAccounts.length === 1
+                    ? 'center'
+                    : selectedAccounts.length === 2
+                      ? 'space-evenly'
+                      : 'space-between',
+              },
+            ]}>
+            {selectedAccounts.map((account, index) => (
+              <TouchableOpacity
+                key={account.id}
+                style={[styles.accountPill, {borderColor: lineColors[index % lineColors.length]}]}
+                onPress={() => removeAccount(account.id)}>
+                <View style={[styles.colorIndicator, {backgroundColor: lineColors[index % lineColors.length]}]} />
+                <View style={styles.accountPillContent}>
+                  <Text style={styles.accountPillName} numberOfLines={1}>
+                    {account.name}
+                  </Text>
+                  <Text style={styles.accountPillBalance} numberOfLines={1}>
+                    {formatSmartNumber(account.balance, account.currency)}
+                  </Text>
+                </View>
+                <Ionicons name="close-circle" size={14} color={theme.colors.text.tertiary} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
+        {/* Net Worth Display */}
         <View style={styles.netWorthWrapper}>
           <View style={styles.netWorthContainer}>
             <Text style={styles.netWorthText}>{formatSmartNumber(prepared.latest, prepared.currency)}</Text>
@@ -373,7 +428,7 @@ const AccountComparisonChart: React.FC = () => {
             </LinearGradient>
           </View>
 
-          {/* ✅ FIX: Move tooltip here to position it relative to the header */}
+          {/* Tooltip */}
           {tooltipData && (
             <View
               style={[
@@ -397,42 +452,32 @@ const AccountComparisonChart: React.FC = () => {
           )}
         </View>
 
-        {/* Chart Container - exactly like IntegratedDashboard_Wagmi */}
+        {/* Chart Container */}
         <View style={[styles.improvedChartContainer, {height: chartHeight}]}>
           {isLoading ? (
             <View style={styles.loadingOverlay}>
-              <ActivityIndicator
-                size="large"
-                color={theme.colors.primary} // Use lineColor to match chart
-              />
+              <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
           ) : error || prepared.chartDataSets.length === 0 ? (
             <View style={styles.loadingOverlay}>
               <Text style={styles.placeholderText}>
-                {!selectedAccounts
-                  ? 'Select an account to view its performance'
-                  : 'No data available for selected account'}
+                {selectedAccounts.length === 0
+                  ? 'Select accounts to compare their performance'
+                  : 'No data available for selected accounts'}
               </Text>
             </View>
           ) : (
             <View style={styles.chartRow}>
               <View style={styles.chartWrapper}>
-                {/* ✅ FIX: Render the primary, interactive chart last so it's on top */}
                 <View style={{flex: 1}}>
-                  {/* ✅ FIX: Render non-interactive background lines first */}
+                  {/* Render non-interactive background lines first */}
                   {prepared.chartDataSets.slice(1).map((dataSet, index) => (
-                    <View
-                      key={dataSet.id}
-                      style={[
-                        StyleSheet.absoluteFill,
-                        // Ensure background lines don't intercept touch events
-                        {pointerEvents: 'none'},
-                      ]}>
+                    <View key={dataSet.id} style={[StyleSheet.absoluteFill, {pointerEvents: 'none'}]}>
                       <LineChart.Provider data={dataSet.data} yRange={prepared.yRange}>
                         <LineChart height={chartHeight}>
                           <LineChart.Path
                             color={lineColors[(index + 1) % lineColors.length]}
-                            width={theme.responsive.isSmallScreen ? 2 : 3}
+                            width={theme.responsive?.isSmallScreen ? 2 : 3}
                           />
                         </LineChart>
                       </LineChart.Provider>
@@ -447,7 +492,7 @@ const AccountComparisonChart: React.FC = () => {
                       // A unique key ensures the provider and its children re-mount with fresh props.
                       key={`${period}-${selectedAccountIds.join('-')}`}>
                       <LineChart height={chartHeight}>
-                        <LineChart.Path color={lineColor} width={theme.responsive.isSmallScreen ? 2 : 3} />
+                        <LineChart.Path color={lineColor} width={theme.responsive?.isSmallScreen ? 2 : 3} />
                         {selectedAccountIds.length === 1 && <LineChart.Gradient color={lineColor} />}
                         <LineChart.CursorCrosshair color={lineColor} onEnded={() => {}} />
                       </LineChart>
@@ -459,7 +504,7 @@ const AccountComparisonChart: React.FC = () => {
           )}
         </View>
 
-        {/* Enhanced Period Selector - exactly like IntegratedDashboard_Wagmi */}
+        {/* Period Selector */}
         <View style={styles.enhancedPeriodSelector}>
           {ranges.map(option => (
             <TouchableOpacity
@@ -522,7 +567,6 @@ const AccountComparisonChart: React.FC = () => {
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{paddingBottom: insets.bottom}}
                 ItemSeparatorComponent={() => (
-                  // Add a separator for better visual distinction
                   <View style={[styles.separator, {backgroundColor: theme.colors.border.primary}]} />
                 )}
               />
@@ -542,61 +586,101 @@ const getStyles = (theme: any, insets: any) =>
       borderBottomLeftRadius: theme.borderRadius.xxl,
       borderBottomRightRadius: theme.borderRadius.xxl,
     },
-    headerContainer: {
+
+    // ✅ UNIFIED: Header Layout with Back Button, Title, and Add Account Button
+    headerSection: {
       flexDirection: 'row',
-      justifyContent: 'flex-end', // Align the selector to the right
-      paddingHorizontal: theme.spacing.md, // Use consistent spacing
+      justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.xl,
+      minHeight: 44, // Ensure minimum height for touch targets
     },
-    accountSelector: {
+
+    // ✅ NEW: Back Button Style
+    backButton: {
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.sm,
+      //left: theme.spacing.md,
+      width: theme.spacing.xl + theme.spacing.lg,
+      height: theme.spacing.xl + theme.spacing.lg,
+      borderRadius: (theme.spacing.xl + theme.spacing.lg) / 2,
+      backgroundColor: theme.colors.interactive.hover,
+      borderWidth: 0.5,
+      borderColor: theme.colors.border.primary,
+      zIndex: 10,
+    },
+
+    titleContainer: {
+      flex: 1, // Take remaining space
+      justifyContent: 'center',
+      alignItems: 'center', // Center the title
+    },
+
+    sectionTitle: {
+      fontSize: theme.fontSizes.title,
+      fontWeight: '800',
+      color: theme.colors.text.onGradient,
+    },
+
+    addAccountButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: theme.borderRadius.lg,
-      padding: theme.spacing.md,
+      backgroundColor: 'rgba(255,255,255,0.15)',
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.md,
+      marginLeft: theme.spacing.sm,
+    },
+
+    addAccountText: {
+      fontSize: theme.fontSizes.xs,
+      color: theme.colors.text.onGradient,
+      marginLeft: theme.spacing.xs,
+      fontWeight: '500',
+    },
+
+    // Pills with 30% Width Each
+    accountPillsContainer: {
+      flexDirection: 'row',
+      paddingHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.lg,
+      flexWrap: 'wrap',
+    },
+    accountPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.1)',
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs,
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.2)',
-      width: '80%',
-      minHeight: theme.spacing.xxxl * 2, // Ensure consistent height
+      width: '30%', // ✅ 30% width so 3 pills fit per row
+      marginBottom: theme.spacing.xs,
     },
-    accountInfo: {
-      flex: 1,
-    },
-    accountSelectorTitle: {
-      fontSize: theme.fontSizes.caption,
-      color: theme.colors.text.onGradient,
-      opacity: 0.7,
-      marginBottom: 2,
-    },
-    accountName: {
-      fontSize: theme.fontSizes.subtitle,
-      fontWeight: '600',
-      color: theme.colors.text.onGradient,
-      flexShrink: 1, // Allow text to shrink
-    },
-    selectedAccountsContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap', // Allow pills to wrap
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.xs,
-    },
-    selectedAccountPill: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      borderRadius: theme.borderRadius.sm,
-      paddingVertical: 4,
-      paddingHorizontal: 8,
-    },
-    colorDot: {
+    colorIndicator: {
       width: 10,
       height: 10,
       borderRadius: 5,
-      marginRight: theme.spacing.sm,
+      marginRight: theme.spacing.xs,
+      flexShrink: 0,
+    },
+    accountPillContent: {
+      flex: 1,
+      marginRight: theme.spacing.xs,
+    },
+    accountPillName: {
+      fontSize: theme.fontSizes.xs,
+      fontWeight: '600',
+      color: theme.colors.text.onGradient,
+    },
+    accountPillBalance: {
+      fontSize: 10,
+      color: theme.colors.text.secondary,
     },
 
-    // Net worth display - exactly like IntegratedDashboard_Wagmi
+    // Rest of existing styles...
     netWorthWrapper: {
       alignItems: 'center',
     },
@@ -620,8 +704,6 @@ const getStyles = (theme: any, insets: any) =>
       fontSize: theme.fontSizes.sm,
       fontWeight: '600',
     },
-
-    // Chart container - exactly like IntegratedDashboard_Wagmi
     improvedChartContainer: {
       marginBottom: theme.spacing.xl,
       paddingHorizontal: theme.spacing.sm,
@@ -650,8 +732,6 @@ const getStyles = (theme: any, insets: any) =>
       flexDirection: 'row',
       alignItems: 'center',
     },
-
-    // Fixed tooltip positioning - exactly like IntegratedDashboard_Wagmi
     customTooltip: {
       paddingHorizontal: 16,
       paddingVertical: 12,
@@ -659,10 +739,9 @@ const getStyles = (theme: any, insets: any) =>
       borderWidth: 1,
       zIndex: 1000,
       position: 'absolute',
-      // ✅ FIX: Center the tooltip over the net worth display
       top: 0,
-      minWidth: 200, // A bit wider for better layout
-      maxWidth: '80%',
+      minWidth: 200,
+      maxWidth: '60%',
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.text.primary,
@@ -705,8 +784,6 @@ const getStyles = (theme: any, insets: any) =>
       color: theme.colors.text.secondary,
       flex: 1,
     },
-
-    // Period selector - exactly like IntegratedDashboard_Wagmi
     enhancedPeriodSelector: {
       flexDirection: 'row',
       backgroundColor: 'transparent',
@@ -741,8 +818,6 @@ const getStyles = (theme: any, insets: any) =>
       color: theme.colors.text.onGradient,
       letterSpacing: -0.2,
     },
-
-    // Modal styles
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.5)',
@@ -802,7 +877,39 @@ const getStyles = (theme: any, insets: any) =>
     accountOptionType: {
       fontSize: theme.fontSizes.caption,
       color: theme.colors.text.tertiary,
-      textTransform: 'capitalize',
+    },
+    // ✅ ALTERNATIVE: Compact Pill Styles
+    compactAddButton: {
+      borderRadius: theme.borderRadius.full,
+      marginLeft: theme.spacing.sm,
+      overflow: 'hidden',
+      minHeight: 32,
+    },
+
+    compactAddButtonDisabled: {
+      opacity: 0.8,
+    },
+
+    compactAddGradient: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.full,
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.15)',
+    },
+
+    compactAddText: {
+      fontSize: theme.fontSizes.xs,
+      fontWeight: '600',
+      color: theme.colors.text.onPrimary,
+      marginLeft: theme.spacing.xs,
+      letterSpacing: 0.3,
+    },
+
+    compactAddTextDisabled: {
+      color: theme.colors.text.disabled,
     },
   });
 

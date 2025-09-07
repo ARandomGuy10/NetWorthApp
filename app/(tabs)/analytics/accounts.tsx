@@ -1,11 +1,13 @@
-// app/(tabs)/analytics/accounts.tsx
 import React, {useCallback, useState} from 'react';
-import {View, StyleSheet, TouchableOpacity, ScrollView, RefreshControl} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
+import {View, StyleSheet, TouchableOpacity, ScrollView, RefreshControl, Text} from 'react-native';
+
 import {useRouter} from 'expo-router';
-import {Ionicons} from '@expo/vector-icons';
+
 import * as Haptics from 'expo-haptics';
+import {Ionicons} from '@expo/vector-icons';
 import {useQueryClient} from '@tanstack/react-query';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import AccountComparisonChart from '@/components/analytics/accounts/AccountComparisonChart';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
@@ -41,11 +43,6 @@ const AccountsAnalyticsScreen: React.FC = () => {
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor={theme.colors.primary} />
       }>
-      {/* Only Back Button - positioned absolutely */}
-      <TouchableOpacity onPress={onBack} style={[styles.backBtn, {top: insets.top + 23}]}>
-        <Ionicons name="chevron-back" size={22} color={theme.colors.text.onGradient} />
-      </TouchableOpacity>
-
       {/* Chart Component */}
       <AccountComparisonChart />
     </ScrollView>
