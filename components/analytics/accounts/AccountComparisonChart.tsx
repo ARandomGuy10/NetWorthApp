@@ -13,7 +13,7 @@ import {
   Pressable, // Keep Pressable for modal overlay
   FlatList,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
+import * as Haptics from 'expo-haptics'; // Keep Haptics import
 import {LineChart} from 'react-native-wagmi-charts';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -291,6 +291,9 @@ const AccountComparisonChart: React.FC = () => {
           };
         });
 
+        // ✅ FIX: Sort values in descending order (highest first)
+        values.sort((a, b) => b.value - a.value);
+
         setTooltipData({
           date: date.toLocaleDateString('en', {weekday: 'short', month: 'short', day: 'numeric'}),
           values,
@@ -348,25 +351,50 @@ const AccountComparisonChart: React.FC = () => {
         </View>
 
         {/* Net Worth Display - exactly like IntegratedDashboard_Wagmi */}
-        <View style={styles.netWorthContainer}>
-          <Text style={styles.netWorthText}>{formatSmartNumber(prepared.latest, prepared.currency)}</Text>
+        <View style={styles.netWorthWrapper}>
+          <View style={styles.netWorthContainer}>
+            <Text style={styles.netWorthText}>{formatSmartNumber(prepared.latest, prepared.currency)}</Text>
 
-          <LinearGradient
-            colors={
-              prepared.delta >= 0
-                ? [`${theme.colors.asset}25`, `${theme.colors.asset}15`]
-                : [`${liabilityColor}25`, `${liabilityColor}15`]
-            }
-            style={styles.deltaContainer}>
-            <Text
+            <LinearGradient
+              colors={
+                prepared.delta >= 0
+                  ? [`${theme.colors.asset}25`, `${theme.colors.asset}15`]
+                  : [`${liabilityColor}25`, `${liabilityColor}15`]
+              }
+              style={styles.deltaContainer}>
+              <Text
+                style={[
+                  styles.netWorthChangeText,
+                  {color: prepared.delta >= 0 ? theme.colors.asset || theme.colors.primary : liabilityColor},
+                ]}>
+                {prepared.delta >= 0 ? '+' : ''}
+                {formatSmartNumber(prepared.delta, prepared.currency)} ({prepared.pct.toFixed(1)}%)
+              </Text>
+            </LinearGradient>
+          </View>
+
+          {/* ✅ FIX: Move tooltip here to position it relative to the header */}
+          {tooltipData && (
+            <View
               style={[
-                styles.netWorthChangeText,
-                {color: prepared.delta >= 0 ? theme.colors.asset || theme.colors.primary : liabilityColor},
+                styles.customTooltip,
+                {
+                  backgroundColor: theme.colors.background.secondary,
+                  borderColor: lineColor,
+                },
               ]}>
-              {prepared.delta >= 0 ? '+' : ''}
-              {formatSmartNumber(prepared.delta, prepared.currency)} ({prepared.pct.toFixed(1)}%)
-            </Text>
-          </LinearGradient>
+              <Text style={[styles.tooltipDate, {color: theme.colors.text.secondary}]}>{tooltipData.date}</Text>
+              {tooltipData.values.map(item => (
+                <View key={item.name} style={styles.tooltipRow}>
+                  <View style={[styles.tooltipColorDot, {backgroundColor: item.color}]} />
+                  <Text style={styles.tooltipName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.tooltipValue}>{formatSmartNumber(item.value, item.currency)}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Chart Container - exactly like IntegratedDashboard_Wagmi */}
@@ -387,61 +415,46 @@ const AccountComparisonChart: React.FC = () => {
               </Text>
             </View>
           ) : (
-            <View style={{flex: 1}}>
-              {/* ✅ FIX: Render non-interactive background lines first */}
-              {prepared.chartDataSets.slice(1).map((dataSet, index) => (
-                <View key={dataSet.id} style={StyleSheet.absoluteFill}>
-                  <LineChart.Provider data={dataSet.data} yRange={prepared.yRange}>
-                    <LineChart height={chartHeight}>
-                      <LineChart.Path
-                        color={lineColors[(index + 1) % lineColors.length]}
-                        width={theme.responsive.isSmallScreen ? 2 : 3}
-                      />
-                    </LineChart>
-                  </LineChart.Provider>
+            <View style={styles.chartRow}>
+              <View style={styles.chartWrapper}>
+                {/* ✅ FIX: Render the primary, interactive chart last so it's on top */}
+                <View style={{flex: 1}}>
+                  {/* ✅ FIX: Render non-interactive background lines first */}
+                  {prepared.chartDataSets.slice(1).map((dataSet, index) => (
+                    <View
+                      key={dataSet.id}
+                      style={[
+                        StyleSheet.absoluteFill,
+                        // Ensure background lines don't intercept touch events
+                        {pointerEvents: 'none'},
+                      ]}>
+                      <LineChart.Provider data={dataSet.data} yRange={prepared.yRange}>
+                        <LineChart height={chartHeight}>
+                          <LineChart.Path
+                            color={lineColors[(index + 1) % lineColors.length]}
+                            width={theme.responsive.isSmallScreen ? 2 : 3}
+                          />
+                        </LineChart>
+                      </LineChart.Provider>
+                    </View>
+                  ))}
+                  {prepared.chartDataSets.length > 0 && (
+                    <LineChart.Provider
+                      data={prepared.chartDataSets[0].data}
+                      yRange={prepared.yRange}
+                      onCurrentIndexChange={onCurrentIndexChange}
+                      // ✅ KEY FIX: Force re-render when data changes to prevent stale tooltip callbacks.
+                      // A unique key ensures the provider and its children re-mount with fresh props.
+                      key={`${period}-${selectedAccountIds.join('-')}`}>
+                      <LineChart height={chartHeight}>
+                        <LineChart.Path color={lineColor} width={theme.responsive.isSmallScreen ? 2 : 3} />
+                        {selectedAccountIds.length === 1 && <LineChart.Gradient color={lineColor} />}
+                        <LineChart.CursorCrosshair color={lineColor} onEnded={() => {}} />
+                      </LineChart>
+                    </LineChart.Provider>
+                  )}
                 </View>
-              ))}
-              {/* ✅ FIX: Render the primary, interactive chart last so it's on top */}
-              {prepared.chartDataSets.length > 0 && (
-                <View style={StyleSheet.absoluteFill}>
-                  <LineChart.Provider
-                    data={prepared.chartDataSets[0].data}
-                    yRange={prepared.yRange}
-                    onCurrentIndexChange={onCurrentIndexChange}
-                    // ✅ KEY FIX: Force re-render when data changes to prevent stale tooltip callbacks.
-                    // A unique key ensures the provider and its children re-mount with fresh props.
-                    key={`${period}-${selectedAccountIds.join('-')}`}>
-                    <LineChart height={chartHeight}>
-                      <LineChart.Path color={lineColor} width={theme.responsive.isSmallScreen ? 2 : 3} />
-                      {selectedAccountIds.length === 1 && <LineChart.Gradient color={lineColor} />}
-                      <LineChart.CursorCrosshair color={lineColor} onEnded={() => {}} />
-                    </LineChart>
-                  </LineChart.Provider>
-                </View>
-              )}
-            </View>
-          )}
-          {/* Custom Tooltip - Safe Implementation */}
-          {tooltipData && (
-            <View // This View is correctly positioned relative to its parent
-              style={[
-                styles.customTooltip,
-                {
-                  backgroundColor: theme.colors.background.secondary,
-                  borderColor: lineColor,
-                },
-              ]}>
-              <Text style={[styles.tooltipDate, {color: theme.colors.text.secondary}]}>{tooltipData.date}</Text>
-              {tooltipData.values.map(item => (
-                <View key={item.name} style={styles.tooltipRow}>
-                  <View style={[styles.tooltipColorDot, {backgroundColor: item.color}]} />
-                  <Text style={styles.tooltipName} numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.tooltipValue}>{formatSmartNumber(item.value, item.currency)}</Text>
-                </View>
-              ))}
-              <View style={[styles.tooltipArrow, {borderTopColor: theme.colors.background.secondary}]} />
+              </View>
             </View>
           )}
         </View>
@@ -584,6 +597,9 @@ const getStyles = (theme: any, insets: any) =>
     },
 
     // Net worth display - exactly like IntegratedDashboard_Wagmi
+    netWorthWrapper: {
+      alignItems: 'center',
+    },
     netWorthContainer: {
       alignItems: 'center',
       marginVertical: theme.spacing.xl,
@@ -625,6 +641,15 @@ const getStyles = (theme: any, insets: any) =>
       marginTop: theme.spacing.xl,
       color: theme.colors.text.primary,
     },
+    chartWrapper: {
+      flex: 1,
+      flexDirection: 'row',
+    },
+    chartRow: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
 
     // Fixed tooltip positioning - exactly like IntegratedDashboard_Wagmi
     customTooltip: {
@@ -632,12 +657,12 @@ const getStyles = (theme: any, insets: any) =>
       paddingVertical: 12,
       borderRadius: 12,
       borderWidth: 1,
-      alignItems: 'center',
       zIndex: 1000,
       position: 'absolute',
-      top: 20,
-      alignSelf: 'center',
-      minWidth: 140,
+      // ✅ FIX: Center the tooltip over the net worth display
+      top: 0,
+      minWidth: 200, // A bit wider for better layout
+      maxWidth: '80%',
       ...Platform.select({
         ios: {
           shadowColor: theme.colors.text.primary,
@@ -679,19 +704,6 @@ const getStyles = (theme: any, insets: any) =>
       fontSize: theme.fontSizes.body,
       color: theme.colors.text.secondary,
       flex: 1,
-    },
-    tooltipArrow: {
-      position: 'absolute',
-      bottom: -6,
-      left: '50%',
-      marginLeft: -6,
-      width: 0,
-      height: 0,
-      borderLeftWidth: 6,
-      borderRightWidth: 6,
-      borderTopWidth: 6,
-      borderLeftColor: 'transparent',
-      borderRightColor: 'transparent',
     },
 
     // Period selector - exactly like IntegratedDashboard_Wagmi
