@@ -24,15 +24,16 @@ const PerformanceScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} >
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* ✅ Pass period handlers to chart */}
+        
         <IntegratedDashboard_Wagmi onPeriodChange={setSelectedPeriod} currentPeriod={selectedPeriod} />
 
         {historyData?.insights && (
           <>
             {/* ✅ Add section spacing */}
-            <View style={styles.sectionSpacing}>
+            <View style={styles.sectionContainer}>
               <KeyPerformanceMetrics
                 insights={historyData.insights}
                 currency={historyData.currency}
@@ -40,13 +41,11 @@ const PerformanceScreen: React.FC = () => {
               />
             </View>
 
-            <View style={styles.sectionSpacing}>
               <PerformanceInsights
                 insights={historyData.insights}
                 currency={historyData.currency}
                 period={selectedPeriod}
               />
-            </View>
           </>
         )}
       </ScrollView>
@@ -67,8 +66,8 @@ const getStyles = (theme: any) =>
       paddingBottom: theme.spacing.xxxl,
     },
     // ✅ Add proper section spacing
-    sectionSpacing: {
-      marginTop: theme.spacing.xl,
+    sectionContainer: {
+      marginTop: theme.spacing.xxl,
     },
   });
 

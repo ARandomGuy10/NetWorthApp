@@ -113,8 +113,6 @@ const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: theme.spacing.lg,
-      paddingTop: theme.spacing.xl,
-      paddingBottom: theme.spacing.lg,
     },
     sectionTitle: {
       fontSize: theme.fontSizes.heading,

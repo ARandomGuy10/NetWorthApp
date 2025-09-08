@@ -326,7 +326,6 @@ const getStyles = (theme: any) =>
     container: {
       backgroundColor: theme.colors.background.card,
       borderRadius: theme.borderRadius.xl,
-      marginTop: theme.spacing.xl,
       overflow: 'hidden',
       ...Platform.select({
         ios: {
