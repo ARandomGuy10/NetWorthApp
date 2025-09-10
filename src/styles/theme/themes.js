@@ -97,13 +97,14 @@ export const DARK_THEME = createTheme(
       header: ['#0A0E28', '#1A1F3F', 'rgba(32, 227, 178, 0.25)'],
 
       // ✅ Improved: Natural green progression
-      success: ['#22C55E', '#16A34A', '#15803D'],
-
+      //success: ['#22C55E', '#16A34A', '#15803D'],
+      success: ['#22C55E', '#16A34A', '#0F766E'],
       // ✅ Improved: Warm amber gradient
       warning: ['#F59E0B', '#D97706', '#B45309'],
 
       // ✅ Improved: Coral to deep red
-      error: ['#F87171', '#EF4444', '#DC2626'],
+      //error: ['#F87171', '#EF4444', '#DC2626'],
+      error: ['#F87171', '#EF4444', '#BE123C'],
 
       // ✅ Improved: Very subtle dark variations
       subtle: ['#0A0E28', '#0F1435', '#151A3A'],
