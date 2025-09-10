@@ -1,7 +1,7 @@
 // components/analytics/accounts/AccountInsights.tsx
 
 import React, {useMemo} from 'react';
-import InsightsSection, {InsightItem} from '@/components/ui/InsightsSection';
+import InsightsSection, {InsightItem} from '@/components/analytics/InsightsSection';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';

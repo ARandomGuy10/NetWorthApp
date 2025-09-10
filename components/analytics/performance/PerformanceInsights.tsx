@@ -1,7 +1,7 @@
 // components/analytics/PerformanceInsights.tsx
 
 import React from 'react';
-import InsightsSection, {InsightItem} from '@/components/ui/InsightsSection';
+import InsightsSection, {InsightItem} from '@/components/analytics/InsightsSection';
 import {formatSmartNumber} from '@/src/utils/formatters';
 import {NetWorthHistoryInsights} from '@/lib/supabase';
 import {useTheme} from '@/src/styles/theme/ThemeContext';

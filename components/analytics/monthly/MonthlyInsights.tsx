@@ -1,7 +1,7 @@
 // components/analytics/MonthlyInsights.tsx - Updated to use InsightsSection
 
 import React from 'react';
-import InsightsSection, {InsightItem} from '@/components/ui/InsightsSection';
+import InsightsSection, {InsightItem} from '@/components/analytics/InsightsSection';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {formatSmartNumber} from '@/src/utils/formatters';
 import {Extremes, MonthlyDelta} from '@/lib/supabase';
