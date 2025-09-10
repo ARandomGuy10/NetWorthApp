@@ -10,9 +10,9 @@ import {LinearGradient} from 'expo-linear-gradient';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useQueryClient} from '@tanstack/react-query';
 
-import MonthlyHeatmap from '@/components/analytics/MonthlyHeatmap';
-import MonthlyInsights from '@/components/analytics/MonthlyInsights';
-import MonthlyPerformanceOverview from '@/components/analytics/MonthlyPerformanceOverview';
+import MonthlyHeatmap from '@/components/analytics/monthly/MonthlyHeatmap';
+import MonthlyInsights from '@/components/analytics/monthly/MonthlyInsights';
+import MonthlyPerformanceOverview from '@/components/analytics/monthly/MonthlyPerformanceOverview';
 import PeriodSelector from '@/components/ui/PeriodSelector';
 import {Period} from '@/lib/supabase';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';

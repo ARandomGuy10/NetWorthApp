@@ -5,8 +5,8 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
-import KeyPerformanceMetrics from '@/components/analytics/KeyPerformanceMetrics';
-import PerformanceInsights from '@/components/analytics/PerformanceInsights';
+import KeyPerformanceMetrics from '@/components/analytics/performance/KeyPerformanceMetrics';
+import PerformanceInsights from '@/components/analytics/performance/PerformanceInsights';
 
 const PerformanceScreen: React.FC = () => {
   const {theme} = useTheme();
