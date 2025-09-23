@@ -6,6 +6,8 @@ import {getTheme} from './themes';
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({children}) => {
+  console.log('ThemeProvider rendered');
+
   const {data: profile, isLoading: profileLoading} = useProfile();
   const systemColorScheme = useColorScheme();
   const {width, height} = useWindowDimensions();
@@ -64,10 +66,6 @@ export const ThemeProvider = ({children}) => {
     setBaseTheme(getTheme(themeName));
   }, [profile, profileLoading, systemColorScheme]);
 
-  if (profileLoading) {
-    return null;
-  }
-
   const switchTheme = themeName => {
     let themeToSet = themeName;
     if (themeToSet === 'SYSTEM') {
@@ -76,7 +74,10 @@ export const ThemeProvider = ({children}) => {
     setBaseTheme(getTheme(themeToSet));
   };
 
-  return <ThemeContext.Provider value={{theme, switchTheme}}>{children}</ThemeContext.Provider>;
+  // FIXED: Always return Provider with value
+  const value = useMemo(() => ({theme, switchTheme}), [theme]);
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {

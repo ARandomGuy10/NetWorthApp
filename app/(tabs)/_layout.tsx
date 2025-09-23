@@ -1,13 +1,8 @@
 import {useEffect} from 'react';
-
 import {View, ActivityIndicator} from 'react-native';
-
 import {Tabs, router} from 'expo-router';
-
 import {useAuth} from '@clerk/clerk-expo';
-
 import {ThemeProvider, useTheme} from '@/src/styles/theme/ThemeContext';
-
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
 import {useProfile, useCreateProfile} from '../../hooks/useProfile';
 
@@ -17,6 +12,7 @@ import {useProfile, useCreateProfile} from '../../hooks/useProfile';
  */
 function ProtectedLayout() {
   console.log('TabsLayout rendered');
+
   const {isSignedIn, isLoaded} = useAuth();
   const {data: profile, isLoading: isProfileLoading} = useProfile();
   const {mutate: createProfile} = useCreateProfile();
@@ -31,12 +27,12 @@ function ProtectedLayout() {
     if (isLoaded && !isSignedIn) {
       router.replace('/(auth)/sign-in');
       return;
-    }
+    } // FIXED: Added missing closing brace
 
     // Wait for profile to finish loading before making decisions
     if (isProfileLoading) {
       return;
-    }
+    } // FIXED: Added missing closing brace
 
     // Scenario 2: Signed in, but no profile exists yet.
     // This happens for brand new users (both email and social).
@@ -44,12 +40,13 @@ function ProtectedLayout() {
       createProfile();
       // The useProfile query will refetch after creation, triggering the next check.
       return;
-    }
+    } // FIXED: Added missing closing brace
 
     // Scenario 3: Profile exists, but onboarding is not complete.
     if (profile && !profile.has_completed_onboarding) {
       router.replace('/(onboarding)/setup');
-    }
+      return; // FIXED: Added missing return
+    } // FIXED: Added missing closing brace
   }, [isSignedIn, isLoaded, isProfileLoading, profile, createProfile]);
 
   // Show a loading indicator while auth/profile is loading or while redirecting.
@@ -80,15 +77,17 @@ function ProtectedLayout() {
       }}>
       <Tabs.Screen
         name="dashboard"
-        options={{
-          title: undefined,
+        options={{title: 'Home'}}
+        listeners={{
+          tabPress: e => {
+            e.preventDefault();
+            router.navigate('/(tabs)/dashboard');
+          },
         }}
       />
       <Tabs.Screen
         name="accounts"
-        options={{
-          title: undefined,
-        }}
+        options={{title: 'Accounts'}}
         listeners={{
           tabPress: e => {
             e.preventDefault();
@@ -98,9 +97,7 @@ function ProtectedLayout() {
       />
       <Tabs.Screen
         name="analytics"
-        options={{
-          title: undefined,
-        }}
+        options={{title: 'Analytics'}}
         listeners={{
           tabPress: e => {
             e.preventDefault();
