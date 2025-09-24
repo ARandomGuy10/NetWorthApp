@@ -198,19 +198,25 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
     <View style={styles.container}>
       {/* ✅ Header matching AccountPerformanceList style */}
       <View style={styles.header}>
-        <View style={styles.headerTop}>
-          <View style={styles.titleSection}>
-            <Text style={styles.title}>Category Performance</Text>
-            <View style={styles.subtitleRow}>
-              <Text style={styles.subtitle}>{processedCategories.length} categories</Text>
+        <LinearGradient
+          colors={[theme.colors?.primary + '20' || '#4facfe20', 'transparent']}
+          style={styles.headerGradient}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="stats-chart" size={28} color={theme.colors?.primary || '#4facfe'} />
             </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>Category Performance</Text>
+              <Text style={styles.headerSubtitle}>{processedCategories.length} categories</Text>
+            </View>
+            <TouchableOpacity style={styles.sortButton} onPress={handleSortChange}>
+              <Ionicons name="funnel-outline" size={16} color={theme.colors?.text?.secondary || '#b8c6db'} />
+              <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
+            </TouchableOpacity>
           </View>
-
-          <TouchableOpacity style={styles.sortButton} onPress={handleSortChange} activeOpacity={0.7}>
-            <Ionicons name="filter-outline" size={16} color={theme.colors.text.secondary} />
-            <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
-          </TouchableOpacity>
-        </View>
+        </LinearGradient>
       </View>
 
       {/* Category List */}
@@ -330,26 +336,67 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
-      backgroundColor: theme.colors.background.card,
-      borderRadius: theme.borderRadius.xl,
+      backgroundColor: theme.colors?.surface?.primary || '#1a1a2e',
+      borderRadius: theme.borderRadius?.xl || 20,
       overflow: 'hidden',
-      ...Platform.select({
-        ios: {
-          shadowColor: theme.colors.text.primary,
-          shadowOffset: {width: 0, height: 4},
-          shadowOpacity: 0.1,
-          shadowRadius: 12,
-        },
-        android: {
-          elevation: 8,
-        },
-      }),
+      shadowColor: theme.colors?.shadow || '#000000',
+      shadowOffset: {width: 0, height: 4},
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 8,
+      marginBottom: theme.spacing?.xl || 20,
     },
+    // ✅ UPDATED: Header styles matching CurrencyRiskAnalysis
     header: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.border.primary,
+      marginBottom: theme.spacing?.lg || 16,
+    },
+    headerGradient: {
+      padding: theme.spacing?.lg || 16,
+      borderTopLeftRadius: theme.borderRadius?.xl || 20,
+      borderTopRightRadius: theme.borderRadius?.xl || 20,
+    },
+    headerContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    headerIcon: {
+      marginRight: theme.spacing?.md || 12,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: theme.colors?.primary + '20' || '#4facfe20',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerTextContainer: {
+      flex: 1,
+    },
+    headerTitle: {
+      fontSize: theme.fontSizes?.subtitle || 18,
+      fontWeight: '800',
+      color: theme.colors?.text?.primary || '#ffffff',
+      marginBottom: 2,
+    },
+    headerSubtitle: {
+      fontSize: theme.fontSizes?.caption || 12,
+      color: theme.colors?.text?.secondary || '#b8c6db',
+      fontWeight: '500',
+    },
+    sortButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors?.interactive?.hover || 'rgba(255,255,255,0.1)',
+      paddingHorizontal: theme.spacing?.md || 12,
+      paddingVertical: theme.spacing?.sm || 8,
+      borderRadius: theme.borderRadius?.md || 12,
+      borderWidth: 0.5,
+      borderColor: theme.colors?.border?.primary || 'rgba(255,255,255,0.1)',
+    },
+    sortButtonText: {
+      fontSize: theme.fontSizes?.caption || 12,
+      fontWeight: '600',
+      color: theme.colors?.text?.secondary || '#b8c6db',
+      marginLeft: theme.spacing?.xs || 4,
     },
     headerTop: {
       flexDirection: 'row',
@@ -373,22 +420,6 @@ const getStyles = (theme: any) =>
       fontSize: theme.fontSizes.caption,
       color: theme.colors.text.tertiary,
       fontWeight: '500',
-    },
-    sortButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background.secondary,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      borderRadius: theme.borderRadius.md,
-      borderWidth: 1,
-      borderColor: theme.colors.border.primary,
-    },
-    sortButtonText: {
-      fontSize: theme.fontSizes.caption,
-      fontWeight: '600',
-      color: theme.colors.text.secondary,
-      marginLeft: theme.spacing.xs,
     },
     listContainer: {
       maxHeight: 500,

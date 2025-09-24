@@ -63,7 +63,7 @@ const MonthlyChangesScreen: React.FC = () => {
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollContent}
-        contentContainerStyle={[styles.scrollContentContainer, {paddingBottom: insets.bottom}]}
+        contentContainerStyle={{paddingBottom: insets.bottom + 90}}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />}>
         <LinearGradient
@@ -121,11 +121,6 @@ const getStyles = (theme: any, insets: any) =>
 
     scrollContent: {
       flex: 1,
-    },
-
-    scrollContentContainer: {
-      paddingBottom: theme.spacing.xxxl,
-      flexGrow: 1,
     },
 
     // ✅ Simplified header styling
