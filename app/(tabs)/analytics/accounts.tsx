@@ -1,18 +1,19 @@
 // app/(tabs)/analytics/accounts.tsx
 
 import React, {useCallback, useState} from 'react';
-import {View, StyleSheet, TouchableOpacity, ScrollView, RefreshControl} from 'react-native';
+import {View, StyleSheet, ScrollView, RefreshControl} from 'react-native';
 import {useRouter} from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import {Ionicons} from '@expo/vector-icons';
 import {useQueryClient} from '@tanstack/react-query';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import AccountComparisonChart from '@/components/analytics/accounts/AccountComparisonChart';
 import AccountPerformanceList from '@/components/analytics/accounts/AccountPerformanceList';
 import AccountInsights from '@/components/analytics/accounts/AccountInsights'; // ✅ NEW
+import LoadingView from '@/components/ui/LoadingView';
 import type {Period} from '@/lib/supabase';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
+import { useNetWorthHistory } from '@/hooks/useNetWorthHistory';
 
 const AccountsAnalyticsScreen: React.FC = () => {
   const router = useRouter();
@@ -22,6 +23,11 @@ const AccountsAnalyticsScreen: React.FC = () => {
 
   const [selectedPeriod, setSelectedPeriod] = useState<Period>('3M');
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const {data: historyData, isLoading} = useNetWorthHistory({
+    period: selectedPeriod,
+    includeAccountBreakdown: true,
+  });
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -38,6 +44,10 @@ const AccountsAnalyticsScreen: React.FC = () => {
 
   const styles = getStyles(theme, insets);
 
+  if (isLoading && !historyData) {
+    return <LoadingView message="Analyzing account performance..." />;
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -47,16 +57,20 @@ const AccountsAnalyticsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}>
         {/* Account Comparison Chart - controlled by shared period */}
         <View style={styles.sectionContainer}>
-          <AccountComparisonChart period={selectedPeriod} onPeriodChange={setSelectedPeriod} />
+          <AccountComparisonChart
+            period={selectedPeriod}
+            onPeriodChange={setSelectedPeriod}
+            historyData={historyData}
+          />
         </View>
 
         {/* Account Performance List */}
         <View style={styles.sectionContainer}>
-          <AccountPerformanceList period={selectedPeriod} />
+          <AccountPerformanceList period={selectedPeriod} historyData={historyData} />
         </View>
 
         {/* ✅ NEW: Account Insights */}
-        <AccountInsights period={selectedPeriod} />
+        <AccountInsights period={selectedPeriod} historyData={historyData} />
       </ScrollView>
     </View>
   );
@@ -73,20 +87,6 @@ const getStyles = (theme: any, insets: any) =>
       flexGrow: 1,
     },
 
-    headerContainer: {
-      paddingTop: insets.top,
-      paddingHorizontal: theme.spacing.lg,
-      paddingBottom: theme.spacing.md,
-    },
-
-    backButton: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: theme.colors.background.secondary,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
     sectionContainer: {
       marginBottom: theme.spacing.xxl, // ✅ Consistent spacing between sections
     },

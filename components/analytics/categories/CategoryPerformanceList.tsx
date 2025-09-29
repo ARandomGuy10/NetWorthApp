@@ -1,6 +1,6 @@
 // components/analytics/categories/CategoryPerformanceList.tsx
 
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useCallback} from 'react';
 import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable, Platform} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -81,6 +81,10 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
 
   const [sortBy, setSortBy] = useState<SortOption>('value');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+  // State to dynamically calculate maxHeight for 6 rows
+  const [rowHeight, setRowHeight] = useState(65); // Default estimate
+  const maxVisibleRows = 6;
 
   // ✅ HELPER: Get account count for a category and type
   const getCategoryAccountCount = (category: string, type: 'asset' | 'liability'): number => {
@@ -185,6 +189,14 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
     });
   };
 
+  // Callback to measure the first row and set the dynamic maxHeight
+  const onFirstRowLayout = useCallback((event: any) => {
+    const {height} = event.nativeEvent.layout;
+    if (height > 0 && height !== rowHeight) {
+      setRowHeight(height);
+    }
+  }, []);
+
   if (processedCategories.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -221,13 +233,15 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
 
       {/* Category List */}
       <ScrollView
-        style={styles.listContainer}
+        style={[styles.listContainer, {maxHeight: rowHeight * maxVisibleRows}]}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}>
         {processedCategories.map((category, index) => (
           <Animated.View key={`${category.category}-${category.type}`} entering={FadeInUp.delay(index * 50)}>
             {/* Main Category Item */}
             <Pressable
+              // Add onLayout to the first item to measure its height
+              onLayout={index === 0 ? onFirstRowLayout : undefined}
               style={({pressed}) => [
                 styles.categoryItem,
                 expandedCategory === `${category.category}-${category.type}` && styles.expandedItem,
@@ -325,9 +339,6 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
           </Animated.View>
         ))}
       </ScrollView>
-
-      {/* Bottom Spacing */}
-      <View style={styles.bottomSpacing} />
     </View>
   );
 };
@@ -348,7 +359,8 @@ const getStyles = (theme: any) =>
     },
     // ✅ UPDATED: Header styles matching CurrencyRiskAnalysis
     header: {
-      marginBottom: theme.spacing?.lg || 16,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.primary,
     },
     headerGradient: {
       padding: theme.spacing?.lg || 16,
@@ -422,10 +434,11 @@ const getStyles = (theme: any) =>
       fontWeight: '500',
     },
     listContainer: {
-      maxHeight: 500,
+      // This is now set dynamically via inline style
     },
     listContent: {
-      paddingVertical: theme.spacing.sm,
+      // Add padding at the bottom of the scrollable content
+      paddingBottom: theme.spacing.lg,
     },
     categoryItem: {
       flexDirection: 'row',
@@ -571,9 +584,6 @@ const getStyles = (theme: any) =>
       textAlign: 'center',
       fontStyle: 'italic',
       paddingVertical: theme.spacing.md,
-    },
-    bottomSpacing: {
-      height: theme.spacing.xl,
     },
     emptyState: {
       alignItems: 'center',

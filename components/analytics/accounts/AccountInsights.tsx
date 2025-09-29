@@ -6,7 +6,7 @@ import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import {formatSmartNumber} from '@/src/utils/formatters';
-import type {Period} from '@/lib/supabase';
+import type {Period, NetWorthHistoryResponse} from '@/lib/supabase';
 
 interface AccountPerformance {
   id: string;
@@ -22,17 +22,14 @@ interface AccountPerformance {
 
 interface AccountInsightsProps {
   period: Period;
+  historyData: NetWorthHistoryResponse | null | undefined;
 }
 
-const AccountInsights: React.FC<AccountInsightsProps> = ({period}) => {
+const AccountInsights: React.FC<AccountInsightsProps> = ({period, historyData}) => {
   const {theme} = useTheme();
 
   // ✅ Fetch data inside the component
   const {data: rawAccounts} = useAccountsWithBalances();
-  const {data: historyData, isLoading} = useNetWorthHistory({
-    period,
-    includeAccountBreakdown: true,
-  });
 
   // ✅ Calculate account performances (same logic as AccountPerformanceList)
   const accountPerformances = useMemo((): AccountPerformance[] => {
@@ -163,7 +160,7 @@ const AccountInsights: React.FC<AccountInsightsProps> = ({period}) => {
   };
 
   // ✅ Show loading state
-  if (isLoading) {
+  if (!historyData) {
     return (
       <InsightsSection
         title="Account Performance Insights"

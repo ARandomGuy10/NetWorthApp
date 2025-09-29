@@ -73,8 +73,6 @@ const CategoriesAnalyticsScreen: React.FC = () => {
     userCurrency
   );
 
-  console.log('Processed Data:', JSON.stringify(processedData, null, 2));
-
 
   return (
     <View style={styles.container}>

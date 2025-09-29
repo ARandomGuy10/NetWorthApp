@@ -1,6 +1,6 @@
 // components/analytics/accounts/AccountPerformanceList.tsx
 
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useCallback} from 'react';
 import {View, Text, TouchableOpacity, Pressable, StyleSheet, ScrollView, Platform} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -10,11 +10,13 @@ import * as Haptics from 'expo-haptics';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
+import LoadingView from '@/components/ui/LoadingView';
 import {formatSmartNumber} from '@/src/utils/formatters';
-import type {Period} from '@/lib/supabase';
+import type {Period, NetWorthHistoryResponse} from '@/lib/supabase';
 
 interface AccountPerformanceListProps {
   period: Period;
+  historyData: NetWorthHistoryResponse | null | undefined;
 }
 
 type SortOption = 'performance' | 'alphabetical' | 'balance';
@@ -64,19 +66,20 @@ const getSortLabel = (sortBy: SortOption): string => {
   }
 };
 
-const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period}) => {
+const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period, historyData}) => {
   const {theme} = useTheme();
   const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('performance');
 
+  // State for dynamic list height
+  const [rowHeight, setRowHeight] = useState(80); // Default estimate
+  const maxVisibleRows = 6;
+
   const {data: rawAccounts} = useAccountsWithBalances();
-  const {data: historyData, isLoading} = useNetWorthHistory({
-    period,
-    includeAccountBreakdown: true,
-  });
 
   // ✅ Updated logic to use convertedBalance for consistent currency calculations
   const accountPerformances = useMemo((): AccountPerformance[] => {
+    // Data is now passed as a prop, so we don't need to check isLoading here.
     if (!rawAccounts || !historyData?.data || historyData.data.length === 0) {
       return [];
     }
@@ -153,17 +156,15 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
     setSortBy(options[nextIndex]);
   };
 
-  const styles = getStyles(theme);
+  // Callback to measure the first row for dynamic maxHeight
+  const onFirstRowLayout = useCallback((event: any) => {
+    const {height} = event.nativeEvent.layout;
+    if (height > 0 && height !== rowHeight) {
+      setRowHeight(height);
+    }
+  }, []);
 
-  if (isLoading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Analyzing account performance...</Text>
-        </View>
-      </View>
-    );
-  }
+  const styles = getStyles(theme);
 
   return (
     <View style={styles.container}>
@@ -193,13 +194,16 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
       </View>
 
       {/* ✅ Enhanced Account List with Touch Functionality */}
-      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={[styles.listContainer, {maxHeight: rowHeight * maxVisibleRows}]}
+        showsVerticalScrollIndicator={false}>
         {accountPerformances.map((account, index) => {
           const isTopPerformer = index < 3;
           const isPositiveChange = account.change >= 0;
 
           return (
             <Pressable
+              onLayout={index === 0 ? onFirstRowLayout : undefined}
               key={account.id}
               style={({pressed}) => [
                 styles.accountItem,
@@ -394,7 +398,7 @@ const getStyles = (theme: any) =>
     },
 
     listContainer: {
-      maxHeight: 400,
+      // maxHeight is now set dynamically
     },
 
     // ✅ Enhanced accountItem with better touch states

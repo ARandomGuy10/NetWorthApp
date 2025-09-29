@@ -25,16 +25,17 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import PeriodSelector from '@/components/ui/PeriodSelector';
 import type {Period, AccountSnapshot} from '@/lib/supabase';
 import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
-import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
 import {useHaptics} from '@/hooks/useHaptics';
-import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import {useProfile} from '@/hooks/useProfile';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {NetWorthHistoryResponse} from '@/lib/supabase';
+import {useAccountsWithBalances} from '@/hooks/useAccountsWithBalances';
 
 const {width: screenWidth} = Dimensions.get('window');
 interface AccountComparisonChartProps {
   period?: Period; // ✅ Add optional period prop
   onPeriodChange?: (period: Period) => void; // ✅ Add callback prop
+  historyData: NetWorthHistoryResponse | undefined | null;
 }
 
 const ranges = [
@@ -90,7 +91,11 @@ const getComparisonColors = (theme: any) => {
   ];
 };
 
-const AccountComparisonChart: React.FC<AccountComparisonChartProps> = ({period: externalPeriod, onPeriodChange}) => {
+const AccountComparisonChart: React.FC<AccountComparisonChartProps> = ({
+  period: externalPeriod,
+  onPeriodChange,
+  historyData,
+}) => {
   const {theme} = useTheme();
   const lineColors = useMemo(() => getComparisonColors(theme), [theme]);
   const {height} = useWindowDimensions();
@@ -112,14 +117,6 @@ const AccountComparisonChart: React.FC<AccountComparisonChartProps> = ({period: 
 
   // Data
   const {data: rawAccounts} = useAccountsWithBalances();
-  const {
-    data: historyData,
-    isLoading,
-    error,
-  } = useNetWorthHistory({
-    period,
-    includeAccountBreakdown: true,
-  });
 
   // Process accounts data
   const accounts = useMemo(() => {
@@ -466,11 +463,12 @@ const AccountComparisonChart: React.FC<AccountComparisonChartProps> = ({period: 
 
         {/* Chart Container */}
         <View style={[styles.improvedChartContainer, {height: chartHeight}]}>
-          {isLoading ? (
+          {/* Show loader if data is missing OR if we are waiting for the first account to be auto-selected */}
+          {!historyData || !historyData.data || (availableAccounts.length > 0 && selectedAccounts.length === 0) ? (
             <View style={styles.loadingOverlay}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
-          ) : error || prepared.chartDataSets.length === 0 ? (
+          ) : prepared.chartDataSets.length === 0 ? (
             <View style={styles.loadingOverlay}>
               <Text style={styles.placeholderText}>
                 {selectedAccounts.length === 0
@@ -518,7 +516,7 @@ const AccountComparisonChart: React.FC<AccountComparisonChartProps> = ({period: 
 
         {/* Period Selector */}
         <View>
-          <PeriodSelector selectedPeriod={period} onPeriodChange={handlePeriodChange}  />
+          <PeriodSelector selectedPeriod={period} onPeriodChange={handlePeriodChange} />
         </View>
 
         {/* Account Picker Modal */}
