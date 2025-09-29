@@ -1,16 +1,16 @@
 import React, {useCallback, useState} from 'react';
-import {View, StyleSheet, ScrollView, Text, TouchableOpacity, RefreshControl, ActivityIndicator} from 'react-native';
+import {View, StyleSheet, ScrollView, Text, TouchableOpacity, RefreshControl} from 'react-native';
 import {useRouter} from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
-import {useQueryClient} from '@tanstack/react-query';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import CategoryAllocationPieChart from '@/components/analytics/categories/CategoryAllocationPieChart';
 import CategoryInsights from '@/components/analytics/categories/CategoryInsights';
 import CategoryPerformanceList from '@/components/analytics/categories/CategoryPerformanceList';
 import NetWorthSummaryCard from '@/components/analytics/categories/NetWorthSummaryCard';
+import LoadingView from '@/components/ui/LoadingView';
 
 import {useDashboardData} from '@/hooks/useDashboard';
 import {useProfile} from '@/hooks/useProfile';
@@ -22,7 +22,6 @@ const CategoriesAnalyticsScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {theme} = useTheme();
-  const queryClient = useQueryClient();
   const {impactAsync} = useHaptics();
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -48,20 +47,11 @@ const CategoriesAnalyticsScreen: React.FC = () => {
   }, [refetch, impactAsync]);
 
   if (isLoading && !dashboardData) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading portfolio analysis...</Text>
-      </View>
-    );
+    return <LoadingView message="Loading portfolio analysis..." />;
   }
 
   if (!dashboardData || !profile) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>No data available</Text>
-      </View>
-    );
+    return <LoadingView message="No data available to display." />;
   }
 
   // Process the data with safe handling
@@ -72,7 +62,6 @@ const CategoriesAnalyticsScreen: React.FC = () => {
     dashboardData.totalLiabilities,
     userCurrency
   );
-
 
   return (
     <View style={styles.container}>
@@ -201,7 +190,8 @@ const processCategoryData = (
 
   const liabilities = liabilitiesRaw.map(cat => {
     const amount = Number(cat.liabilities || 0);
-    return { // Explicitly cast to 'liability' type
+    return {
+      // Explicitly cast to 'liability' type
       type: 'liability' as const,
       category: cat.category,
       amount,
@@ -282,19 +272,6 @@ const getStyles = (theme: any, insets: any) =>
     // Section spacing
     sectionContainer: {
       marginBottom: theme.spacing.xxl,
-    },
-    // Loading States
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background.primary,
-      gap: theme.spacing.md,
-    },
-    loadingText: {
-      fontSize: theme.fontSizes.body,
-      color: theme.colors.text.secondary,
-      textAlign: 'center',
     },
     // Bottom spacing for better scroll experience
     bottomSpacing: {

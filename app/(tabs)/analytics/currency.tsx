@@ -1,16 +1,16 @@
 import React, {useCallback, useState} from 'react';
-import {View, StyleSheet, ScrollView, Text, TouchableOpacity, RefreshControl, ActivityIndicator} from 'react-native';
+import {View, StyleSheet, ScrollView, Text, TouchableOpacity, RefreshControl} from 'react-native';
 import {useRouter} from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import {Ionicons} from '@expo/vector-icons';
 import {LinearGradient} from 'expo-linear-gradient';
-import {useQueryClient} from '@tanstack/react-query';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import CurrencyBreakdownChart from '@/components/analytics/currency/CurrencyBreakdownChart';
 import CurrencyNetWorthCard from '@/components/analytics/currency/CurrencyNetWorthCard';
 import CurrencyRiskAnalysis from '@/components/analytics/currency/CurrencyRiskAnalysis';
 import CurrencyInsights from '@/components/analytics/currency/CurrencyInsights';
+import LoadingView from '@/components/ui/LoadingView';
 
 import {useDashboardData} from '@/hooks/useDashboard';
 import {useProfile} from '@/hooks/useProfile';
@@ -21,7 +21,6 @@ const CurrencyAnalyticsScreen: React.FC = () => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const {theme} = useTheme();
-  const queryClient = useQueryClient();
   const {impactAsync} = useHaptics();
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -47,20 +46,11 @@ const CurrencyAnalyticsScreen: React.FC = () => {
   }, [refetch, impactAsync]);
 
   if (isLoading && !dashboardData) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading currency analysis...</Text>
-      </View>
-    );
+    return <LoadingView message="Loading currency analysis..." />;
   }
 
   if (!dashboardData || !profile) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>No data available</Text>
-      </View>
-    );
+    return <LoadingView message="No data available to display." />;
   }
 
   // Process the currency data with safe handling
@@ -312,19 +302,6 @@ const getStyles = (theme: any, insets: any) =>
       textAlign: 'center',
       lineHeight: theme.fontSizes.body * 1.4,
       maxWidth: 280,
-    },
-    // Loading States
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background.primary,
-      gap: theme.spacing.md,
-    },
-    loadingText: {
-      fontSize: theme.fontSizes.body,
-      color: theme.colors.text.secondary,
-      textAlign: 'center',
     },
   });
 

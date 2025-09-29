@@ -1,5 +1,5 @@
-import React, {useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Modal} from 'react-native';
+import React, {useState, useCallback} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {formatSmartNumber} from '@/src/utils/formatters';
 import {LinearGradient} from 'expo-linear-gradient';
@@ -22,6 +22,10 @@ interface CurrencyRiskAnalysisProps {
 const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme, userCurrency}) => {
   const styles = getStyles(theme);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
+
+  // State for dynamic list height
+  const [rowHeight, setRowHeight] = useState(68); // Default estimate
+  const maxVisibleRows = 6;
 
   // ✅ SAFE: Simple exposure calculation with colors but neutral language
   const getExposureLevel = (foreignExposure: number) => {
@@ -128,6 +132,14 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
     }
   };
 
+  // Callback to measure the first row for dynamic maxHeight
+  const onFirstRowLayout = useCallback((event: any) => {
+    const {height} = event.nativeEvent.layout;
+    if (height > 0 && height !== rowHeight) {
+      setRowHeight(height);
+    }
+  }, []);
+
   const showTooltip = (type: string) => setActiveTooltip(type);
   const hideTooltip = () => setActiveTooltip(null);
 
@@ -233,11 +245,14 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
             </TouchableOpacity>
           </View>
 
-          <View style={styles.listContainer}>
-            {netExposures.slice(0, 6).map((exposure, index) => (
+          <ScrollView
+            style={[styles.listContainer, {maxHeight: rowHeight * maxVisibleRows}]}
+            showsVerticalScrollIndicator={false}>
+            {netExposures.map((exposure, index) => (
               <View
                 key={exposure.currency}
-                style={[styles.positionItem, index === netExposures.slice(0, 6).length - 1 && styles.lastPositionItem]}>
+                onLayout={index === 0 ? onFirstRowLayout : undefined}
+                style={[styles.positionItem, index === netExposures.length - 1 && styles.lastPositionItem]}>
                 {/* ✅ FIXED: Beautiful circular currency icon with border */}
                 <View
                   style={[
@@ -315,7 +330,7 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
                 </View>
               </View>
             ))}
-          </View>
+          </ScrollView>
         </View>
       )}
 
@@ -445,9 +460,7 @@ const getStyles = (theme: any) =>
       marginBottom: theme.spacing?.lg || 16,
     },
     listContainer: {
-      backgroundColor: theme.colors?.background?.card || theme.colors?.surface?.secondary,
-      borderRadius: theme.borderRadius?.lg || 16,
-      overflow: 'hidden',
+      // maxHeight is now set dynamically
     },
     positionItem: {
       flexDirection: 'row',
