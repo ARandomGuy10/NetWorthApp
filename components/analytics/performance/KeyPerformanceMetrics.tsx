@@ -1,25 +1,24 @@
 // components/analytics/KeyPerformanceMetrics.tsx
+
 import React from 'react';
-import {View, Text, StyleSheet, Dimensions} from 'react-native';
+import {View, Text, StyleSheet} from 'react-native';
 import {LinearGradient} from 'expo-linear-gradient';
 import Animated, {FadeInUp} from 'react-native-reanimated';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {formatSmartNumber} from '@/src/utils/formatters';
 import {NetWorthHistoryInsights} from '@/lib/supabase';
-
-const {width: screenWidth} = Dimensions.get('window');
+import {TrendingUp, TrendingDown, Calendar, Target, BarChart3} from 'lucide-react-native';
 
 interface KeyPerformanceMetricsProps {
   insights: NetWorthHistoryInsights;
   currency: string;
-  period: '1M' | '3M' | '6M' | '12M' | 'ALL'; // ✅ Use 12M instead of 1Y
+  period: '1M' | '3M' | '6M' | '12M' | 'ALL';
 }
 
 const KeyPerformanceMetrics: React.FC<KeyPerformanceMetricsProps> = ({insights, currency, period}) => {
   const {theme} = useTheme();
   const styles = getStyles(theme);
 
-  // ✅ Updated to use 12M instead of 1Y
   const getPeriodDisplayName = (period: string) => {
     switch (period) {
       case '1M':
@@ -29,7 +28,7 @@ const KeyPerformanceMetrics: React.FC<KeyPerformanceMetricsProps> = ({insights, 
       case '6M':
         return 'Past 6 Months';
       case '12M':
-        return 'Past 12 Months'; // ✅ Changed from 'Past Year'
+        return 'Past 12 Months';
       case 'ALL':
         return 'All Time';
       default:
@@ -42,8 +41,12 @@ const KeyPerformanceMetrics: React.FC<KeyPerformanceMetricsProps> = ({insights, 
       title: 'TOTAL RETURN',
       value: formatSmartNumber(insights.performanceSummary.change, currency),
       percentage: `${insights.performanceSummary.change >= 0 ? '+' : ''}${insights.performanceSummary.percent.toFixed(1)}%`,
-      icon: '📈',
-      color: insights.performanceSummary.change >= 0 ? theme.colors.asset : theme.colors.liability,
+      color: insights.performanceSummary.change >= 0 ? theme.colors.success : theme.colors.error,
+      icon: insights.performanceSummary.change >= 0 ? TrendingUp : TrendingDown,
+      gradient:
+        insights.performanceSummary.change >= 0
+          ? (['#22C55E15', '#22C55E08', '#22C55E05'] as const)
+          : (['#EF444415', '#EF444408', '#EF444405'] as const),
     },
     {
       title: 'MONTHLY AVG',
@@ -55,8 +58,9 @@ const KeyPerformanceMetrics: React.FC<KeyPerformanceMetricsProps> = ({insights, 
             )
           : formatSmartNumber(0, currency),
       percentage: 'per month',
-      icon: '📊',
       color: theme.colors.info,
+      icon: Calendar,
+      gradient: [`${theme.colors.info}15`, `${theme.colors.info}08`, `${theme.colors.info}05`] as const,
     },
     {
       title: 'BEST MONTH',
@@ -66,8 +70,9 @@ const KeyPerformanceMetrics: React.FC<KeyPerformanceMetricsProps> = ({insights, 
       percentage: insights.extremes?.biggestGain
         ? `${insights.extremes.biggestGain.month} (+${insights.extremes.biggestGain.percent.toFixed(1)}%)`
         : 'No data',
-      icon: '🚀',
       color: theme.colors.success,
+      icon: Target,
+      gradient: ['#22C55E15', '#22C55E08', '#22C55E05'] as const,
     },
     {
       title: 'GROWTH CONSISTENCY',
@@ -78,29 +83,53 @@ const KeyPerformanceMetrics: React.FC<KeyPerformanceMetricsProps> = ({insights, 
           : insights.volatility.stddevPercent > 10
             ? 'Moderate Growth'
             : 'Steady Growth',
-      icon: '📊',
       color: insights.volatility.stddevPercent > 20 ? theme.colors.warning : theme.colors.info,
+      icon: BarChart3,
+      gradient:
+        insights.volatility.stddevPercent > 20
+          ? ([`${theme.colors.warning}15`, `${theme.colors.warning}08`, `${theme.colors.warning}05`] as const)
+          : ([`${theme.colors.info}15`, `${theme.colors.info}08`, `${theme.colors.info}05`] as const),
     },
   ];
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Key Performance Metrics</Text>
-      <Text style={styles.periodIndicator}>BASED ON {getPeriodDisplayName(period).toUpperCase()}</Text>
+      {/* Enhanced Header */}
+      <View style={styles.header}>
+        <Text style={styles.sectionTitle}>Key Performance Metrics</Text>
+        <View style={styles.periodBadge}>
+          <Text style={styles.periodIndicator}>BASED ON {getPeriodDisplayName(period).toUpperCase()}</Text>
+        </View>
+      </View>
 
-      {/* ✅ NEW: 2-column grid layout */}
+      {/* Enhanced Grid Layout */}
       <View style={styles.metricsGrid}>
         {metrics.map((metric, index) => (
-          <Animated.View key={metric.title} style={styles.metricCard} entering={FadeInUp.delay(index * 100)}>
-            <LinearGradient colors={theme.colors.gradient.card} style={styles.metricGradient}>
+          <Animated.View
+            key={metric.title}
+            style={styles.metricCard}
+            entering={FadeInUp.delay(index * 100).springify()}>
+            <LinearGradient
+              colors={metric.gradient}
+              style={styles.metricGradient}
+              start={{x: 0, y: 0}}
+              end={{x: 1, y: 1}}>
+              {/* Card Header with Icon */}
               <View style={styles.metricHeader}>
-                <View style={[styles.metricIconContainer, {backgroundColor: `${metric.color}20`}]}>
-                  <Text style={styles.metricIcon}>{metric.icon}</Text>
+                <View style={[styles.iconContainer, {backgroundColor: `${metric.color}20`}]}>
+                  <metric.icon size={18} color={metric.color} />
                 </View>
                 <Text style={styles.metricTitle}>{metric.title}</Text>
               </View>
+
+              {/* Main Value */}
               <Text style={[styles.metricValue, {color: metric.color}]}>{metric.value}</Text>
+
+              {/* Secondary Info */}
               <Text style={styles.metricPercentage}>{metric.percentage}</Text>
+
+              {/* Subtle Background Pattern */}
+              <View style={styles.backgroundPattern} />
             </LinearGradient>
           </Animated.View>
         ))}
@@ -113,62 +142,79 @@ const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
       paddingHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.xl,
+    },
+    header: {
+      marginBottom: theme.spacing.xl,
     },
     sectionTitle: {
       fontSize: theme.fontSizes.heading,
-      fontWeight: '700',
+      fontWeight: '800',
       color: theme.colors.text.primary,
-      marginBottom: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+      letterSpacing: -0.3,
+    },
+    periodBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: `${theme.colors.primary}10`,
+      borderRadius: theme.borderRadius.full,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      borderWidth: 1,
+      borderColor: `${theme.colors.primary}20`,
     },
     periodIndicator: {
       fontSize: theme.fontSizes.caption,
-      color: theme.colors.text.tertiary,
-      textTransform: 'uppercase',
+      color: theme.colors.primary,
+      fontWeight: '600',
       letterSpacing: 0.5,
-      marginBottom: theme.spacing.lg,
     },
-    // ✅ NEW: Grid container for 2-column layout
+
+    // Grid Layout
     metricsGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'space-between', // ✅ Better spacing distribution
+      justifyContent: 'space-between',
+      rowGap: theme.spacing.lg,
+      columnGap: theme.spacing.md,
     },
-    // ✅ UPDATED: Card width for 2-column layout
     metricCard: {
-      width: '48%', // ✅ Each card takes ~48% of container width
-      marginBottom: theme.spacing.lg,
+      width: '48%', // Ensures exactly 2 columns with gap
+      minWidth: 150, // Prevents cards from becoming too small
     },
     metricGradient: {
       padding: theme.spacing.lg,
       borderRadius: theme.borderRadius.xl,
       borderWidth: 1,
       borderColor: theme.colors.border.primary,
-      minHeight: 140, // ✅ Consistent card height
-      // ✅ Add subtle shadow for depth
-      shadowColor: theme.colors.text.primary,
+      minHeight: 140,
+      position: 'relative',
+      overflow: 'hidden',
+
+      // Enhanced shadow
+      shadowColor: theme.colors.shadow || '#000',
       shadowOffset: {
         width: 0,
-        height: 2,
+        height: 4,
       },
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 2,
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      elevation: 4,
     },
+
+    // Card Content
     metricHeader: {
       flexDirection: 'row',
       alignItems: 'center',
       marginBottom: theme.spacing.md,
     },
-    metricIconContainer: {
-      width: 28,
-      height: 28,
-      borderRadius: 14,
+    iconContainer: {
+      width: 36,
+      height: 36,
+      borderRadius: theme.borderRadius.lg,
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: theme.spacing.sm,
-    },
-    metricIcon: {
-      fontSize: theme.fontSizes.md,
     },
     metricTitle: {
       fontSize: theme.fontSizes.caption,
@@ -176,19 +222,33 @@ const getStyles = (theme: any) =>
       color: theme.colors.text.secondary,
       textTransform: 'uppercase',
       letterSpacing: 0.5,
-      flex: 1, // ✅ Take remaining space
+      flex: 1,
+      lineHeight: theme.fontSizes.caption * 1.2,
     },
     metricValue: {
-      fontSize: theme.fontSizes.xl,
-      fontWeight: '700',
-      marginBottom: theme.spacing.xs,
-      lineHeight: theme.fontSizes.xl * 1.2,
+      fontSize: theme.fontSizes.xxl,
+      fontWeight: '800',
+      marginBottom: theme.spacing.sm,
+      lineHeight: theme.fontSizes.xxl * 1.1,
+      letterSpacing: -0.5,
     },
     metricPercentage: {
       fontSize: theme.fontSizes.sm,
       fontWeight: '500',
       color: theme.colors.text.tertiary,
       lineHeight: theme.fontSizes.sm * 1.3,
+    },
+
+    // Visual Enhancement
+    backgroundPattern: {
+      position: 'absolute',
+      top: -20,
+      right: -20,
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      backgroundColor: `${theme.colors.primary}05`,
+      opacity: 0.5,
     },
   });
 

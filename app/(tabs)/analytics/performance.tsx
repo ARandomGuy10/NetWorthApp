@@ -1,15 +1,22 @@
 // screens/PerformanceScreen.tsx
-import React, {useState} from 'react';
-import {ScrollView, StyleSheet, View} from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import React, {useState, useCallback} from 'react';
+import {ScrollView, StyleSheet, View, TouchableOpacity, Text} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useRouter} from 'expo-router';
+import * as Haptics from 'expo-haptics';
+import {Ionicons} from '@expo/vector-icons';
+
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
 import KeyPerformanceMetrics from '@/components/analytics/performance/KeyPerformanceMetrics';
 import PerformanceInsights from '@/components/analytics/performance/PerformanceInsights';
+import LoadingView from '@/components/ui/LoadingView';
 
 const PerformanceScreen: React.FC = () => {
   const {theme} = useTheme();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   // ✅ Add state for period management
   const [selectedPeriod, setSelectedPeriod] = useState<'1M' | '3M' | '6M' | '12M' | 'ALL'>('3M');
@@ -17,18 +24,29 @@ const PerformanceScreen: React.FC = () => {
   // ✅ Use dynamic period instead of hardcoded '3M'
   const {data: historyData, isLoading, error} = useNetWorthHistory({period: selectedPeriod});
 
-  const styles = getStyles(theme);
+  const onBack = useCallback(() => {
+    Haptics.selectionAsync();
+    router.back();
+  }, [router]);
+
+  const styles = getStyles(theme, insets);
 
   if (isLoading || !historyData) {
-    return <View style={styles.container}>{/* Loading state */}</View>;
+    return <LoadingView message="Analyzing performance..." />;
   }
 
   return (
-    <SafeAreaView style={styles.container} >
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic">
         {/* ✅ Pass period handlers to chart */}
-        
-        <IntegratedDashboard_Wagmi onPeriodChange={setSelectedPeriod} currentPeriod={selectedPeriod} />
+
+        <View style={styles.sectionContainer}>
+          <IntegratedDashboard_Wagmi onPeriodChange={setSelectedPeriod} currentPeriod={selectedPeriod} />
+        </View>
 
         {historyData?.insights && (
           <>
@@ -41,23 +59,42 @@ const PerformanceScreen: React.FC = () => {
               />
             </View>
 
-              <PerformanceInsights
-                insights={historyData.insights}
-                currency={historyData.currency}
-                period={selectedPeriod}
-              />
+            <PerformanceInsights
+              insights={historyData.insights}
+              currency={historyData.currency}
+              period={selectedPeriod}
+            />
           </>
         )}
       </ScrollView>
-    </SafeAreaView>
+
+      {/* Overlay Back Button */}
+      <TouchableOpacity onPress={onBack} style={styles.overlayBackButton}>
+        <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+      </TouchableOpacity>
+    </View>
   );
 };
 
-const getStyles = (theme: any) =>
+const getStyles = (theme: any, insets: any) =>
   StyleSheet.create({
     container: {
       flex: 1,
       backgroundColor: theme.colors.background.primary,
+    },
+    overlayBackButton: {
+      position: 'absolute',
+      top: insets.top + theme.spacing.md,
+      left: theme.spacing.lg,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: `${theme.colors.background.secondary}B3`, // Add some transparency
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10,
+      borderWidth: 1,
+      borderColor: `${theme.colors.border.primary}99`,
     },
     scrollView: {
       flex: 1,
@@ -67,7 +104,7 @@ const getStyles = (theme: any) =>
     },
     // ✅ Add proper section spacing
     sectionContainer: {
-      marginTop: theme.spacing.xxl,
+      marginBottom: theme.spacing.xxl, // ✅ Consistent spacing between sections
     },
   });
 

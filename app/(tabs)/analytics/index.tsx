@@ -1,5 +1,5 @@
-import React, {useEffect, useState, useCallback} from 'react';
-import {ScrollView, StyleSheet, View, Text, TouchableOpacity} from 'react-native';
+import React, {useEffect, useState, useCallback, useRef} from 'react';
+import {ScrollView, StyleSheet, View, Text, TouchableOpacity, Modal, Animated as RNAnimated} from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -80,22 +80,94 @@ const analyticsItems: AnalyticsNavItem[] = [
     accent: '🌍',
     type: 'currency',
   },
-  {
-    href: '/analytics/achievements',
-    icon: Award,
-    title: 'Achievements',
-    description: 'Financial milestones & gamification',
-    accent: '🏅',
-    type: 'achievements',
-  },
+  // ✅ COMMENTED OUT: Achievements navigation (not needed for now)
+  // {
+  //   href: '/analytics/achievements',
+  //   icon: Award,
+  //   title: 'Achievements',
+  //   description: 'Financial milestones & gamification',
+  //   accent: '🏅',
+  //   type: 'achievements',
+  // },
 ];
 
-// Premium Achievement Badge with Shine Effect
+// Badge Tooltip Component (unchanged)
+const BadgeTooltip = ({badge, visible, onClose}: {badge: any; visible: boolean; onClose: () => void}) => {
+  const {theme} = useTheme();
+  const fadeAnim = useRef(new RNAnimated.Value(0)).current;
+  const scaleAnim = useRef(new RNAnimated.Value(0.8)).current;
+
+  useEffect(() => {
+    if (visible) {
+      RNAnimated.parallel([
+        RNAnimated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        RNAnimated.spring(scaleAnim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+
+      const timer = setTimeout(() => {
+        onClose();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    } else {
+      RNAnimated.parallel([
+        RNAnimated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        RNAnimated.timing(scaleAnim, {
+          toValue: 0.8,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  if (!visible) return null;
+
+  return (
+    <Modal transparent visible={visible} onRequestClose={onClose}>
+      <TouchableOpacity style={tooltipStyles.overlay} activeOpacity={1} onPress={onClose}>
+        <RNAnimated.View
+          style={[
+            tooltipStyles.container,
+            {
+              opacity: fadeAnim,
+              transform: [{scale: scaleAnim}],
+              backgroundColor: theme?.colors?.background?.card || '#2A2A2E',
+              borderColor: theme?.colors?.border?.primary || '#404040',
+            },
+          ]}>
+          <Text style={[tooltipStyles.title, {color: theme?.colors?.text?.primary || '#FFFFFF'}]}>
+            {badge.icon} {badge.title}
+          </Text>
+          <Text style={[tooltipStyles.description, {color: theme?.colors?.text?.secondary || '#B8C6DB'}]}>
+            {badge.description}
+          </Text>
+        </RNAnimated.View>
+      </TouchableOpacity>
+    </Modal>
+  );
+};
+
+// ✅ UPDATED: Achievement Badge - uses only database icon
 const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
   const {theme} = useTheme();
   const {impactAsync} = useHaptics();
   const scale = useSharedValue(1);
   const shine = useSharedValue(0);
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{scale: scale.value}],
@@ -115,46 +187,70 @@ const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
     shine.value = withSequence(withTiming(0.3, {duration: 150}), withTiming(0, {duration: 300}));
 
     await impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setShowTooltip(true);
   }, [impactAsync, scale, shine]);
 
-  // Premium gradient based on badge type - Fixed TS
-  const getPremiumGradient = (badgeId: string) => {
-    const gradients = {
-      streak: ['#FFD700', '#FFA500', '#FF8C00'] as const,
-      high: ['#20E3B2', '#1BC49A', '#16A085'] as const,
-      savings: ['#6366F1', '#8B5CF6', '#A855F7'] as const,
-      performer: ['#F59E0B', '#D97706', '#B45309'] as const,
-    };
-    return (
-      gradients[badgeId as keyof typeof gradients] ||
-      ([`${theme.colors.primary}40`, `${theme.colors.primary}20`, `${theme.colors.primary}10`] as const)
-    );
+  // Hash-based gradient for consistent colors
+  const getPremiumGradient = (badge: any): [string, string, string] => {
+    const badgeKey = badge.title || badge.label || badge.id || '';
+
+    let hash = 0;
+    for (let i = 0; i < badgeKey.length; i++) {
+      hash = badgeKey.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const gradientOptions: [string, string, string][] = [
+      ['#FFD700', '#FFA500', '#FF8C00'], // Gold
+      ['#20E3B2', '#1BC49A', '#16A085'], // Teal
+      ['#22C55E', '#16A34A', '#15803D'], // Green
+      ['#F59E0B', '#D97706', '#B45309'], // Amber
+      ['#6366F1', '#8B5CF6', '#A855F7'], // Purple
+      ['#EF4444', '#DC2626', '#B91C1C'], // Red
+      ['#06B6D4', '#0891B2', '#0E7490'], // Cyan
+      ['#10B981', '#059669', '#047857'], // Emerald
+      ['#84CC16', '#65A30D', '#4D7C0F'], // Lime
+      ['#F97316', '#EA580C', '#C2410C'], // Orange
+    ];
+
+    const gradientIndex = Math.abs(hash) % gradientOptions.length;
+    return gradientOptions[gradientIndex];
   };
 
-  const styles = getStyles(theme, true); // Pass true for fullWidth default
+  const styles = getStyles(theme, true);
 
   return (
-    <Animated.View style={[styles.achievementBadge, animatedStyle]}>
-      <TouchableOpacity onPress={handlePress} style={styles.badgeContent}>
-        <LinearGradient
-          colors={getPremiumGradient(badge.id)}
-          style={styles.badgeGradient}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}>
-          {/* Shine overlay */}
-          <Animated.View style={[styles.shineOverlay, shineStyle]} />
+    <>
+      <Animated.View style={[styles.achievementBadge, animatedStyle]}>
+        <TouchableOpacity onPress={handlePress} style={styles.badgeContent}>
+          <LinearGradient
+            colors={getPremiumGradient(badge)}
+            style={styles.badgeGradient}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}>
+            {/* Shine overlay */}
+            <Animated.View style={[styles.shineOverlay, shineStyle]} />
 
-          <Text style={[styles.badgeLabel, {color: theme.colors.text.primary}]}>{badge.label}</Text>
-          {badge.value && <Text style={[styles.badgeValue, {color: theme.colors.text.primary}]}>{badge.value}</Text>}
-        </LinearGradient>
-      </TouchableOpacity>
-    </Animated.View>
+            {/* ✅ UPDATED: Only use database icon and title, no hardcoded fallbacks */}
+            <Text style={[styles.badgeLabel, {color: '#FFFFFF'}]} numberOfLines={1}>
+              {badge.icon}
+              {badge.title || badge.label}
+            </Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </Animated.View>
+
+      <BadgeTooltip badge={badge} visible={showTooltip} onClose={() => setShowTooltip(false)} />
+    </>
   );
 };
 
-// Premium Badges Strip
+// Premium Badges Strip (unchanged)
 const BadgesStrip = ({theme, badges}: {theme: any; badges: any[]}) => {
-  const styles = getStyles(theme, true); // Pass true for fullWidth default
+  const styles = getStyles(theme, true);
+
+  if (!badges || badges.length === 0) {
+    return null;
+  }
 
   return (
     <View style={styles.badgesContainer}>
@@ -164,14 +260,14 @@ const BadgesStrip = ({theme, badges}: {theme: any; badges: any[]}) => {
         contentContainerStyle={styles.badgesScrollContent}
         style={styles.badgesScroll}>
         {badges.map((badge, index) => (
-          <AchievementBadge key={badge.id || index} badge={badge} index={index} />
+          <AchievementBadge key={badge.title || badge.id || index} badge={badge} index={index} />
         ))}
       </ScrollView>
     </View>
   );
 };
 
-// Enhanced Hero Section with fullWidth prop
+// Enhanced Hero Section (unchanged)
 const HeroSection = ({theme, fullWidth = true}: {theme: any; fullWidth?: boolean}) => {
   const {data: dashboardData} = useDashboardData();
   const {data: historyData} = useNetWorthHistory({period: '12M'});
@@ -253,7 +349,7 @@ const HeroSection = ({theme, fullWidth = true}: {theme: any; fullWidth?: boolean
   );
 };
 
-// Animated Card with fullWidth prop
+// Animated Card (unchanged)
 const AnimatedCard = ({
   item,
   index,
@@ -284,9 +380,9 @@ const AnimatedCard = ({
   );
 };
 
-// Motivational Footer
+// Motivational Footer (unchanged)
 const MotivationalFooter = ({theme}: {theme: any}) => {
-  const styles = getStyles(theme, true); // Pass true for fullWidth default
+  const styles = getStyles(theme, true);
 
   return (
     <View style={styles.motivationFooter}>
@@ -300,14 +396,18 @@ const MotivationalFooter = ({theme}: {theme: any}) => {
   );
 };
 
+// ✅ REMOVED: Helper functions for hardcoded icons - no longer needed since icons come from database
+
 // Main Screen Component
 export default function AnalyticsIndexScreen() {
   const {theme} = useTheme();
   const insets = useSafeAreaInsets();
 
-  // ✅ EASY TOGGLE: Change these to false for original padded layout
-  const FULL_WIDTH_CARDS = true; // Set to false for original card layout
-  const FULL_WIDTH_HEADER = true; // Set to false for original header layout
+  const {data: dashboardData} = useDashboardData();
+  const {data: historyData} = useNetWorthHistory({period: '12M'});
+
+  const FULL_WIDTH_CARDS = true;
+  const FULL_WIDTH_HEADER = true;
 
   if (!theme || !theme.colors) {
     return (
@@ -324,12 +424,26 @@ export default function AnalyticsIndexScreen() {
   }
 
   const styles = getStyles(theme, FULL_WIDTH_CARDS);
-  const badges = [
-    {id: 'streak', label: 'Streak', value: '7d'},
-    {id: 'high', label: 'All-time High'},
-    {id: 'savings', label: 'Savings Rate', value: '18%'},
-    {id: 'performer', label: 'Top Performer', value: 'ETF A'},
-  ];
+
+  // ✅ UPDATED: Get badges dynamically from API data - no fallback hardcoded icons
+  const badges = React.useMemo(() => {
+    // First try to get full badge objects from NetWorth history (with title, description, icon)
+    if (historyData?.badges && historyData.badges.length > 0) {
+      return historyData.badges;
+    }
+
+    // Fallback to dashboard analytics badges (just strings) and map them to basic objects
+    if (dashboardData?.analytics?.badges && dashboardData.analytics.badges.length > 0) {
+      return dashboardData.analytics.badges.map((badgeString: string) => ({
+        title: badgeString,
+        description: 'Achievement unlocked', // Generic description
+        icon: '🏅', // Generic icon since we don't have mapping
+      }));
+    }
+
+    // No static fallbacks - badges come from database or none at all
+    return [];
+  }, [historyData?.badges, dashboardData?.analytics?.badges]);
 
   return (
     <View style={styles.container}>
@@ -358,7 +472,7 @@ export default function AnalyticsIndexScreen() {
   );
 }
 
-// Complete Styles with fullWidth parameter
+// Complete Styles (unchanged)
 const getStyles = (theme: any, fullWidth: boolean = true) =>
   StyleSheet.create({
     container: {
@@ -372,8 +486,6 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
     contentContainer: {
       paddingHorizontal: fullWidth ? 0 : theme.spacing.lg,
     },
-
-    // Screen titles always have padding for readability
     screenTitle: {
       fontSize: 28,
       fontWeight: '800',
@@ -390,8 +502,6 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
       opacity: 0.8,
       paddingHorizontal: theme.spacing.lg,
     },
-
-    // Hero section layout
     heroContainer: {
       ...(fullWidth
         ? {
@@ -456,8 +566,7 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
       fontSize: 12,
       fontWeight: '600',
     },
-
-    // Premium Badge Styles
+    // Badge Styles
     badgesContainer: {
       marginBottom: theme.spacing.md,
     },
@@ -484,12 +593,12 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
       borderRadius: theme.borderRadius.lg,
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
-      flexDirection: 'row',
       alignItems: 'center',
-      gap: theme.spacing.xs,
+      justifyContent: 'center',
       borderWidth: 1,
       borderColor: 'rgba(255,255,255,0.2)',
       position: 'relative',
+      minWidth: 100,
     },
     shineOverlay: {
       position: 'absolute',
@@ -506,15 +615,8 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
       textShadowColor: 'rgba(0,0,0,0.3)',
       textShadowOffset: {width: 0, height: 1},
       textShadowRadius: 2,
+      textAlign: 'center',
     },
-    badgeValue: {
-      fontSize: 13,
-      fontWeight: '800',
-      textShadowColor: 'rgba(0,0,0,0.3)',
-      textShadowOffset: {width: 0, height: 1},
-      textShadowRadius: 2,
-    },
-
     // Footer
     motivationFooter: {
       marginTop: theme.spacing.xxl,
@@ -539,3 +641,37 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
       opacity: 0.8,
     },
   });
+
+// Tooltip styles (unchanged)
+const tooltipStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  container: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    minWidth: 200,
+    maxWidth: 280,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 12,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  description: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+});
