@@ -3,7 +3,6 @@ import {View, Text, StyleSheet, TouchableOpacity, Modal} from 'react-native';
 import {Ionicons} from '@expo/vector-icons';
 import {formatSmartNumber} from '@/src/utils/formatters';
 import {LinearGradient} from 'expo-linear-gradient';
-import {CURRENCIES} from '@/lib/supabase'; // ✅ ONLY CHANGE: Added import
 
 interface CurrencyRiskAnalysisProps {
   data: {
@@ -20,69 +19,35 @@ interface CurrencyRiskAnalysisProps {
   userCurrency: string;
 }
 
-// ✅ ONLY CHANGE: Enhanced currency volatility classification using official currency list
-const getCurrencyVolatilityGroup = (currency: string): 'stable' | 'moderate' | 'volatile' => {
-  // Validate currency is supported
-  if (!CURRENCIES.includes(currency)) {
-    console.warn(`Unsupported currency in risk analysis: ${currency}`);
-    return 'volatile'; // Default to highest risk for unknown currencies
-  }
-
-  // Major reserve currencies - truly the most stable
-  const stable = ['USD', 'EUR', 'JPY', 'CHF'];
-
-  // Developed economies with established central banks - moderate volatility
-  const moderate = ['CAD', 'AUD', 'NZD', 'SEK', 'NOK', 'DKK', 'SGD', 'HKD', 'ILS'];
-
-  // European currencies (stable due to EU proximity)
-  const europeanStable = ['BGN', 'CZK', 'HUF', 'PLN', 'RON'];
-
-  // All others are considered volatile (including GBP due to Brexit, emerging markets, etc.)
-  if (stable.includes(currency)) return 'stable';
-  if (moderate.includes(currency) || europeanStable.includes(currency)) return 'moderate';
-  return 'volatile';
-};
-
 const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme, userCurrency}) => {
   const styles = getStyles(theme);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  // Simplified risk calculation
-  const getSimplifiedRiskLevel = (foreignExposure: number) => {
+  // ✅ SAFE: Simple exposure calculation with colors but neutral language
+  const getExposureLevel = (foreignExposure: number) => {
     if (foreignExposure <= 0.2)
-      return {level: 'Low', color: theme.colors?.status?.success || '#00d4aa', icon: 'shield-checkmark'};
+      return {level: 'Low', color: theme.colors?.status?.success || '#00d4aa', icon: 'information-circle'};
     if (foreignExposure <= 0.5)
-      return {level: 'Medium', color: theme.colors?.status?.warning || '#ffd700', icon: 'warning'};
-    return {level: 'High', color: theme.colors?.status?.error || '#ff6b9d', icon: 'alert-circle'};
+      return {level: 'Medium', color: theme.colors?.status?.warning || '#ffd700', icon: 'information-circle'};
+    return {level: 'High', color: theme.colors?.status?.info || '#4facfe', icon: 'information-circle'};
   };
 
-  // Calculate risk metrics
+  // Calculate exposure metrics
   const baseCurrencyAssetExposure = data.assets.find(a => a.currency === userCurrency)?.percentage || 0;
   const baseCurrencyLiabilityExposure = data.liabilities.find(l => l.currency === userCurrency)?.percentage || 0;
 
   const foreignAssetExposure = 1 - baseCurrencyAssetExposure;
   const foreignLiabilityExposure = 1 - baseCurrencyLiabilityExposure;
 
-  const assetRisk = getSimplifiedRiskLevel(foreignAssetExposure);
-  const liabilityRisk = getSimplifiedRiskLevel(foreignLiabilityExposure);
+  const assetExposure = getExposureLevel(foreignAssetExposure);
+  const liabilityExposure = getExposureLevel(foreignLiabilityExposure);
 
-  // Net exposure calculations
-  const netExposureByCurrency = new Map<
-    string,
-    {
-      amount: number;
-      isHedged: boolean;
-      volatilityGroup: 'stable' | 'moderate' | 'volatile';
-    }
-  >();
+  // ✅ FIXED: Calculate net positions with proper +/- indicators
+  const netExposureByCurrency = new Map<string, {amount: number; isHedged: boolean}>();
 
   // Process assets
   data.assets.forEach(asset => {
-    const current = netExposureByCurrency.get(asset.currency) || {
-      amount: 0,
-      isHedged: false,
-      volatilityGroup: getCurrencyVolatilityGroup(asset.currency),
-    };
+    const current = netExposureByCurrency.get(asset.currency) || {amount: 0, isHedged: false};
     netExposureByCurrency.set(asset.currency, {
       ...current,
       amount: current.amount + asset.amount,
@@ -91,19 +56,13 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
 
   // Process liabilities and determine hedging
   data.liabilities.forEach(liability => {
-    const current = netExposureByCurrency.get(liability.currency) || {
-      amount: 0,
-      isHedged: false,
-      volatilityGroup: getCurrencyVolatilityGroup(liability.currency),
-    };
+    const current = netExposureByCurrency.get(liability.currency) || {amount: 0, isHedged: false};
     const newAmount = current.amount - liability.amount;
     const hasAssets = data.assets.some(a => a.currency === liability.currency);
 
     netExposureByCurrency.set(liability.currency, {
-      ...current,
       amount: newAmount,
       isHedged: hasAssets && Math.abs(newAmount) < Math.max(current.amount, liability.amount) * 0.5,
-      volatilityGroup: getCurrencyVolatilityGroup(liability.currency),
     });
   });
 
@@ -113,57 +72,55 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
       currency,
       ...details,
       exposurePercent: Math.abs(details.amount) / Math.abs(data.netWorth),
+      isNetAsset: details.amount > 0, // ✅ FIXED: Track if net asset or liability
     }))
     .filter(item => Math.abs(item.amount) > 0.01)
     .sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
 
-  // Tooltip content
+  // ✅ SAFE: Factual tooltip content with disclaimers
   const getTooltipContent = (type: string) => {
     switch (type) {
-      case 'risk-levels':
+      case 'exposure-levels':
         return {
-          title: 'How Risk Levels Work',
+          title: 'Currency Exposure Information',
           content: [
-            'We assess your exchange rate risk based on how much of your wealth is in foreign currencies:',
+            'This shows what percentage of your wealth is in currencies other than your base currency.',
             '',
-            '🟢 Low Risk (0-20%): Minimal foreign exposure',
-            '🟡 Medium Risk (20-50%): Moderate foreign exposure',
-            '🔴 High Risk (50%+): High foreign exposure',
+            '• Low (0-20%): Most wealth in base currency',
+            '• Medium (20-50%): Moderate foreign currency holdings',
+            '• High (50%+): Majority in foreign currencies',
             '',
-            'Foreign currency = any currency other than your base currency (' + userCurrency + ')',
+            'Base currency: ' + userCurrency,
+            '',
+            'This is informational only. Consult a financial advisor for investment decisions.',
           ],
         };
       case 'natural-hedging':
         return {
-          title: 'Natural Currency Hedging',
+          title: 'Currency Matching',
           content: [
-            'When you have both assets and liabilities in the same foreign currency, they naturally offset each other.',
+            'When you have both assets and liabilities in the same currency, they may offset each other.',
             '',
-            'Example with EUR:',
-            '• €10,000 in European stocks (asset)',
+            'Example:',
+            '• €10,000 European investment (asset)',
             '• €6,000 European mortgage (liability)',
-            '• Net EUR exposure = €4,000 (not €10,000)',
+            '• Net EUR position = +€4,000',
             '',
-            'Currency movements affect both sides, reducing your overall risk.',
+            'Currency movements affect both positions. This information is educational only.',
           ],
         };
-      case 'volatility':
+      case 'net-positions':
         return {
-          title: 'Currency Stability Groups',
+          title: 'Net Currency Positions',
           content: [
-            'Different currencies have different volatility patterns:',
+            'Net position = Total assets - Total liabilities in each currency',
             '',
-            '🟢 Stable: USD, EUR, JPY, CHF',
-            '• Major reserve currencies',
-            '• Deep global markets, lower volatility',
+            '+ Positive = You have more assets than liabilities',
+            '- Negative = You have more liabilities than assets',
             '',
-            '🟡 Moderate: CAD, AUD, SEK, NOK, SGD, etc.',
-            '• Developed country currencies',
-            '• Generally stable with some fluctuation',
+            'These positions may be affected by currency exchange rate changes.',
             '',
-            '🔴 Volatile: GBP, BRL, TRY, ZAR, etc.',
-            '• Political uncertainty or emerging markets',
-            '• Higher potential for large swings',
+            'This information is for educational purposes only.',
           ],
         };
       default:
@@ -216,58 +173,58 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
           end={{x: 1, y: 1}}>
           <View style={styles.headerContent}>
             <View style={styles.headerIcon}>
-              <Ionicons name="shield-checkmark" size={28} color={theme.colors?.primary || '#4facfe'} />
+              <Ionicons name="analytics-outline" size={28} color={theme.colors?.primary || '#4facfe'} />
             </View>
             <View style={styles.headerTextContainer}>
-              <Text style={styles.headerTitle}>Currency Risk Analysis</Text>
-              <Text style={styles.headerSubtitle}>Exchange rate exposure assessment</Text>
+              <Text style={styles.headerTitle}>Currency Exposure Analysis</Text>
+              <Text style={styles.headerSubtitle}>Portfolio currency distribution</Text>
             </View>
           </View>
         </LinearGradient>
       </View>
 
-      {/* Risk Assessment */}
-      <View style={styles.riskSection}>
+      {/* ✅ FIXED: Exposure Assessment with colors */}
+      <View style={styles.exposureSection}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Exchange Rate Risk</Text>
-          <TouchableOpacity style={styles.tooltipButton} onPress={() => showTooltip('risk-levels')}>
+          <Text style={styles.sectionTitle}>Currency Exposure</Text>
+          <TouchableOpacity style={styles.tooltipButton} onPress={() => showTooltip('exposure-levels')}>
             <Ionicons name="information-circle-outline" size={16} color={theme.colors?.text?.secondary || '#b8c6db'} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.riskGrid}>
-          <View style={styles.riskCard}>
-            <View style={styles.riskCardHeader}>
-              <Ionicons name={assetRisk.icon as any} size={24} color={assetRisk.color} />
-              <View style={[styles.riskBadge, {backgroundColor: assetRisk.color + '20'}]}>
-                <Text style={[styles.riskLevel, {color: assetRisk.color}]}>{assetRisk.level}</Text>
+        <View style={styles.exposureGrid}>
+          <View style={styles.exposureCard}>
+            <View style={styles.exposureCardHeader}>
+              <Ionicons name={assetExposure.icon as any} size={24} color={assetExposure.color} />
+              <View style={[styles.exposureBadge, {backgroundColor: assetExposure.color + '20'}]}>
+                <Text style={[styles.exposureLevel, {color: assetExposure.color}]}>{assetExposure.level}</Text>
               </View>
             </View>
-            <Text style={styles.riskCardTitle}>Assets</Text>
-            <Text style={styles.riskCardValue}>{Math.round(foreignAssetExposure * 100)}%</Text>
-            <Text style={styles.riskCardDescription}>Foreign currency exposure</Text>
+            <Text style={styles.exposureCardTitle}>Assets</Text>
+            <Text style={styles.exposureCardValue}>{Math.round(foreignAssetExposure * 100)}%</Text>
+            <Text style={styles.exposureCardDescription}>Non-{userCurrency} exposure</Text>
           </View>
 
-          <View style={styles.riskCard}>
-            <View style={styles.riskCardHeader}>
-              <Ionicons name={liabilityRisk.icon as any} size={24} color={liabilityRisk.color} />
-              <View style={[styles.riskBadge, {backgroundColor: liabilityRisk.color + '20'}]}>
-                <Text style={[styles.riskLevel, {color: liabilityRisk.color}]}>{liabilityRisk.level}</Text>
+          <View style={styles.exposureCard}>
+            <View style={styles.exposureCardHeader}>
+              <Ionicons name={liabilityExposure.icon as any} size={24} color={liabilityExposure.color} />
+              <View style={[styles.exposureBadge, {backgroundColor: liabilityExposure.color + '20'}]}>
+                <Text style={[styles.exposureLevel, {color: liabilityExposure.color}]}>{liabilityExposure.level}</Text>
               </View>
             </View>
-            <Text style={styles.riskCardTitle}>Liabilities</Text>
-            <Text style={styles.riskCardValue}>{Math.round(foreignLiabilityExposure * 100)}%</Text>
-            <Text style={styles.riskCardDescription}>Foreign currency debt</Text>
+            <Text style={styles.exposureCardTitle}>Liabilities</Text>
+            <Text style={styles.exposureCardValue}>{Math.round(foreignLiabilityExposure * 100)}%</Text>
+            <Text style={styles.exposureCardDescription}>Non-{userCurrency} debt</Text>
           </View>
         </View>
       </View>
 
-      {/* Currency Positions - Only show if there are any */}
+      {/* ✅ FIXED: Currency Positions with labels under values */}
       {netExposures.length > 0 && (
-        <View style={styles.exposureSection}>
+        <View style={styles.positionsSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Currency Positions</Text>
-            <TouchableOpacity style={styles.tooltipButton} onPress={() => showTooltip('natural-hedging')}>
+            <Text style={styles.sectionTitle}>Net Currency Positions</Text>
+            <TouchableOpacity style={styles.tooltipButton} onPress={() => showTooltip('net-positions')}>
               <Ionicons
                 name="information-circle-outline"
                 size={16}
@@ -276,27 +233,41 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
             </TouchableOpacity>
           </View>
 
-          {/* List container matching CategoryPerformanceList */}
           <View style={styles.listContainer}>
             {netExposures.slice(0, 6).map((exposure, index) => (
               <View
                 key={exposure.currency}
-                style={[styles.exposureItem, index === netExposures.slice(0, 6).length - 1 && styles.lastExposureItem]}>
-                {/* Currency Icon */}
+                style={[styles.positionItem, index === netExposures.slice(0, 6).length - 1 && styles.lastPositionItem]}>
+                {/* ✅ FIXED: Beautiful circular currency icon with border */}
                 <View
                   style={[
                     styles.currencyIconContainer,
-                    {backgroundColor: getVolatilityColor(exposure.volatilityGroup, theme) + '15'},
+                    {
+                      backgroundColor:
+                        (exposure.isNetAsset ? theme.colors?.status?.success : theme.colors?.status?.error) + '15' ||
+                        '#00d4aa15',
+                      borderColor: exposure.isNetAsset
+                        ? theme.colors?.status?.success || '#00d4aa'
+                        : theme.colors?.status?.error || '#ff6b9d',
+                    },
                   ]}>
-                  <Text style={[styles.currencyIcon, {color: getVolatilityColor(exposure.volatilityGroup, theme)}]}>
+                  <Text
+                    style={[
+                      styles.currencyIcon,
+                      {
+                        color: exposure.isNetAsset
+                          ? theme.colors?.status?.success || '#00d4aa'
+                          : theme.colors?.status?.error || '#ff6b9d',
+                      },
+                    ]}>
                     {exposure.currency}
                   </Text>
                 </View>
 
-                <View style={styles.exposureMain}>
-                  <View style={styles.exposureHeader}>
-                    <Text style={styles.exposureCurrency}>{exposure.currency}</Text>
-                    <View style={styles.exposureIndicators}>
+                <View style={styles.positionMain}>
+                  <View style={styles.positionHeader}>
+                    <Text style={styles.positionCurrency}>{exposure.currency}</Text>
+                    <View style={styles.positionIndicators}>
                       {exposure.isHedged && (
                         <TouchableOpacity
                           style={[
@@ -304,74 +275,59 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
                             {backgroundColor: theme.colors?.status?.info + '20' || '#4facfe20'},
                           ]}
                           onPress={() => showTooltip('natural-hedging')}>
-                          <Ionicons name="shield-checkmark" size={12} color={theme.colors?.status?.info || '#4facfe'} />
+                          <Ionicons name="link-outline" size={12} color={theme.colors?.status?.info || '#4facfe'} />
                           <Text style={[styles.hedgeText, {color: theme.colors?.status?.info || '#4facfe'}]}>
-                            Hedged
+                            Matched
                           </Text>
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity
-                        style={[
-                          styles.volatilityBadge,
-                          {backgroundColor: getVolatilityColor(exposure.volatilityGroup, theme) + '20'},
-                        ]}
-                        onPress={() => showTooltip('volatility')}>
-                        <Text
-                          style={[styles.volatilityText, {color: getVolatilityColor(exposure.volatilityGroup, theme)}]}>
-                          {exposure.volatilityGroup}
-                        </Text>
-                      </TouchableOpacity>
                     </View>
                   </View>
-
-                  <Text style={styles.exposurePercent}>{Math.round(exposure.exposurePercent * 100)}% of net worth</Text>
+                  <Text style={styles.positionPercent}>{Math.round(exposure.exposurePercent * 100)}% of net worth</Text>
                 </View>
 
-                <View style={styles.exposureRight}>
+                {/* ✅ FIXED: Amount with Net Asset/Liability label underneath */}
+                <View style={styles.positionRight}>
                   <Text
                     style={[
-                      styles.exposureAmount,
+                      styles.positionAmount,
                       {
-                        color:
-                          exposure.amount >= 0
-                            ? theme.colors?.status?.success || '#00d4aa'
-                            : theme.colors?.status?.error || '#ff6b9d',
+                        color: exposure.isNetAsset
+                          ? theme.colors?.status?.success || '#00d4aa'
+                          : theme.colors?.status?.error || '#ff6b9d',
                       },
                     ]}>
-                    {exposure.amount >= 0 ? '+' : ''}
-                    {formatSmartNumber(exposure.amount, userCurrency)}
+                    {exposure.isNetAsset ? '+' : '-'}
+                    {formatSmartNumber(Math.abs(exposure.amount), userCurrency)}
                   </Text>
-                  <Ionicons
-                    name={exposure.amount >= 0 ? 'trending-up' : 'trending-down'}
-                    size={16}
-                    color={
-                      exposure.amount >= 0
-                        ? theme.colors?.status?.success || '#00d4aa'
-                        : theme.colors?.status?.error || '#ff6b9d'
-                    }
-                  />
+                  {/* ✅ KEPT: Net Asset/Liability label under the value */}
+                  <Text
+                    style={[
+                      styles.positionLabel,
+                      {
+                        color: exposure.isNetAsset
+                          ? theme.colors?.status?.success || '#00d4aa'
+                          : theme.colors?.status?.error || '#ff6b9d',
+                      },
+                    ]}>
+                    Net {exposure.isNetAsset ? 'Asset' : 'Liability'}
+                  </Text>
                 </View>
               </View>
             ))}
           </View>
         </View>
       )}
+
+      {/* ✅ SAFE: Add disclaimer */}
+      <View style={styles.disclaimerContainer}>
+        <Text style={styles.disclaimerText}>
+          This information is for educational purposes only and does not constitute financial advice. Currency values
+          fluctuate and past performance does not guarantee future results.
+        </Text>
+      </View>
     </View>
   );
-};
-
-// Helper function
-const getVolatilityColor = (group: string, theme: any) => {
-  switch (group) {
-    case 'stable':
-      return theme.colors?.status?.success || '#00d4aa';
-    case 'moderate':
-      return theme.colors?.status?.warning || '#ffd700';
-    case 'volatile':
-      return theme.colors?.status?.error || '#ff6b9d';
-    default:
-      return theme.colors?.text?.secondary || '#b8c6db';
-  }
 };
 
 // Styling
@@ -440,61 +396,60 @@ const getStyles = (theme: any) =>
       padding: theme.spacing?.xs || 4,
       marginLeft: theme.spacing?.xs || 4,
     },
-    riskSection: {
+    exposureSection: {
       marginBottom: theme.spacing?.xl || 20,
     },
-    riskGrid: {
+    exposureGrid: {
       flexDirection: 'row',
       paddingHorizontal: theme.spacing?.lg || 16,
       gap: theme.spacing?.md || 12,
     },
-    riskCard: {
+    exposureCard: {
       flex: 1,
       backgroundColor: theme.colors?.surface?.secondary || 'rgba(255,255,255,0.05)',
       borderRadius: theme.borderRadius?.lg || 16,
       padding: theme.spacing?.md || 12,
     },
-    riskCardHeader: {
+    exposureCardHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'flex-start',
       marginBottom: theme.spacing?.sm || 8,
     },
-    riskCardTitle: {
+    exposureCardTitle: {
       fontSize: theme.fontSizes?.caption || 12,
       color: theme.colors?.text?.secondary || '#b8c6db',
       fontWeight: '600',
       marginBottom: 4,
     },
-    riskCardValue: {
+    exposureCardValue: {
       fontSize: theme.fontSizes?.title || 20,
       fontWeight: '800',
       color: theme.colors?.text?.primary || '#ffffff',
       marginBottom: 4,
     },
-    riskCardDescription: {
+    exposureCardDescription: {
       fontSize: theme.fontSizes?.xs || 10,
       color: theme.colors?.text?.secondary || '#b8c6db',
     },
-    riskBadge: {
+    exposureBadge: {
       paddingHorizontal: theme.spacing?.xs || 6,
       paddingVertical: 2,
       borderRadius: theme.borderRadius?.sm || 8,
     },
-    riskLevel: {
+    exposureLevel: {
       fontSize: theme.fontSizes?.xs || 10,
       fontWeight: '700',
     },
-    exposureSection: {
-      paddingBottom: theme.spacing?.lg || 16,
+    positionsSection: {
+      marginBottom: theme.spacing?.lg || 16,
     },
-    // List container matching CategoryPerformanceList exactly
     listContainer: {
       backgroundColor: theme.colors?.background?.card || theme.colors?.surface?.secondary,
       borderRadius: theme.borderRadius?.lg || 16,
       overflow: 'hidden',
     },
-    exposureItem: {
+    positionItem: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing?.lg || 16,
@@ -503,9 +458,10 @@ const getStyles = (theme: any) =>
       borderBottomColor: theme.colors?.border?.primary || 'rgba(255,255,255,0.1)',
       backgroundColor: theme.colors?.background?.card || theme.colors?.surface?.secondary,
     },
-    lastExposureItem: {
+    lastPositionItem: {
       borderBottomWidth: 0,
     },
+    // ✅ FIXED: Beautiful circular icon with border like original
     currencyIconContainer: {
       width: 44,
       height: 44,
@@ -513,28 +469,27 @@ const getStyles = (theme: any) =>
       alignItems: 'center',
       justifyContent: 'center',
       marginRight: theme.spacing?.md || 12,
-      borderWidth: 2,
-      borderColor: 'transparent',
+      borderWidth: 2, // ✅ Nice circular border restored
     },
     currencyIcon: {
       fontSize: 12,
       fontWeight: '800',
     },
-    exposureMain: {
+    positionMain: {
       flex: 1,
     },
-    exposureHeader: {
+    positionHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
       marginBottom: theme.spacing?.xs || 4,
     },
-    exposureCurrency: {
+    positionCurrency: {
       fontSize: theme.fontSizes?.subtitle || 16,
       fontWeight: '700',
       color: theme.colors?.text?.primary || '#ffffff',
     },
-    exposureIndicators: {
+    positionIndicators: {
       flexDirection: 'row',
       gap: theme.spacing?.xs || 4,
     },
@@ -550,31 +505,39 @@ const getStyles = (theme: any) =>
       fontSize: theme.fontSizes?.xs || 10,
       fontWeight: '600',
     },
-    volatilityBadge: {
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 12,
-    },
-    volatilityText: {
-      fontSize: theme.fontSizes?.xs || 10,
-      fontWeight: '600',
-      textTransform: 'capitalize',
-    },
-    exposurePercent: {
+    positionPercent: {
       fontSize: theme.fontSizes?.caption || 12,
       color: theme.colors?.text?.secondary || '#b8c6db',
     },
-    exposureRight: {
+    positionRight: {
       alignItems: 'flex-end',
       marginLeft: theme.spacing?.md || 12,
       minWidth: 100,
     },
-    exposureAmount: {
+    positionAmount: {
       fontSize: theme.fontSizes?.subtitle || 16,
       fontWeight: '700',
       marginBottom: 2,
     },
-    // Tooltip styles
+    // ✅ KEPT: Style for Net Asset/Liability label
+    positionLabel: {
+      fontSize: theme.fontSizes?.xs || 10,
+      fontWeight: '600',
+    },
+    // ✅ SAFE: Disclaimer section
+    disclaimerContainer: {
+      padding: theme.spacing?.md || 12,
+      backgroundColor: theme.colors?.surface?.secondary || 'rgba(255,255,255,0.05)',
+      borderRadius: theme.borderRadius?.lg || 16,
+      margin: theme.spacing?.lg || 16,
+    },
+    disclaimerText: {
+      fontSize: theme.fontSizes?.xs || 10,
+      color: theme.colors?.text?.secondary || '#b8c6db',
+      textAlign: 'center',
+      lineHeight: 14,
+    },
+    // Tooltip styles (same as before)
     tooltipOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0,0,0,0.7)',

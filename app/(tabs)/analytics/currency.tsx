@@ -125,6 +125,7 @@ const CurrencyAnalyticsScreen: React.FC = () => {
                   type="asset"
                   total={processedData.totalAssets}
                   currency={userCurrency}
+                  centerLabel="Assets"
                 />
               </View>
             )}
@@ -138,6 +139,7 @@ const CurrencyAnalyticsScreen: React.FC = () => {
                   type="liability"
                   total={processedData.totalLiabilities}
                   currency={userCurrency}
+                  centerLabel="Liabilities"
                 />
               </View>
             )}
@@ -283,10 +285,11 @@ const getStyles = (theme: any, insets: any) =>
     },
     // Section spacing
     sectionContainer: {
-      marginBottom: theme.spacing.lg,
+      marginBottom: theme.spacing.xxl,
     },
     chartsSection: {
-      gap: theme.spacing.sm,
+      gap: theme.spacing.lg,
+      marginBottom: theme.spacing.xxl,
     },
     // Empty states
     emptyChartsContainer: {

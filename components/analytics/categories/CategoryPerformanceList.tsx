@@ -212,7 +212,7 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
               <Text style={styles.headerSubtitle}>{processedCategories.length} categories</Text>
             </View>
             <TouchableOpacity style={styles.sortButton} onPress={handleSortChange}>
-              <Ionicons name="funnel-outline" size={16} color={theme.colors?.text?.secondary || '#b8c6db'} />
+              <Ionicons name="filter-outline" size={16} color={theme.colors?.text?.secondary || '#b8c6db'} />
               <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
             </TouchableOpacity>
           </View>

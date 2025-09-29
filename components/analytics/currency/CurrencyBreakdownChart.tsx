@@ -20,6 +20,7 @@ interface CurrencyBreakdownChartProps {
   type: 'asset' | 'liability';
   total: number;
   currency: string;
+  centerLabel?: string;
 }
 
 // Chart constants - exactly matching CategoryAllocationPieChart
@@ -67,16 +68,17 @@ const getCurrencyColor = (currency: string, index: number): string => {
   return color || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
 };
 
-const CurrencyBreakdownChart: React.FC<CurrencyBreakdownChartProps> = ({data, title, type, total, currency}) => {
+const CurrencyBreakdownChart: React.FC<CurrencyBreakdownChartProps> = ({
+  data,
+  title,
+  type,
+  total,
+  currency,
+  centerLabel,
+}) => {
   const {theme} = useTheme() as any;
   const {selectionAsync} = useHaptics();
   const {width: screenWidth} = useWindowDimensions();
-
-  // Safe theme access with fallbacks
-  const colors = theme?.colors ?? {};
-  const text = colors.text ?? {};
-  const surface = colors.surface ?? {};
-  const border = colors.border ?? {};
 
   // Exact same sizing logic as CategoryAllocationPieChart
   const size = Math.max(220, Math.min(360, screenWidth * 0.72));
@@ -150,115 +152,119 @@ const CurrencyBreakdownChart: React.FC<CurrencyBreakdownChartProps> = ({data, ti
     [selectionAsync]
   );
 
-  const centerPrimary = text?.primary ?? '#ffffff';
-  const centerSecondary = text?.secondary ?? '#b8c6db';
+  const centerPrimary = theme.colors.text.primary;
+  const centerSecondary = theme.colors.text.secondary;
+
+  const dynamicStyles = getStyles(theme);
 
   if (!data || data.length === 0) {
     return (
-      <View style={[styles.container, {backgroundColor: surface?.primary ?? '#1a1a2e'}]}>
-        <Text style={[styles.title, {color: text?.primary ?? '#ffffff'}]}>{title}</Text>
-        <View style={styles.emptyContainer}>
-          <Text style={[styles.emptyText, {color: text?.secondary ?? '#b8c6db'}]}>No {type} data available</Text>
-        </View>
-      </View>
+      <Text style={[dynamicStyles.noDataText, {color: theme.colors.text.secondary}]}>No {type} data available</Text>
     );
   }
 
   return (
-    <View style={[styles.container, {backgroundColor: surface?.primary ?? '#1a1a2e'}]}>
+    <View style={[dynamicStyles.container, dynamicStyles.containerBackground]}>
       {/* Title */}
-      <Text style={[styles.title, {color: text?.primary ?? '#ffffff'}]}>{title}</Text>
+      <View style={dynamicStyles.titleContainer}>
+        <Text style={[dynamicStyles.title, {color: theme.colors.text.primary}]}>{title}</Text>
+      </View>
 
       {/* Donut chart */}
-      <View style={styles.chartContainer}>
+      <View style={[dynamicStyles.chartContainer, dynamicStyles.chartMargin]}>
         <Svg width={canvas} height={canvas}>
-          <G transform={`translate(${canvas / 2}, ${canvas / 2})`}>
-            {/* Slice shadows - same as CategoryAllocationPieChart */}
+          <Defs>
             {arcs.map((_, i) => (
-              <G key={`shadow-${chartData[i].currency}-${i}`}>
-                <Defs>
-                  <SvgLinearGradient id={`shadow-${i}`} x1="0%" y1="0%" x2="100%" y2="100%">
-                    <Stop offset="0%" stopColor="#000000" stopOpacity={0.08} />
-                    <Stop offset="100%" stopColor="#000000" stopOpacity={0.12} />
-                  </SvgLinearGradient>
-                </Defs>
-              </G>
+              <SvgLinearGradient key={`grad-${i}`} id={`grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0%" stopColor={chartColors[i]} stopOpacity={0.85} />
+                <Stop offset="100%" stopColor={chartColors[i]} stopOpacity={0.55} />
+              </SvgLinearGradient>
             ))}
+          </Defs>
 
-            {/* FIXED: Main slices with labels - exactly like CategoryAllocationPieChart */}
+          <G x={canvas / 2} y={canvas / 2}>
+            {/* Slice shadow */}
+            <Path
+              d={
+                d3Shape
+                  .arc()
+                  .innerRadius(innerRadius)
+                  .outerRadius(outerRadius)
+                  .startAngle(0)
+                  .endAngle(Math.PI * 2)({} as d3Shape.DefaultArcObject) as string
+              }
+              fill="rgba(0,0,0,0.08)"
+            />
+
             {arcs.map((a, i) => {
               const arcGen = arcForIndex(i);
               const {dx, dy} = getSliceTranslate(a, i);
-
-              // FIXED: Use d3 centroid for label positioning - just like CategoryAllocationPieChart
-              const [labelX, labelY] = arcGen.centroid(a);
-
               return (
-                <G key={`slice-${chartData[i].currency}-${i}`} transform={`translate(${dx}, ${dy})`}>
-                  {/* Slice path */}
-                  <Path
-                    d={arcGen(a) || ''}
-                    fill={chartColors[i]}
-                    stroke={surface?.primary ?? '#1a1a2e'}
-                    strokeWidth={2}
-                    onPress={() => onSlicePress(i)}
-                  />
-
-                  {/* FIXED: Percent label using centroid positioning */}
+                <G key={i} transform={`translate(${dx},${dy})`}>
+                  <Path d={arcGen(a) as string} fill={`url(#grad-${i})`} onPress={() => onSlicePress(i)} />
+                  {/* Percent label */}
                   {a.data.percentage * 100 > LABEL_THRESHOLD_PERCENT && (
                     <SvgText
-                      x={labelX}
-                      y={labelY}
-                      textAnchor="middle"
-                      alignmentBaseline="middle"
+                      x={arcGen.centroid(a)[0]}
+                      y={arcGen.centroid(a)[1]}
+                      fill={centerPrimary}
                       fontSize={12}
-                      fontWeight="600"
-                      fill={text?.onPrimary ?? '#ffffff'}>
+                      fontWeight="700"
+                      textAnchor="middle"
+                      alignmentBaseline="middle">
                       {`${Math.round(a.data.percentage * 100)}%`}
                     </SvgText>
                   )}
                 </G>
               );
             })}
+
+            {/* Center label */}
+            <SvgText x={0} y={-4} fill={centerSecondary} fontSize={12} fontWeight="500" textAnchor="middle">
+              {centerLabel || 'Total'}
+            </SvgText>
+            <SvgText x={0} y={16} fill={centerPrimary} fontSize={16} fontWeight="800" textAnchor="middle">
+              {formatSmartNumber(totalAmount, currency)}
+            </SvgText>
           </G>
         </Svg>
-
-        {/* Center label - same as CategoryAllocationPieChart */}
-        <View style={styles.centerLabel}>
-          <Text style={[styles.centerTotal, {color: centerPrimary}]}>{formatSmartNumber(totalAmount, currency)}</Text>
-          <Text style={[styles.centerSubtitle, {color: centerSecondary}]}>Total {type}s</Text>
-        </View>
       </View>
 
-      {/* Legend - same layout as CategoryAllocationPieChart */}
-      <View style={styles.legendWrap}>
+      {/* Legend */}
+      <View style={[dynamicStyles.legendWrap, dynamicStyles.legendGap]}>
         {chartData.map((item, i) => {
           const selected = activeIndex === i;
           return (
             <TouchableOpacity
-              key={`legend-${item.currency}-${i}`}
+              key={i}
               style={[
-                styles.legendItem,
+                dynamicStyles.legendItem,
+                // ✅ KEPT INLINE: Dynamic logic for selected state
                 {
-                  backgroundColor: selected ? (surface?.secondary ?? 'rgba(255,255,255,0.05)') : 'transparent',
-                  borderColor: selected ? chartColors[i] : (border?.primary ?? 'rgba(255,255,255,0.1)'),
+                  backgroundColor: selected ? `${theme.colors.primary}15` : theme.colors.background.secondary,
+                  borderColor: selected ? theme.colors.primary : theme.colors.border.primary,
                 },
               ]}
               onPress={() => onSlicePress(i)}
               accessibilityRole={'button' as AccessibilityRole}
               accessibilityLabel={`${item.currency} ${Math.round(item.percentage * 100)}% — ${formatSmartNumber(item.amount, currency)}`}>
-              <View style={[styles.legendDot, {backgroundColor: chartColors[i]}]} />
-              <View style={styles.legendTextCol}>
-                <Text style={[styles.legendLabel, {color: text?.primary ?? '#ffffff'}]}>{item.currency}</Text>
-                <Text style={[styles.legendSub, {color: text?.secondary ?? '#b8c6db'}]}>
+              <View style={[dynamicStyles.legendDot, {backgroundColor: chartColors[i]}]} />
+              <View style={dynamicStyles.legendTextCol}>
+                <Text style={[dynamicStyles.legendLabel, {color: theme.colors.text.primary}]}>{item.currency}</Text>
+                <Text style={[dynamicStyles.legendSub, {color: theme.colors.text.tertiary}]}>
                   {formatSmartNumber(item.amount, currency)}
                 </Text>
               </View>
-              <Text style={[styles.legendPct, {color: text?.primary ?? '#ffffff'}]}>
+              <Text style={[dynamicStyles.legendPct, {color: theme.colors.text.primary}]}>
                 {Math.round(item.percentage * 100)}%
               </Text>
               {selected && (
-                <Ionicons name="checkmark-circle" size={16} color={chartColors[i]} style={{marginLeft: 8}} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color={theme.colors.primary}
+                  style={dynamicStyles.selectedIcon}
+                />
               )}
             </TouchableOpacity>
           );
@@ -268,95 +274,85 @@ const CurrencyBreakdownChart: React.FC<CurrencyBreakdownChartProps> = ({data, ti
   );
 };
 
-// Styles - exact same as CategoryAllocationPieChart
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 16,
-    marginBottom: 24,
-    shadowColor: '#000000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '800',
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  chartContainer: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    marginBottom: 16,
-  },
-  centerLabel: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerTotal: {
-    fontSize: 16,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  centerSubtitle: {
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  legendWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  legendItem: {
-    width: '48%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 10,
-  },
-  legendTextCol: {
-    flex: 1,
-  },
-  legendLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  legendSub: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  legendPct: {
-    fontSize: 13,
-    fontWeight: '700',
-    marginLeft: 6,
-  },
-  emptyContainer: {
-    height: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyText: {
-    fontSize: 14,
-    textAlign: 'center',
-  },
-});
+// ✅ FIXED: Exact same styling approach as CategoryAllocationPieChart with theme flexibility
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      width: '100%',
+    },
+    // ✅ Moved inline containerBackground with theme values
+    containerBackground: {
+      backgroundColor: theme.colors.background.card,
+      borderRadius: theme.borderRadius.xl,
+      padding: theme.spacing.lg,
+    },
+    // ✅ Moved inline titleContainer
+    titleContainer: {
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: theme.fontSizes?.title || 18,
+      fontWeight: '800',
+      marginBottom: theme.spacing?.sm || 12,
+    },
+    chartContainer: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // ✅ Moved inline chartMargin
+    chartMargin: {
+      marginVertical: theme.spacing?.xs || 6,
+    },
+    legendWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+    },
+    // ✅ Moved inline legendGap
+    legendGap: {
+      gap: theme.spacing.sm,
+    },
+    legendItem: {
+      width: '48%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: theme.spacing?.sm || 8,
+      paddingHorizontal: theme.spacing?.sm || 10,
+      borderRadius: theme.borderRadius?.md || 12,
+      borderWidth: 1,
+      marginBottom: theme.spacing?.sm || 8,
+    },
+    legendDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginRight: theme.spacing?.sm || 10,
+    },
+    legendTextCol: {
+      flex: 1,
+    },
+    legendLabel: {
+      fontSize: theme.fontSizes?.body || 14,
+      fontWeight: '700',
+    },
+    legendSub: {
+      fontSize: theme.fontSizes?.caption || 12,
+      fontWeight: '500',
+    },
+    legendPct: {
+      fontSize: theme.fontSizes?.body || 13,
+      fontWeight: '700',
+      marginLeft: theme.spacing?.xs || 6,
+    },
+    // ✅ Moved inline selectedIcon
+    selectedIcon: {
+      marginLeft: theme.spacing?.xs || 6,
+    },
+    // ✅ Added for no data text
+    noDataText: {
+      fontSize: theme.fontSizes?.body || 14,
+    },
+  });
 
 export default CurrencyBreakdownChart;

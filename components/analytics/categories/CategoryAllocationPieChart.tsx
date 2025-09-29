@@ -130,21 +130,20 @@ const CategoryAllocationPieChart: React.FC<Props> = ({
   const centerPrimary = theme.colors.text.primary;
   const centerSecondary = theme.colors.text.secondary;
 
-  if (!items || items.length === 0) return <Text style={{color: theme.colors.text.secondary}}>No data to display</Text>;
+  const dynamicStyles = getStyles(theme);
+
+  if (!items || items.length === 0)
+    return <Text style={[dynamicStyles.noDataText, {color: theme.colors.text.secondary}]}>No data to display</Text>;
 
   return (
-    <View
-      style={[
-        styles.container,
-        {backgroundColor: theme.colors.background.card, borderRadius: theme.borderRadius.xl, padding: theme.spacing.lg},
-      ]}>
+    <View style={[dynamicStyles.container, dynamicStyles.containerBackground]}>
       {/* Title */}
-      <View style={{alignItems: 'center'}}>
-        <Text style={[styles.title, {color: theme.colors.text.primary}]}>{title}</Text>
+      <View style={dynamicStyles.titleContainer}>
+        <Text style={[dynamicStyles.title, {color: theme.colors.text.primary}]}>{title}</Text>
       </View>
 
       {/* Donut chart */}
-      <View style={[styles.chartContainer, {marginVertical: 6}]}>
+      <View style={[dynamicStyles.chartContainer, dynamicStyles.chartMargin]}>
         <Svg width={canvas} height={canvas}>
           <Defs>
             {arcs.map((_, i) => (
@@ -204,14 +203,15 @@ const CategoryAllocationPieChart: React.FC<Props> = ({
       </View>
 
       {/* Legend */}
-      <View style={[styles.legendWrap, {gap: theme.spacing.sm}]}>
+      <View style={[dynamicStyles.legendWrap, dynamicStyles.legendGap]}>
         {data.map((item, i) => {
           const selected = activeIndex === i;
           return (
             <TouchableOpacity
               key={i}
               style={[
-                styles.legendItem,
+                dynamicStyles.legendItem,
+                // ✅ KEPT INLINE: Dynamic logic for selected state
                 {
                   backgroundColor: selected ? `${theme.colors.primary}15` : theme.colors.background.secondary,
                   borderColor: selected ? theme.colors.primary : theme.colors.border.primary,
@@ -220,18 +220,23 @@ const CategoryAllocationPieChart: React.FC<Props> = ({
               onPress={() => onSlicePress(i)}
               accessibilityRole={'button' as AccessibilityRole}
               accessibilityLabel={`${item.category} ${Math.round(item.percentage * 100)}% — ${formatSmartNumber(item.amount, currency)}`}>
-              <View style={[styles.legendDot, {backgroundColor: colors[i]}]} />
-              <View style={styles.legendTextCol}>
-                <Text style={[styles.legendLabel, {color: theme.colors.text.primary}]}>{item.category}</Text>
-                <Text style={[styles.legendSub, {color: theme.colors.text.tertiary}]}>
+              <View style={[dynamicStyles.legendDot, {backgroundColor: colors[i]}]} />
+              <View style={dynamicStyles.legendTextCol}>
+                <Text style={[dynamicStyles.legendLabel, {color: theme.colors.text.primary}]}>{item.category}</Text>
+                <Text style={[dynamicStyles.legendSub, {color: theme.colors.text.tertiary}]}>
                   {formatSmartNumber(item.amount, currency)}
                 </Text>
               </View>
-              <Text style={[styles.legendPct, {color: theme.colors.text.primary}]}>
+              <Text style={[dynamicStyles.legendPct, {color: theme.colors.text.primary}]}>
                 {Math.round(item.percentage * 100)}%
               </Text>
               {selected && (
-                <Ionicons name="checkmark-circle" size={16} color={theme.colors.primary} style={{marginLeft: 6}} />
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color={theme.colors.primary}
+                  style={dynamicStyles.selectedIcon}
+                />
               )}
             </TouchableOpacity>
           );
@@ -241,26 +246,85 @@ const CategoryAllocationPieChart: React.FC<Props> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {width: '100%'},
-  title: {fontSize: 18, fontWeight: '800', marginBottom: 12},
-  chartContainer: {width: '100%', alignItems: 'center', justifyContent: 'center'},
-  legendWrap: {flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center'},
-  legendItem: {
-    width: '48%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 8,
-  },
-  legendDot: {width: 12, height: 12, borderRadius: 6, marginRight: 10},
-  legendTextCol: {flex: 1},
-  legendLabel: {fontSize: 14, fontWeight: '700'},
-  legendSub: {fontSize: 12, fontWeight: '500'},
-  legendPct: {fontSize: 13, fontWeight: '700', marginLeft: 6},
-});
+// ✅ FIXED: Only static styles in StyleSheet, no functions
+const getStyles = (theme: any) =>
+  StyleSheet.create({
+    container: {
+      width: '100%',
+    },
+    // ✅ Moved inline containerBackground
+    containerBackground: {
+      backgroundColor: theme.colors.background.card,
+      borderRadius: theme.borderRadius.xl,
+      padding: theme.spacing.lg,
+    },
+    // ✅ Moved inline titleContainer
+    titleContainer: {
+      alignItems: 'center',
+    },
+    title: {
+      fontSize: theme.fontSizes?.title || 18,
+      fontWeight: '800',
+      marginBottom: theme.spacing?.sm || 12,
+    },
+    chartContainer: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    // ✅ Moved inline chartMargin
+    chartMargin: {
+      marginVertical: theme.spacing?.xs || 6,
+    },
+    legendWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+    },
+    // ✅ Moved inline legendGap
+    legendGap: {
+      gap: theme.spacing.sm,
+    },
+    legendItem: {
+      width: '48%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: theme.spacing?.sm || 8,
+      paddingHorizontal: theme.spacing?.sm || 10,
+      borderRadius: theme.borderRadius?.md || 12,
+      borderWidth: 1,
+      marginBottom: theme.spacing?.sm || 8,
+    },
+    legendDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+      marginRight: theme.spacing?.sm || 10,
+    },
+    legendTextCol: {
+      flex: 1,
+    },
+    legendLabel: {
+      fontSize: theme.fontSizes?.body || 14,
+      fontWeight: '700',
+    },
+    legendSub: {
+      fontSize: theme.fontSizes?.caption || 12,
+      fontWeight: '500',
+    },
+    legendPct: {
+      fontSize: theme.fontSizes?.body || 13,
+      fontWeight: '700',
+      marginLeft: theme.spacing?.xs || 6,
+    },
+    // ✅ Moved inline selectedIcon
+    selectedIcon: {
+      marginLeft: theme.spacing?.xs || 6,
+    },
+    // ✅ Added for no data text
+    noDataText: {
+      fontSize: theme.fontSizes?.body || 14,
+    },
+  });
 
 export default CategoryAllocationPieChart;
