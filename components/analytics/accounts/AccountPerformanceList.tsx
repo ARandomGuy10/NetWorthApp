@@ -168,29 +168,29 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
   return (
     <View style={styles.container}>
       {/* Enhanced Header */}
-      <LinearGradient
-        colors={theme.colors.gradient?.card || [theme.colors.background.card, theme.colors.background.elevated]}
-        style={styles.header}
-        start={{x: 0, y: 0}}
-        end={{x: 1, y: 1}}>
-        <View style={styles.headerTop}>
-          <View style={styles.titleSection}>
-            <Text style={styles.title}>Account Performance</Text>
-            <View style={styles.subtitleRow}>
-              <View style={styles.periodBadge}>
-                <Text style={styles.periodText}>{period === 'ALL' ? 'All Time' : period}</Text>
-              </View>
-              <Text style={styles.subtitle}>• Ranked by {getSortLabel(sortBy).toLowerCase()}</Text>
+      <View style={styles.header}>
+        <LinearGradient
+          colors={[theme.colors?.primary + '20' || '#4facfe20', 'transparent']}
+          style={styles.headerGradient}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}>
+          <View style={styles.headerContent}>
+            <View style={styles.headerIcon}>
+              <Ionicons name="trophy-outline" size={28} color={theme.colors?.primary || '#4facfe'} />
             </View>
+            <View style={styles.headerTextContainer}>
+              <Text style={styles.headerTitle}>Account Performance</Text>
+              <Text style={styles.headerSubtitle}>
+                {period === 'ALL' ? 'All Time' : period} • Ranked by {getSortLabel(sortBy).toLowerCase()}
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.sortButton} onPress={handleSortChange} activeOpacity={0.7}>
+              <Ionicons name="swap-vertical" size={16} color={theme.colors?.text?.secondary || '#b8c6db'} />
+              <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
+            </TouchableOpacity>
           </View>
-
-          {/* Enhanced Sort Button */}
-          <TouchableOpacity onPress={handleSortChange} style={styles.sortButton} activeOpacity={0.7}>
-            <Ionicons name="swap-vertical" size={16} color={theme.colors.text.secondary} />
-            <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
-          </TouchableOpacity>
-        </View>
-      </LinearGradient>
+        </LinearGradient>
+      </View>
 
       {/* ✅ Enhanced Account List with Touch Functionality */}
       <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
@@ -324,7 +324,7 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period})
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
-      backgroundColor: theme.colors.background.card,
+      backgroundColor: theme.colors?.surface?.primary || '#1a1a2e',
       borderRadius: theme.borderRadius.xl,
       overflow: 'hidden',
       ...Platform.select({
@@ -341,62 +341,48 @@ const getStyles = (theme: any) =>
     },
 
     header: {
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.lg,
       borderBottomWidth: 1,
       borderBottomColor: theme.colors.border.primary,
     },
-
-    headerTop: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
+    headerGradient: {
+      padding: theme.spacing.lg,
     },
-
-    titleSection: {
-      flex: 1,
-    },
-
-    title: {
-      fontSize: theme.fontSizes.title,
-      fontWeight: '800',
-      color: theme.colors.text.primary,
-      marginBottom: theme.spacing.xs,
-    },
-
-    subtitleRow: {
+    headerContent: {
       flexDirection: 'row',
       alignItems: 'center',
     },
-
-    periodBadge: {
-      backgroundColor: theme.colors.primary,
-      paddingHorizontal: theme.spacing.sm,
-      paddingVertical: theme.spacing.xs / 2,
-      borderRadius: theme.borderRadius.full,
-      marginRight: theme.spacing.xs,
+    headerIcon: {
+      marginRight: theme.spacing.md,
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: theme.colors.primary + '20',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-
-    periodText: {
-      fontSize: theme.fontSizes.xs,
-      fontWeight: '600',
-      color: theme.colors.text.onPrimary,
+    headerTextContainer: {
+      flex: 1,
     },
-
-    subtitle: {
+    headerTitle: {
+      fontSize: theme.fontSizes.subtitle,
+      fontWeight: '800',
+      color: theme.colors.text.primary,
+      marginBottom: 2,
+    },
+    headerSubtitle: {
       fontSize: theme.fontSizes.caption,
-      color: theme.colors.text.tertiary,
+      color: theme.colors.text.secondary,
       fontWeight: '500',
     },
 
     sortButton: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: theme.colors.background.secondary,
+      backgroundColor: theme.colors.interactive.hover,
       paddingHorizontal: theme.spacing.md,
       paddingVertical: theme.spacing.sm,
       borderRadius: theme.borderRadius.md,
-      borderWidth: 1,
+      borderWidth: 0.5,
       borderColor: theme.colors.border.primary,
     },
 
