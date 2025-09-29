@@ -1,11 +1,19 @@
 import React, {useMemo, useState, useEffect} from 'react';
 
-import {View, Text, StyleSheet, FlatList, LayoutChangeEvent, ScrollView, Pressable} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  LayoutChangeEvent,
+  ScrollView,
+  Pressable,
+  TouchableOpacity,
+} from 'react-native';
 
 import * as Haptics from 'expo-haptics';
 import Animated, {
   FadeInUp,
-  Layout as ReLayout,
   useSharedValue,
   useAnimatedStyle,
   withTiming,
@@ -20,66 +28,23 @@ import {formatSmartNumber} from '@/src/utils/formatters';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 type Measure = 'percent' | 'amount';
-type SortMode = 'chronological' | 'best' | 'worst';
+type SortOption = 'chrono' | 'best_percent' | 'worst_percent' | 'best_amount' | 'worst_amount';
 
 interface Props {
   insights: NetWorthHistoryInsights;
   currency: string;
+  period: string;
 }
 
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
-
-const Chip = ({
-  label,
-  active,
-  onPress,
-  icon,
-}: {
-  label: string;
-  active?: boolean;
-  onPress?: () => void;
-  icon?: keyof typeof Ionicons.glyphMap;
-}) => {
-  const {theme} = useTheme();
-  const styles = getStyles(theme);
-  const scale = useSharedValue(1);
-  const rStyle = useAnimatedStyle(() => ({transform: [{scale: scale.value}]}));
-  return (
-    <AnimatedPressable
-      accessibilityRole="button"
-      onPress={onPress}
-      onPressIn={() => (scale.value = withSpring(0.96, {damping: 18, stiffness: 220}))}
-      onPressOut={() => (scale.value = withSpring(1, {damping: 18, stiffness: 220}))}
-      hitSlop={8}
-      style={[
-        styles.chip,
-        rStyle,
-        {
-          backgroundColor: active ? theme.colors.interactive.pressed : theme.colors.background.secondary,
-          borderColor: active ? theme.colors.border.focus || theme.colors.border.primary : theme.colors.border.primary,
-        },
-      ]}>
-      <View style={{flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs}}>
-        {icon ? (
-          <Ionicons
-            name={icon}
-            size={theme.fontSizes.body}
-            color={active ? theme.colors.text.primary : theme.colors.text.secondary}
-          />
-        ) : null}
-        <Text
-          style={[
-            styles.chipText,
-            {
-              color: active ? theme.colors.text.primary : theme.colors.text.secondary,
-              fontSize: theme.fontSizes.caption,
-            },
-          ]}>
-          {label}
-        </Text>
-      </View>
-    </AnimatedPressable>
-  );
+const getSortLabel = (sortBy: SortOption): string => {
+  const labels: Record<SortOption, string> = {
+    chrono: 'Chronological',
+    best_percent: 'Best %',
+    worst_percent: 'Worst %',
+    best_amount: 'Best Amount',
+    worst_amount: 'Worst Amount',
+  };
+  return labels[sortBy] || 'Chronological';
 };
 
 const Badge = ({icon, text, tint}: {icon: keyof typeof Ionicons.glyphMap; text: string; tint?: string}) => {
@@ -164,7 +129,7 @@ const Row = ({
   return (
     <Animated.View
       entering={FadeInUp.delay(idx * 25)}
-      layout={ReLayout.springify().damping(18).stiffness(170)}
+      // layout={ReLayout.springify().damping(18).stiffness(170)} // Layout animation can be buggy with FlatList
       style={{marginBottom: theme.spacing.lg}}>
       {/* Row header */}
       <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.xs}}>
@@ -221,34 +186,43 @@ const Row = ({
           </Animated.View>
         ) : null}
       </View>
-
-      <Text style={{marginTop: theme.spacing.xs, color: theme.colors.text.tertiary, fontSize: theme.fontSizes.caption}}>
-        Change · {measure === 'percent' ? 'Percent' : 'Amount'}
-      </Text>
     </Animated.View>
   );
 };
 
-const MonthlyPerformanceOverview: React.FC<Props> = ({insights, currency}) => {
+const MonthlyPerformanceOverview: React.FC<Props> = ({insights, currency, period}) => {
   const {theme} = useTheme();
   const styles = getStyles(theme);
 
-  const [measure, setMeasure] = useState<Measure>('percent');
-  const [sortMode, setSortMode] = useState<SortMode>('chronological');
+  const [sortBy, setSortBy] = useState<SortOption>('chrono');
   const [showVolInfo, setShowVolInfo] = useState(false);
+
+  const handleSortChange = async () => {
+    await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const options: SortOption[] = ['chrono', 'best_percent', 'worst_percent', 'best_amount', 'worst_amount'];
+    const currentIndex = options.indexOf(sortBy);
+    const nextIndex = (currentIndex + 1) % options.length;
+    setSortBy(options[nextIndex]);
+  };
 
   const months = useMemo(() => {
     const src = [...insights.monthlyDeltas];
-    switch (sortMode) {
-      case 'best':
-        return src.sort((a, b) => (measure === 'percent' ? b.percent - a.percent : b.delta - a.delta));
-      case 'worst':
-        return src.sort((a, b) => (measure === 'percent' ? a.percent - b.percent : a.delta - b.delta));
-      case 'chronological':
+    switch (sortBy) {
+      case 'best_percent':
+        return src.sort((a, b) => b.percent - a.percent);
+      case 'worst_percent':
+        return src.sort((a, b) => a.percent - b.percent);
+      case 'best_amount':
+        return src.sort((a, b) => b.delta - a.delta);
+      case 'worst_amount':
+        return src.sort((a, b) => a.delta - b.delta);
+      case 'chrono':
       default:
-        return src;
+        return src.sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
     }
-  }, [insights.monthlyDeltas, sortMode, measure]);
+  }, [insights.monthlyDeltas, sortBy]);
+
+  const measure: Measure = sortBy.endsWith('amount') ? 'amount' : 'percent';
 
   const maxAbsDelta = useMemo(
     () => Math.max(...insights.monthlyDeltas.map(m => Math.abs(m.delta)), 0),
@@ -264,99 +238,54 @@ const MonthlyPerformanceOverview: React.FC<Props> = ({insights, currency}) => {
   const volTint =
     vol > 20 ? theme.colors.error : vol > 10 ? theme.colors.warning : theme.colors.info || theme.colors.asset;
 
-  const onToggle = (fn: (v: any) => void, v: any) => {
-    fn(v);
-    Haptics.selectionAsync();
-  };
-
   const sectionGap = theme.spacing.lg;
   const rowGap = theme.spacing.sm;
 
   return (
     <View style={styles.container}>
-      <LinearGradient colors={theme.colors.gradient.card} style={styles.card}>
-        <Text style={styles.title}>Monthly Performance Overview</Text>
+      <LinearGradient
+        colors={theme.colors.gradient?.card || [theme.colors.background.card, theme.colors.background.elevated]}
+        style={styles.header}
+        start={{x: 0, y: 0}}
+        end={{x: 1, y: 1}}>
+        <View style={styles.headerTop}>
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>Monthly Performance</Text>
+            <View style={styles.subtitleRow}>
+              <View style={styles.periodBadge}>
+                <Text style={styles.periodText}>{period === 'ALL' ? 'All Time' : period}</Text>
+              </View>
+              <Text style={styles.subtitle}>• Ranked by {getSortLabel(sortBy).toLowerCase()}</Text>
+            </View>
+          </View>
 
-        {/* 1) Badges */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{gap: rowGap}}
-          style={{marginBottom: sectionGap}}>
-          <Badge icon="repeat-outline" text={`Streak: ${insights.growthStreak.current_streak} mo`} />
-          <Pressable onPress={() => onToggle(setShowVolInfo, !showVolInfo)} hitSlop={8}>
-            <Badge icon="pulse-outline" text={`Volatility σ: ${vol.toFixed(1)}% (${volLevel})`} tint={volTint} />
-          </Pressable>
-          <Badge icon="trophy-outline" text={`ATH ${insights.highs.isAtAllTimeHigh ? '✅' : '❌'}`} />
-        </ScrollView>
-
-        {showVolInfo ? (
-          <Text
-            style={{color: theme.colors.text.tertiary, fontSize: theme.fontSizes.caption, marginBottom: sectionGap}}>
-            Volatility σ is the standard deviation of monthly percentage changes, indicating typical variability
-            month‑to‑month.
-          </Text>
-        ) : null}
-
-        {/* 2) Measure */}
-        <View style={{flexDirection: 'row', gap: rowGap, marginBottom: rowGap}}>
-          <Chip
-            label="Percent"
-            active={measure === 'percent'}
-            onPress={() => onToggle(setMeasure, 'percent')}
-            icon="stats-chart-outline"
-          />
-          <Chip
-            label="Amount"
-            active={measure === 'amount'}
-            onPress={() => onToggle(setMeasure, 'amount')}
-            icon="cash-outline"
-          />
+          <TouchableOpacity onPress={handleSortChange} style={styles.sortButton} activeOpacity={0.7}>
+            <Ionicons name="swap-vertical" size={16} color={theme.colors.text.secondary} />
+            <Text style={styles.sortButtonText}>{getSortLabel(sortBy)}</Text>
+          </TouchableOpacity>
         </View>
+      </LinearGradient>
 
-        {/* 3) Sorting */}
-        <View style={{flexDirection: 'row', gap: rowGap, marginBottom: sectionGap}}>
-          <Chip
-            label="Chrono"
-            active={sortMode === 'chronological'}
-            onPress={() => onToggle(setSortMode, 'chronological')}
-            icon="time-outline"
-          />
-          <Chip
-            label="Best"
-            active={sortMode === 'best'}
-            onPress={() => onToggle(setSortMode, 'best')}
-            icon="trending-up-outline"
-          />
-          <Chip
-            label="Worst"
-            active={sortMode === 'worst'}
-            onPress={() => onToggle(setSortMode, 'worst')}
-            icon="trending-down-outline"
-          />
-        </View>
-
+      <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {/* List */}
-        <FlatList
-          data={months}
-          keyExtractor={m => m.month}
-          extraData={{measure, maxAbsDelta, maxAbsPercent, sortMode}}
-          renderItem={({item, index}) => (
+        <View style={styles.listWrapper}>
+          {months.map((item, index) => (
             <Row
+              key={item.month}
               item={item}
               idx={index}
               maxAbsDelta={maxAbsDelta}
               maxAbsPercent={maxAbsPercent}
               measure={measure}
               currency={currency}
-              isBest={item.month === insights.extremes.biggestGain.month}
-              isWorst={item.month === insights.extremes.biggestDrop.month}
+              isBest={!!insights.extremes.biggestGain && item.month === insights.extremes.biggestGain.month}
+              isWorst={!!insights.extremes.biggestDrop && item.month === insights.extremes.biggestDrop.month}
             />
-          )}
-          scrollEnabled={false}
-          contentContainerStyle={{paddingBottom: theme.spacing.xl, paddingTop: rowGap}}
-        />
-      </LinearGradient>
+          ))}
+
+          <View style={styles.bottomSpacing} />
+        </View>
+      </ScrollView>
     </View>
   );
 };
@@ -364,21 +293,10 @@ const MonthlyPerformanceOverview: React.FC<Props> = ({insights, currency}) => {
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
-      paddingHorizontal: 0,
+      backgroundColor: theme.colors.background.card,
+      borderRadius: theme.borderRadius.xl,
+      overflow: 'hidden',
     },
-    title: {
-      fontSize: theme.fontSizes.heading,
-      fontWeight: '700',
-      color: theme.colors.text.primary,
-      marginBottom: theme.spacing.xl,
-    },
-    chip: {
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.xs,
-      borderRadius: theme.borderRadius.full,
-      borderWidth: 1,
-    },
-    chipText: {fontWeight: '700'},
     badge: {
       flexDirection: 'row',
       alignItems: 'center',
@@ -388,15 +306,84 @@ const getStyles = (theme: any) =>
       borderRadius: theme.borderRadius.full,
       borderWidth: 1,
     },
-    badgeText: {fontWeight: '700', fontSize: theme.fontSizes.caption},
-    card: {
-      borderRadius: theme.borderRadius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border.primary,
+    badgeText: {fontWeight: '700', fontSize: theme.fontSizes.caption, color: theme.colors.text.secondary},
+    header: {
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.lg,
-      width: '100%',
-      ...(theme.shadows?.md || {}),
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.primary,
+    },
+    headerTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    },
+    titleSection: {
+      flex: 1,
+    },
+    title: {
+      fontSize: theme.fontSizes.title,
+      fontWeight: '800',
+      color: theme.colors.text.primary,
+      marginBottom: theme.spacing.xs,
+    },
+    subtitleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    periodBadge: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.sm,
+      paddingVertical: theme.spacing.xs / 2,
+      borderRadius: theme.borderRadius.full,
+      marginRight: theme.spacing.xs,
+    },
+    periodText: {
+      fontSize: theme.fontSizes.xs,
+      fontWeight: '600',
+      color: theme.colors.text.onPrimary,
+    },
+    subtitle: {
+      fontSize: theme.fontSizes.caption,
+      color: theme.colors.text.tertiary,
+      fontWeight: '500',
+    },
+    sortButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background.secondary,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+    },
+    sortButtonText: {
+      fontSize: theme.fontSizes.caption,
+      fontWeight: '600',
+      color: theme.colors.text.secondary,
+      marginLeft: theme.spacing.xs,
+    },
+    contentContainer: {
+      maxHeight: 400, // Make the list scrollable if content exceeds this height
+    },
+    listWrapper: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingVertical: theme.spacing.lg,
+    },
+    bottomSpacing: {
+      height: theme.spacing.xl,
+    },
+    chip: {
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      borderRadius: theme.borderRadius.full,
+      borderWidth: 1,
+    },
+    chipText: {
+      fontWeight: '700',
+      color: theme.colors.text.secondary,
+      fontSize: theme.fontSizes.caption,
     },
   });
 

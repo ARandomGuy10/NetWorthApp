@@ -1,4 +1,4 @@
-// components/analytics/MonthlyHeatmap.tsx — FIXED hooks + polished UI
+// components/analytics/MonthlyHeatmap.tsx
 
 import React, {memo, useEffect} from 'react';
 import {View, Text, StyleSheet, Pressable, FlatList} from 'react-native';
@@ -8,40 +8,176 @@ import Animated, {
   FadeInUp,
   useSharedValue,
   useAnimatedStyle,
-  withTiming,
-  withRepeat,
-  Easing,
+  withSpring,
+  interpolate,
+  Extrapolate,
 } from 'react-native-reanimated';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {formatSmartNumber} from '@/src/utils/formatters';
 import {Extremes, MonthlyDelta} from '@/lib/supabase';
+import {Star, AlertTriangle} from 'lucide-react-native';
 
 interface Props {
   monthlyDeltas: MonthlyDelta[];
-  extremes?: Extremes;
+  extremes?: Extremes | null;
   currency: string;
   period?: string;
 }
 
-const APressable = Animated.createAnimatedComponent(Pressable);
+const AnimatedWrapper = Animated.createAnimatedComponent(View);
 
-// Child component so hooks live inside a real component (not inside renderItem)
-const HeatmapCell = memo(function HeatmapCell({
+// Handle zero values with neutral colors
+const getConsistentCardStyle = (percent: number, intensity: number, theme: any) => {
+  if (percent === 0) {
+    return {
+      backgroundGradient: [
+        `${theme.colors.text.secondary}15`,
+        `${theme.colors.text.secondary}08`,
+        `${theme.colors.text.secondary}05`,
+      ] as const,
+      borderColor: `${theme.colors.border.primary}60`,
+      textColor: theme.colors.text.primary,
+      accentColor: theme.colors.text.secondary,
+    };
+  }
+
+  const isPositive = percent > 0;
+
+  if (isPositive) {
+    return {
+      backgroundGradient: [
+        `#22C55E${Math.floor(15 + intensity * 25)
+          .toString(16)
+          .padStart(2, '0')}`,
+        `#DCFCE7${Math.floor(10 + intensity * 15)
+          .toString(16)
+          .padStart(2, '0')}`,
+        `#DCFCE705`,
+      ] as const,
+      borderColor: `#22C55E${Math.floor(40 + intensity * 40)
+        .toString(16)
+        .padStart(2, '0')}`,
+      textColor: theme.colors.text.primary,
+      accentColor: '#22C55E',
+    };
+  } else {
+    return {
+      backgroundGradient: [
+        `#EF4444${Math.floor(15 + intensity * 25)
+          .toString(16)
+          .padStart(2, '0')}`,
+        `#FEE2E2${Math.floor(10 + intensity * 15)
+          .toString(16)
+          .padStart(2, '0')}`,
+        `#FEE2E205`,
+      ] as const,
+      borderColor: `#EF4444${Math.floor(40 + intensity * 40)
+        .toString(16)
+        .padStart(2, '0')}`,
+      textColor: theme.colors.text.primary,
+      accentColor: '#EF4444',
+    };
+  }
+};
+
+// Progress Ring with neutral color for zero
+const ProgressRing = memo(function ProgressRing({
+  percent,
+  intensity,
+  size = 40,
+  strokeWidth = 3,
+}: {
+  percent: number;
+  intensity: number;
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const progress = useSharedValue(0);
+
+  const color = percent === 0 ? '#64748B' : percent > 0 ? '#22C55E' : '#EF4444';
+
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  useEffect(() => {
+    progress.value = withSpring(intensity, {
+      damping: 15,
+      stiffness: 100,
+    });
+  }, [intensity]);
+
+  const animatedProps = useAnimatedStyle<any>(() => {
+    const strokeDashoffset = interpolate(progress.value, [0, 1], [circumference, 0], Extrapolate.CLAMP);
+
+    return {
+      strokeDashoffset,
+    };
+  });
+
+  return (
+    <View style={{width: size, height: size}}>
+      <View
+        style={{
+          position: 'absolute',
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: strokeWidth,
+          borderColor: `${color}20`,
+        }}
+      />
+
+      <Animated.View
+        style={[
+          {
+            position: 'absolute',
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth: strokeWidth,
+            borderColor: color,
+            borderTopColor: 'transparent',
+            borderRightColor: 'transparent',
+            transform: [{rotate: '-90deg'}],
+          },
+          animatedProps,
+        ]}
+      />
+
+      <View
+        style={{
+          position: 'absolute',
+          width: size,
+          height: size,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <Text
+          style={{
+            fontSize: size * 0.25,
+            fontWeight: '800',
+            color,
+            textAlign: 'center',
+          }}>
+          {Math.abs(percent).toFixed(0)}
+        </Text>
+      </View>
+    </View>
+  );
+});
+
+const ModernHeatmapCell = memo(function ModernHeatmapCell({
   item,
   index,
   currency,
-  posText,
-  negText,
   theme,
-  intensity, // 0..1
+  intensity,
   isBest,
   isWorst,
 }: {
   item: MonthlyDelta;
   index: number;
   currency: string;
-  posText: string;
-  negText: string;
   theme: any;
   intensity: number;
   isBest: boolean;
@@ -51,174 +187,196 @@ const HeatmapCell = memo(function HeatmapCell({
     .mass(0.6)
     .stiffness(180)
     .damping(20)
-    .delay(index * 40);
+    .delay(index * 80);
 
-  // Press micro interaction + haptic
   const scale = useSharedValue(1);
-  const pressStyle = useAnimatedStyle(() => ({transform: [{scale: scale.value}]}));
+  const elevation = useSharedValue(0);
+
+  const pressStyle = useAnimatedStyle(() => ({
+    transform: [{scale: scale.value}],
+    elevation: elevation.value,
+  }));
+
   const onPressIn = () => {
-    scale.value = withTiming(0.98, {duration: 100, easing: Easing.out(Easing.quad)});
+    scale.value = withSpring(0.95, {
+      damping: 15,
+      stiffness: 300,
+    });
+    elevation.value = withSpring(8, {
+      damping: 15,
+      stiffness: 300,
+    });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
+
   const onPressOut = () => {
-    scale.value = withTiming(1, {duration: 120, easing: Easing.out(Easing.quad)});
+    scale.value = withSpring(1, {
+      damping: 15,
+      stiffness: 300,
+    });
+    elevation.value = withSpring(0, {
+      damping: 15,
+      stiffness: 300,
+    });
   };
 
-  // Pulse for best/worst badge
-  const pulse = useSharedValue(1);
-  const badgeStyle = useAnimatedStyle(() => ({transform: [{scale: pulse.value}]}));
-  useEffect(() => {
-    if (isBest || isWorst) {
-      pulse.value = withRepeat(withTiming(1.06, {duration: 1200}), -1, true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBest, isWorst]);
-
-  const monthLabel = new Date(item.month).toLocaleDateString('en', {month: 'short'});
-
-  const base = item.percent >= 0 ? theme.colors.success : theme.colors.error;
-  const bgOpacity = 0.65 + 0.35 * intensity; // 0.65–1.0 vivid range
-  const textColor = item.percent >= 0 ? posText : negText;
+  const monthLabel = new Date(item.month).toLocaleDateString('en', {month: 'short'}).toUpperCase();
+  const cardStyle = getConsistentCardStyle(item.percent, intensity, theme);
+  const dynamicStyles = getStyles(theme);
 
   return (
-    <Animated.View entering={entering} style={{width: '32%', marginBottom: theme.spacing.sm}}>
-      <APressable
-        onPressIn={onPressIn}
-        onPressOut={onPressOut}
-        android_ripple={{color: 'rgba(255,255,255,0.22)', radius: 120}}
-        style={[
-          {
-            borderRadius: theme.borderRadius.lg,
-            padding: theme.spacing.sm,
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: 96,
-            overflow: 'hidden',
-            position: 'relative',
-            backgroundColor: base,
-            opacity: bgOpacity,
-            borderColor: base,
-            borderWidth: 1,
-          },
-          pressStyle,
-          {overflow: 'visible'},
-        ]}>
-        {/* Accent overlay adds a soft, theme‑consistent glow */}
-        <LinearGradient
-          pointerEvents="none"
-          colors={theme.colors.gradient.accent}
-          style={[StyleSheet.absoluteFillObject, {opacity: 0.05 + 0.12 * intensity}]}
-        />
+    <AnimatedWrapper entering={entering} style={dynamicStyles.cellContainer}>
+      <Animated.View style={pressStyle}>
+        <Pressable onPressIn={onPressIn} onPressOut={onPressOut} style={dynamicStyles.pressableContainer}>
+          <LinearGradient
+            colors={cardStyle.backgroundGradient}
+            style={[dynamicStyles.modernCell, {borderColor: cardStyle.borderColor}]}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}>
+            <View style={dynamicStyles.cellHeader}>
+              <Text style={[dynamicStyles.monthText, {color: cardStyle.textColor}]}>{monthLabel}</Text>
 
-        <Text style={{color: textColor, fontSize: theme.fontSizes.sm, fontWeight: '600', marginBottom: 2}}>
-          {monthLabel}
-        </Text>
+              <View style={dynamicStyles.badgeContainer}>
+                {isBest && (
+                  <View style={dynamicStyles.glowBadge}>
+                    <Star size={14} color="#FFA500" fill="#FFA500" />
+                  </View>
+                )}
+                {isWorst && (
+                  <View style={dynamicStyles.glowBadge}>
+                    <AlertTriangle size={14} color="#FF6B6B" />
+                  </View>
+                )}
+              </View>
+            </View>
 
-        <Text
-          style={{
-            color: textColor,
-            fontSize: theme.fontSizes.lg,
-            fontWeight: '800',
-            marginBottom: 2,
-            lineHeight: theme.fontSizes.lg * 1.2,
-          }}>
-          {item.percent >= 0 ? '+' : ''}
-          {Math.abs(item.percent) < 10 ? item.percent.toFixed(1) : Math.round(item.percent)}%
-        </Text>
+            <View style={dynamicStyles.contentArea}>
+              <ProgressRing percent={item.percent} intensity={intensity} size={50} />
 
-        <Text numberOfLines={1} adjustsFontSizeToFit style={{color: textColor, fontSize: theme.fontSizes.sm}}>
-          {formatSmartNumber(item.delta, currency)}
-        </Text>
+              <Text style={[dynamicStyles.percentageValue, {color: cardStyle.accentColor}]}>
+                {item.percent >= 0 ? '+' : ''}
+                {item.percent.toFixed(1)}%
+              </Text>
+            </View>
 
-        {(isBest || isWorst) && (
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                top: -theme.spacing.xs,
-                right: -theme.spacing.xs,
-                backgroundColor: theme.colors.background.primary,
-                borderRadius: theme.spacing.md,
-                paddingHorizontal: 4,
-                paddingVertical: 2,
-                ...theme.shadows?.sm,
-              },
-              badgeStyle,
-            ]}>
-            <Text style={{fontSize: theme.fontSizes.sm}}>{isBest ? '🚀' : '📉'}</Text>
-          </Animated.View>
-        )}
-      </APressable>
-    </Animated.View>
+            <Text style={[dynamicStyles.amountValue, {color: cardStyle.textColor}]} numberOfLines={1}>
+              {formatSmartNumber(item.delta, currency)}
+            </Text>
+
+            <View style={[dynamicStyles.accentLine, {backgroundColor: cardStyle.accentColor}]} />
+          </LinearGradient>
+        </Pressable>
+      </Animated.View>
+    </AnimatedWrapper>
   );
 });
 
-const MonthlyHeatmap: React.FC<Props> = ({monthlyDeltas, extremes, currency, period}) => {
+const MonthlyHeatmap: React.FC<Props> = ({monthlyDeltas = [], extremes = null, currency, period}) => {
   const {theme} = useTheme();
   const styles = getStyles(theme);
 
-  // Keep grid consistent: cap ALL at 12
+  // ✅ FIXED: Added missing 1M case
   const displayMonths = React.useMemo(() => {
-    if (period === '3M') return monthlyDeltas.slice(-3);
-    if (period === '6M') return monthlyDeltas.slice(-6);
-    if (period === '12M' || period === 'ALL') return monthlyDeltas.slice(-12);
-    return monthlyDeltas;
+    if (!monthlyDeltas || monthlyDeltas.length === 0) return [];
+
+    const sortedMonths = [...monthlyDeltas].sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+
+    switch (period) {
+      case '1M':
+        return sortedMonths.slice(-1); // ✅ FIXED: Added this case
+      case '3M':
+        return sortedMonths.slice(-3);
+      case '6M':
+        return sortedMonths.slice(-6);
+      case '12M':
+      case 'ALL':
+        return sortedMonths.slice(-12);
+      default:
+        return sortedMonths;
+    }
   }, [monthlyDeltas, period]);
 
-  const POS_TEXT = theme.colors.text.onSuccess || '#FFFFFF';
-  const NEG_TEXT = theme.colors.text.onError || '#FFFFFF';
+  const maxAbsPercent = React.useMemo(() => {
+    if (displayMonths.length === 0) return 1;
+    return Math.max(...displayMonths.map(d => Math.abs(d.percent)), 1);
+  }, [displayMonths]);
 
-  const maxAbs = Math.max(...displayMonths.map(d => Math.abs(d.percent)), 1);
+  // Dynamic column count based on data length
+  const numColumns = React.useMemo(() => {
+    if (displayMonths.length <= 1) return 1;
+    if (displayMonths.length <= 2) return 2;
+    return 3;
+  }, [displayMonths.length]);
 
   const renderItem = ({item, index}: {item: MonthlyDelta; index: number}) => {
-    const intensity = Math.min(Math.abs(item.percent) / maxAbs, 1);
+    const rawIntensity = Math.abs(item.percent) / maxAbsPercent;
+    const intensity = Math.max(0.3, Math.min(rawIntensity, 1));
+
     const isBest = extremes?.biggestGain?.month === item.month;
     const isWorst = extremes?.biggestDrop?.month === item.month;
 
     return (
-      <HeatmapCell
+      <ModernHeatmapCell
         item={item}
         index={index}
         currency={currency}
-        posText={POS_TEXT}
-        negText={NEG_TEXT}
         theme={theme}
         intensity={intensity}
-        isBest={!!isBest}
-        isWorst={!!isWorst}
+        isBest={isBest}
+        isWorst={isWorst}
       />
     );
   };
 
+  if (!displayMonths || displayMonths.length === 0) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <Text style={[styles.emptyState, {color: theme.colors.text.secondary}]}>
+            No monthly data available for the selected period
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <LinearGradient colors={theme.colors.gradient.card} style={styles.card}>
+      <View style={styles.card}>
+        {/* ✅ FIXED: Added key prop to force re-render when numColumns changes */}
         <FlatList
+          key={`${numColumns}-${displayMonths.length}`} // ✅ FIXED: Forces re-render when layout changes
           data={displayMonths}
           keyExtractor={m => m.month}
-          numColumns={3}
+          numColumns={numColumns}
           renderItem={renderItem}
-          contentContainerStyle={{paddingHorizontal: 0, paddingBottom: theme.spacing.md}}
-          columnWrapperStyle={{justifyContent: 'space-between'}}
+          contentContainerStyle={styles.modernGrid}
+          columnWrapperStyle={numColumns > 1 ? styles.gridRow : undefined}
           scrollEnabled={false}
+          showsVerticalScrollIndicator={false}
         />
-        <View style={styles.legendRow}>
-          <View style={styles.legendItem}>
-            <View style={[styles.dot, {backgroundColor: theme.colors.success}]} />
-            <Text style={styles.legendText}>Positive</Text>
+
+        {/* Only show legend if there are best/worst items */}
+        {(extremes?.biggestGain || extremes?.biggestDrop) && (
+          <View style={styles.legendContainer}>
+            <View style={styles.legendGrid}>
+              {extremes?.biggestGain && (
+                <View style={styles.legendItem}>
+                  <Star size={16} color="#FFA500" fill="#FFA500" style={{marginRight: 8}} />
+                  <Text style={[styles.legendLabel, {color: theme.colors.text.secondary}]}>Best</Text>
+                </View>
+              )}
+
+              {extremes?.biggestDrop && (
+                <View style={styles.legendItem}>
+                  <AlertTriangle size={16} color="#FF6B6B" style={{marginRight: 8}} />
+                  <Text style={[styles.legendLabel, {color: theme.colors.text.secondary}]}>Worst</Text>
+                </View>
+              )}
+            </View>
           </View>
-          <View style={styles.legendItem}>
-            <View style={[styles.dot, {backgroundColor: theme.colors.error}]} />
-            <Text style={styles.legendText}>Negative</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <Text style={styles.legendText}>🚀 Best</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <Text style={styles.legendText}>📉 Worst</Text>
-          </View>
-        </View>
-      </LinearGradient>
+        )}
+      </View>
     </View>
   );
 };
@@ -226,30 +384,130 @@ const MonthlyHeatmap: React.FC<Props> = ({monthlyDeltas, extremes, currency, per
 const getStyles = (theme: any) =>
   StyleSheet.create({
     container: {
-      paddingTop: theme.spacing.xl,
       paddingHorizontal: 0,
+      paddingTop: theme.spacing.xxl,
+      //paddingVertical: theme.spacing.xxl,
     },
-    
     card: {
+      backgroundColor: theme.colors.background.card,
+      borderRadius: 0,
+      padding: theme.spacing.lg,
+    },
+
+    emptyState: {
+      textAlign: 'center',
+      fontSize: theme.fontSizes.body,
+      padding: theme.spacing.xl,
+      fontStyle: 'italic',
+    },
+
+    modernGrid: {
+      paddingBottom: theme.spacing.xl,
+    },
+    gridRow: {
+      justifyContent: 'space-between',
+      marginBottom: theme.spacing.lg,
+    },
+
+    cellContainer: {
+      flex: 1,
+      marginHorizontal: theme.spacing.xs,
+      marginBottom: theme.spacing.lg,
+    },
+
+    pressableContainer: {
+      flex: 1,
+    },
+
+    modernCell: {
       borderRadius: theme.borderRadius.xl,
-      borderWidth: 1,
-      borderColor: theme.colors.border.primary,
-      paddingHorizontal: theme.spacing.lg,
-      paddingVertical: theme.spacing.xl,
-      width: '100%',
-      ...(theme.shadows?.md || {}),
+      padding: theme.spacing.lg,
+      borderWidth: 1.5,
+      minHeight: 130,
+      justifyContent: 'space-between',
+      position: 'relative',
+      overflow: 'hidden',
+
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 4},
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      elevation: 4,
     },
-    legendRow: {
-      marginTop: theme.spacing.lg,
-      paddingTop: theme.spacing.md,
-      borderTopWidth: 1,
-      borderTopColor: theme.colors.border.primary,
+
+    cellHeader: {
       flexDirection: 'row',
-      justifyContent: 'space-around',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
     },
-    legendItem: {flexDirection: 'row', alignItems: 'center'},
-    dot: {width: 8, height: 8, borderRadius: 4, marginRight: 6},
-    legendText: {fontSize: theme.fontSizes.caption, color: theme.colors.text.secondary},
+    monthText: {
+      fontSize: theme.fontSizes.caption,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    badgeContainer: {
+      flexDirection: 'row',
+      gap: theme.spacing.xs,
+    },
+    glowBadge: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: 'rgba(255,255,255,0.9)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 3,
+    },
+
+    contentArea: {
+      alignItems: 'center',
+      marginBottom: theme.spacing.sm,
+    },
+    percentageValue: {
+      fontSize: theme.fontSizes.md,
+      fontWeight: '800',
+      marginTop: theme.spacing.xs,
+      letterSpacing: -0.3,
+    },
+    amountValue: {
+      fontSize: theme.fontSizes.xs,
+      fontWeight: '600',
+      textAlign: 'center',
+      opacity: 0.8,
+    },
+
+    accentLine: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 3,
+      borderBottomLeftRadius: theme.borderRadius.xl,
+      borderBottomRightRadius: theme.borderRadius.xl,
+    },
+
+    legendContainer: {
+      borderTopWidth: 1,
+      borderTopColor: `${theme.colors.border.primary}50`,
+    },
+    legendGrid: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      gap: theme.spacing.xxl,
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    legendLabel: {
+      fontSize: theme.fontSizes.caption,
+      fontWeight: '500',
+    },
   });
 
 export default MonthlyHeatmap;

@@ -14,6 +14,7 @@ import MonthlyHeatmap from '@/components/analytics/monthly/MonthlyHeatmap';
 import MonthlyInsights from '@/components/analytics/monthly/MonthlyInsights';
 import MonthlyPerformanceOverview from '@/components/analytics/monthly/MonthlyPerformanceOverview';
 import PeriodSelector from '@/components/ui/PeriodSelector';
+import LoadingView from '@/components/ui/LoadingView';
 import {Period} from '@/lib/supabase';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
@@ -52,11 +53,7 @@ const MonthlyChangesScreen: React.FC = () => {
   }, []);
 
   if (isLoading || !historyData) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading monthly analysis...</Text>
-      </View>
-    );
+    return <LoadingView message="Loading monthly analysis..." />;
   }
 
   return (
@@ -97,7 +94,11 @@ const MonthlyChangesScreen: React.FC = () => {
 
         {/* Monthly Performance Overview */}
         <View style={styles.sectionContainer}>
-          <MonthlyPerformanceOverview insights={historyData.insights} currency={historyData.currency} />
+          <MonthlyPerformanceOverview
+            insights={historyData.insights}
+            currency={historyData.currency}
+            period={selectedPeriod}
+          />
         </View>
 
         {/* Monthly Insights */}
@@ -165,18 +166,6 @@ const getStyles = (theme: any, insets: any) =>
     // ✅ Consistent section spacing
     sectionContainer: {
       marginBottom: theme.spacing.xxl,
-    },
-
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background.primary,
-    },
-
-    loadingText: {
-      fontSize: theme.fontSizes.body,
-      color: theme.colors.text.secondary,
     },
   });
 
