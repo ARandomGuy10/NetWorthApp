@@ -1,44 +1,83 @@
-import React, {createContext, useState, useContext, useEffect} from 'react';
-
-import {useColorScheme} from 'react-native';
-
+import React, {createContext, useState, useContext, useEffect, useMemo} from 'react';
+import {useColorScheme, useWindowDimensions, PixelRatio} from 'react-native';
 import {useProfile} from '@/hooks/useProfile';
-
 import {getTheme} from './themes';
 
 export const ThemeContext = createContext();
 
 export const ThemeProvider = ({children}) => {
   console.log('ThemeProvider rendered');
-  // This is safe to call here because ThemeProvider is now only used inside
-  // the (tabs) layout, which is only rendered for authenticated users.
+
   const {data: profile, isLoading: profileLoading} = useProfile();
   const systemColorScheme = useColorScheme();
-  const [theme, setTheme] = useState(getTheme('DARK')); // Default theme while loading
+  const {width, height} = useWindowDimensions();
+  const [baseTheme, setBaseTheme] = useState(getTheme('DARK'));
+
+  // Enhanced theme with responsive calculations
+  const theme = useMemo(() => {
+    // Device size detection
+    const getDeviceSize = () => {
+      if (width < 375) return 'small';
+      if (width < 414) return 'medium';
+      return 'large';
+    };
+
+    const deviceSize = getDeviceSize();
+    const responsive = baseTheme.responsive[deviceSize];
+
+    // Calculate responsive font sizes
+    const fontSizes = Object.entries(baseTheme.fontSizes).reduce((acc, [key, baseSize]) => {
+      const scaledSize = baseSize * responsive.fontScale;
+      acc[key] = Math.round(PixelRatio.roundToNearestPixel(scaledSize));
+      return acc;
+    }, {});
+
+    // Calculate responsive spacing
+    const spacing = Object.entries(baseTheme.spacing).reduce((acc, [key, baseSpacing]) => {
+      const scaledSpacing = baseSpacing * responsive.spacingScale;
+      acc[key] = Math.round(scaledSpacing);
+      return acc;
+    }, {});
+
+    // Dynamic chart height
+    const chartHeight = Math.max(180, Math.min(250, height * 0.25));
+
+    // Return enhanced theme (backward compatible!)
+    return {
+      ...baseTheme,
+      // ✅ Existing properties remain unchanged
+      spacing, // Enhanced but same key names
+      // ✅ NEW: Add responsive properties
+      fontSizes,
+      responsive: {
+        deviceSize,
+        chartHeight,
+        isSmallScreen: deviceSize === 'small',
+        isMediumScreen: deviceSize === 'medium',
+        isLargeScreen: deviceSize === 'large',
+        originalSpacing: baseTheme.spacing, // Fallback if needed
+      },
+    };
+  }, [baseTheme, width, height]);
 
   useEffect(() => {
     if (profileLoading) return;
-
-    // Use the theme from the user's profile, or fall back to DARK.
     const themeName = profile?.theme || 'DARK';
-    setTheme(getTheme(themeName));
+    setBaseTheme(getTheme(themeName));
   }, [profile, profileLoading, systemColorScheme]);
-
-  // Prevent rendering children until the correct theme is loaded to avoid a
-  // "flash of wrong theme" when the app starts.
-  if (profileLoading) {
-    return null;
-  }
 
   const switchTheme = themeName => {
     let themeToSet = themeName;
     if (themeToSet === 'SYSTEM') {
-      themeToSet = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT'; // This logic can be enhanced later
+      themeToSet = systemColorScheme === 'dark' ? 'DARK' : 'LIGHT';
     }
-    setTheme(getTheme(themeToSet));
+    setBaseTheme(getTheme(themeToSet));
   };
 
-  return <ThemeContext.Provider value={{theme, switchTheme}}>{children}</ThemeContext.Provider>;
+  // FIXED: Always return Provider with value
+  const value = useMemo(() => ({theme, switchTheme}), [theme]);
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 };
 
 export const useTheme = () => {

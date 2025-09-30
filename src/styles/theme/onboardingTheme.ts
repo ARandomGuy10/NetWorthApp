@@ -80,6 +80,56 @@ const sharedStyles = {
     paddingVertical: 0,
     includeFontPadding: false,
   },
+
+  // ✅ FIXED: Added missing styles
+  passwordToggle: {
+    position: 'absolute' as const,
+    right: 12,
+    top: '50%' as const,
+    transform: [{translateY: -10}],
+    width: 20,
+    height: 20,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    zIndex: 1,
+  },
+
+  errorMessage: {
+    marginTop: 8,
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+
+  errorText: {
+    color: '#ef4444',
+    fontSize: responsiveSizes.fontSize - 3,
+    fontFamily: 'Inter_500Medium',
+    marginTop: 2,
+    marginBottom: 4,
+    textAlign: 'left' as const,
+    paddingLeft: 4,
+  },
+
+  socialButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    height: responsiveSizes.buttonHeight,
+    borderRadius: responsiveSizes.buttonHeight / 2,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    gap: 10,
+    marginBottom: responsiveSizes.verticalSpacing,
+    width: '100%' as const,
+    paddingHorizontal: 16,
+  },
+
+  socialButtonDisabled: {
+    opacity: 0.5,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+
   socialButtonDark: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -93,12 +143,30 @@ const sharedStyles = {
     marginBottom: responsiveSizes.verticalSpacing,
     width: '100%' as const,
   },
+
   socialButtonText: {
     color: '#FFFFFF',
     fontFamily: 'Inter_600SemiBold',
     fontSize: responsiveSizes.fontSize,
     fontWeight: '600' as const,
   },
+
+  gradientButton: {
+    width: '100%' as const,
+    borderRadius: responsiveSizes.buttonHeight / 2,
+    marginTop: responsiveSizes.verticalSpacing * 2,
+    marginBottom: responsiveSizes.verticalSpacing,
+    overflow: 'hidden' as const,
+  },
+
+  gradientButtonInner: {
+    height: responsiveSizes.buttonHeight,
+    borderRadius: responsiveSizes.buttonHeight / 2,
+    justifyContent: 'center' as const,
+    alignItems: 'center' as const,
+    paddingHorizontal: 20,
+  },
+
   gradientButtonContainer: {
     width: '100%' as const,
     borderRadius: responsiveSizes.buttonHeight / 2,
@@ -111,19 +179,14 @@ const sharedStyles = {
     shadowRadius: 8,
     elevation: 6,
   },
-  gradientButton: {
-    height: responsiveSizes.buttonHeight,
-    borderRadius: responsiveSizes.buttonHeight / 2,
-    justifyContent: 'center' as const,
-    alignItems: 'center' as const,
-    paddingHorizontal: 20,
-  },
+
   gradientButtonText: {
     color: '#FFFFFF',
     fontSize: responsiveSizes.fontSize,
     fontFamily: 'Inter_700Bold',
     fontWeight: '700' as const,
   },
+
   headerButtonDark: {
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -136,38 +199,34 @@ const sharedStyles = {
     justifyContent: 'center' as const,
     alignItems: 'center' as const,
   },
+
   headerButtonText: {
     color: '#FFFFFF',
     fontFamily: 'Inter_600SemiBold',
     fontSize: responsiveSizes.fontSize - 1,
     fontWeight: '600' as const,
   },
-  errorText: {
-    color: '#ef4444',
-    fontSize: responsiveSizes.fontSize - 3,
-    fontFamily: 'Inter_500Medium',
-    marginTop: 2,
-    marginBottom: 4,
-    textAlign: 'left' as const,
-    paddingLeft: 4,
-  },
+
   dividerContainer: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     marginVertical: responsiveSizes.verticalSpacing * 1.5,
   },
+
   dividerLine: {
     flex: 1,
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     opacity: 0.5,
   },
+
   dividerText: {
     marginHorizontal: 12,
     color: 'rgba(255, 255, 255, 0.7)',
     fontFamily: 'Inter_500Medium',
     fontSize: responsiveSizes.fontSize - 1,
   },
+
   socialContainer: {
     flexDirection: 'column' as const,
     gap: 0,

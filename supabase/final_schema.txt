@@ -13,7 +13,7 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";  -- Enables gen_random_uuid()
 CREATE TYPE public.theme AS ENUM (
   'LIGHT', 
   'DARK', 
-  'SYSTEM', 
+  'BARBIE', 
   'MODERN_FINANCE', 
   'WARM_LUXURY', 
   'NEO_BANKING', 
@@ -408,6 +408,22 @@ BEGIN
       ) AS gs
       WHERE sampling_strategy = 'adaptive'
     ),
+
+    month_boundaries AS (
+      SELECT first_day::date AS anchor_date
+      FROM generate_series(
+        date_trunc('month', start_date),
+        date_trunc('month', end_date),
+        '1 month'
+      ) AS first_day
+      UNION
+      SELECT LEAST(first_day + INTERVAL '1 month - 1 day', end_date)::date AS anchor_date
+        FROM generate_series(
+        date_trunc('month', start_date),
+        date_trunc('month', end_date),
+        '1 month'
+      ) AS first_day
+    ),
     
     -- Always include end_date and remove duplicates
     final_dates AS (
@@ -415,7 +431,11 @@ BEGIN
       FROM (
         SELECT anchor_date FROM anchor_dates
         UNION
+        SELECT start_date AS anchor_date
+        UNION
         SELECT end_date AS anchor_date
+        UNION
+        SELECT anchor_date FROM month_boundaries
       ) combined
       WHERE anchor_date BETWEEN start_date AND end_date
       ORDER BY anchor_date

@@ -10,6 +10,40 @@ const createTheme = (colors, name) => ({
     xxl: 24,
     xxxl: 32,
   },
+  fontSizes: {
+    xs: 10,
+    sm: 12,
+    md: 14,
+    lg: 16,
+    xl: 18,
+    xxl: 20,
+    xxxl: 24,
+    // Semantic font sizes
+    caption: 12,
+    body: 14,
+    subtitle: 16,
+    title: 18,
+    heading: 24,
+    display: 32,
+  },
+  // ✅ NEW: Add responsive scaling factors
+  responsive: {
+    small: {
+      // < 375px (iPhone SE, small phones)
+      fontScale: 0.9,
+      spacingScale: 0.95,
+    },
+    medium: {
+      // 375px - 414px (iPhone 11, most phones)
+      fontScale: 1.0,
+      spacingScale: 1.0,
+    },
+    large: {
+      // > 414px (iPhone Plus, large phones, tablets)
+      fontScale: 1.1,
+      spacingScale: 1.05,
+    },
+  },
   borderRadius: {
     sm: 8,
     md: 12,
@@ -63,13 +97,14 @@ export const DARK_THEME = createTheme(
       header: ['#0A0E28', '#1A1F3F', 'rgba(32, 227, 178, 0.25)'],
 
       // ✅ Improved: Natural green progression
-      success: ['#22C55E', '#16A34A', '#15803D'],
-
+      //success: ['#22C55E', '#16A34A', '#15803D'],
+      success: ['#22C55E', '#16A34A', '#0F766E'],
       // ✅ Improved: Warm amber gradient
       warning: ['#F59E0B', '#D97706', '#B45309'],
 
       // ✅ Improved: Coral to deep red
-      error: ['#F87171', '#EF4444', '#DC2626'],
+      //error: ['#F87171', '#EF4444', '#DC2626'],
+      error: ['#F87171', '#EF4444', '#BE123C'],
 
       // ✅ Improved: Very subtle dark variations
       subtle: ['#0A0E28', '#0F1435', '#151A3A'],
@@ -194,6 +229,73 @@ export const LIGHT_THEME = createTheme(
     },
   },
   'LIGHT'
+);
+
+// BARBIE_THEME - Light Barbie pink theme with good contrast
+export const BARBIE_THEME = createTheme(
+  {
+    primary: '#E0218A', // Official Barbie Pink
+    primaryDark: '#AD166A',
+    primaryLight: '#F399CD',
+    meshBackground: ['#FACDE5', '#F7B9D7', '#F18DBC', '#ED5C9B'],
+    gradient: {
+      // ✅ Soft pink progression for backgrounds
+      primary: ['#FFF5F9', '#FECDD3', '#FDA4AF'],
+      // ✅ Elevated card backgrounds with pink tints
+      card: ['#FFF1F2', '#FECDD3', '#FDA4AF'],
+      // ✅ Vibrant Barbie pink button gradient
+      button: ['#F399CD', '#E0218A', '#AD166A'],
+      // ✅ Light to pink accent header
+      header: ['#FFF5F9', '#FECDD3', 'rgba(224, 33, 138, 0.25)'],
+      // ✅ Green success (complements pink well)
+      success: ['#4ADE80', '#22C55E', '#16A34A'],
+      // ✅ Warm amber warning
+      warning: ['#FBBF24', '#F59E0B', '#D97706'],
+      // ✅ Coral error (softer than harsh red)
+      error: ['#FB7185', '#F43F5E', '#E11D48'],
+      // ✅ Very light pink subtle variations
+      subtle: ['#FFF5F9', '#FECDD3', '#FDA4AF'],
+      // ✅ Soft Barbie pink overlay
+      accent: ['rgba(224, 33, 138, 0.08)', 'rgba(224, 33, 138, 0.04)', 'rgba(224, 33, 138, 0.02)'],
+    },
+    background: {
+      primary: '#FFF5F9',
+      secondary: '#FECDD3',
+      tertiary: '#FDA4AF',
+      card: '#FFF1F2',
+      elevated: '#FECDD3',
+      navBarBackground: '#FFF5F9',
+    },
+    text: {
+      primary: '#881337', // Deep pink for good contrast
+      secondary: '#BE185D',
+      tertiary: '#E0218A',
+      disabled: '#F9A8D4',
+      inverse: '#FFFFFF',
+      onGradient: '#881337',
+      onPrimary: '#FFFFFF',
+      onCard: '#881337',
+      onSuccess: '#FFFFFF',
+      onError: '#FFFFFF',
+    },
+    success: '#22C55E',
+    warning: '#F59E0B',
+    error: '#F43F5E',
+    info: '#E0218A',
+    asset: '#22C55E',
+    liability: '#F43F5E',
+    border: {
+      primary: '#FDA4AF',
+      secondary: '#F9A8D4',
+      focus: '#E0218A',
+    },
+    interactive: {
+      hover: 'rgba(224, 33, 138, 0.1)',
+      pressed: 'rgba(224, 33, 138, 0.2)',
+      disabled: 'rgba(0, 0, 0, 0.05)',
+    },
+  },
+  'BARBIE'
 );
 
 // MODERN_FINANCE_THEME - Purple business theme
@@ -888,6 +990,7 @@ export const PLATINUM_ELEGANCE_THEME = createTheme(
 const allThemes = {
   DARK: DARK_THEME,
   LIGHT: LIGHT_THEME,
+  BARBIE: BARBIE_THEME,
   MODERN_FINANCE: MODERN_FINANCE_THEME,
   WARM_LUXURY: WARM_LUXURY_THEME,
   NEO_BANKING: NEO_BANKING_THEME,

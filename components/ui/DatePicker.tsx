@@ -135,6 +135,8 @@ export default function DatePicker({
                 onChange={handleDateChange}
                 style={styles.picker}
                 maximumDate={maxDate}
+                // ✅ Set the text color based on the current theme
+                textColor={theme.colors.text.primary}
               />
             </View>
           </TouchableOpacity>
