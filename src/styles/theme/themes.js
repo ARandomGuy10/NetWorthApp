@@ -21,6 +21,7 @@ const createTheme = (colors, name) => ({
     // Semantic font sizes
     caption: 12,
     body: 14,
+    button: 16,
     subtitle: 16,
     title: 18,
     heading: 24,

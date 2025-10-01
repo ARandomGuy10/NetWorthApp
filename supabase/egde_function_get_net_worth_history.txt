@@ -29,10 +29,10 @@ const CONFIG = {
   RATE_CACHE_TTL: 60 * 60 * 1000,
   DEFAULT_MAX_POINTS: {
     '1M': 60,
-    '3M': 15,
-    '6M': 30,
-    '12M': 60,
-    'ALL': 120
+    '3M': 30,
+    '6M': 45,
+    '12M': 90,
+    'ALL': 180
   },
   FALLBACK_SAMPLING: {
     '1M': 'daily',
@@ -256,7 +256,8 @@ function processHistoricalData(historicalData, rates, toCurrency, includeAccount
       if (includeAccountBreakdown) {
         processedAccounts.push({
           ...account,
-          balance: Math.round(convertedBalance * 100) / 100
+          convertedBalance: Math.round(convertedBalance * 100) / 100,
+          convertedCurrency: toCurrency
         });
       }
     });
@@ -285,6 +286,43 @@ function jsonResponse(data, status = 200) {
     }
   });
 }
+// Utility: always include per-month deltas (first vs last within each month)
+function monthlyDeltasFromPoints(points) {
+  if (!points.length) return [];
+
+  // Create a map of month -> last data point of that month
+  const lastPointOfMonth = new Map();
+  for (const p of points){
+    const month = p.date.slice(0, 7); // YYYY-MM
+    const existing = lastPointOfMonth.get(month);
+    if (!existing || new Date(p.date) > new Date(existing.date)) {
+      lastPointOfMonth.set(month, p);
+    }
+  }
+
+  const sortedMonths = Array.from(lastPointOfMonth.keys()).sort();
+  const deltas = [];
+
+  // Use the very first point of the whole series as the initial "previous" value
+  let previousMonthNetWorth = points[0].net_worth;
+
+  for (let i = 0; i < sortedMonths.length; i++) {
+    const m = sortedMonths[i];
+    const lastPoint = lastPointOfMonth.get(m);
+    const startNetWorth = i === 0 ? previousMonthNetWorth : lastPointOfMonth.get(sortedMonths[i-1]).net_worth;
+
+    const delta = Math.round((lastPoint.net_worth - startNetWorth) * 100) / 100;
+    const percent = startNetWorth ? Math.round(delta / Math.abs(startNetWorth) * 100 * 100) / 100 : 0;
+
+    deltas.push({
+      month: m,
+      delta,
+      percent
+    });
+  }
+  return deltas;
+}
+
 // Utility: monthly series from daily/weekly/adaptive points (last value per calendar month)
 function toMonthlySeries(points) {
   const byMonth = new Map();
@@ -458,12 +496,18 @@ Deno.serve(async (req)=>{
     if (isPro) {
       // Build a monthly series from whatever sampling was returned
       const monthlySeries = toMonthlySeries(processedData);
-      const monthlyDeltas = deltas(monthlySeries);
+      //const monthlyDeltas = deltas(monthlySeries);
+      //const streaks = streak(monthlyDeltas);
+      //const startNW = monthlySeries[0]?.net_worth ?? processedData[0].net_worth;
+      //const endNW = monthlySeries.at(-1)?.net_worth ?? processedData.at(-1).net_worth;
+      // Compute deltas directly per month
+      const monthlyDeltas = monthlyDeltasFromPoints(processedData);
       const streaks = streak(monthlyDeltas);
-      const startNW = monthlySeries[0]?.net_worth ?? processedData[0].net_worth;
-      const endNW = monthlySeries.at(-1)?.net_worth ?? processedData.at(-1).net_worth;
+      // First and last point across whole series
+      const startNW = processedData[0].net_worth;
+      const endNW = processedData.at(-1).net_worth;
       const change = Math.round((endNW - startNW) * 100) / 100;
-      const percent = startNW ? Math.round(change / startNW * 100 * 100) / 100 : 0;
+      const percent = startNW ? Math.round(change / Math.abs(startNW) * 100 * 100) / 100 : 0;
       const perfSummary = {
         start: startNW,
         end: endNW,
@@ -471,7 +515,8 @@ Deno.serve(async (req)=>{
         percent
       };
       // Simple trend (slope across monthly points)
-      const slope = monthlySeries.length > 1 ? (endNW - startNW) / (monthlySeries.length - 1) : 0;
+      //const slope = monthlySeries.length > 1 ? (endNW - startNW) / (monthlySeries.length - 1) : 0;
+      const slope = monthlyDeltas.length > 1 ? (endNW - startNW) / (monthlyDeltas.length - 1) : 0;
       const trend = {
         slope: Math.round(slope * 100) / 100,
         direction: slope >= 0 ? "up" : "down"
@@ -479,8 +524,9 @@ Deno.serve(async (req)=>{
       // Highs, gains/drops
       const allTimeHigh = Math.max(...processedData.map((p)=>p.net_worth));
       const isAtAllTimeHigh = Math.abs(endNW - allTimeHigh) < 1e-6;
-      const biggestGain = monthlyDeltas.length ? monthlyDeltas.reduce((a, b)=>b.delta > a.delta ? b : a) : null;
-      const biggestDrop = monthlyDeltas.length ? monthlyDeltas.reduce((a, b)=>b.delta < a.delta ? b : a) : null;
+      const biggestGain = monthlyDeltas.filter(d => d.delta > 0).reduce((a, b) => (a && a.delta > b.delta ? a : b), null);
+      const biggestDrop = monthlyDeltas.filter(d => d.delta < 0).reduce((a, b) => (a && a.delta < b.delta ? a : b), null);
+
       // Volatility (std dev of monthly percent changes)
       const pctChanges = monthlyDeltas.map((d)=>d.percent);
       const volatility = {

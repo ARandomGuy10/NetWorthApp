@@ -474,6 +474,7 @@ export type Theme = {
     xxxl: number;
     caption: number;
     body: number;
+    button: number;
     subtitle: number;
     title: number;
     heading: number;
