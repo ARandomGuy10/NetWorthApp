@@ -17,6 +17,7 @@ import PeriodSelector from '@/components/ui/PeriodSelector';
 import LoadingView from '@/components/ui/LoadingView';
 import {Period} from '@/lib/supabase';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
+import EmptyState from '@/components/ui/EmptyState';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 const MonthlyChangesScreen: React.FC = () => {
@@ -56,9 +57,23 @@ const MonthlyChangesScreen: React.FC = () => {
     return <LoadingView message="Loading monthly analysis..." />;
   }
 
+  // Add a defensive check for insights. If they don't exist, show a static empty state.
+  if (!historyData.insights) {
+    return (
+      <EmptyState
+        icon="analytics-outline"
+        title="Not Enough Data"
+        message="We need at least two months of balance history to generate monthly insights."
+        onActionPress={() => router.push('/(tabs)/accounts')}
+        actionText="Add Balance History"
+      />
+    );
+  }
+
   return (
     <View style={styles.container}>
       <ScrollView
+        // Use a consistent background color for overscroll on iOS
         style={styles.scrollContent}
         contentContainerStyle={{paddingBottom: insets.bottom + 90}}
         showsVerticalScrollIndicator={false}
@@ -122,6 +137,7 @@ const getStyles = (theme: any, insets: any) =>
 
     scrollContent: {
       flex: 1,
+      backgroundColor: theme.colors.background.primary,
     },
 
     // ✅ Simplified header styling
