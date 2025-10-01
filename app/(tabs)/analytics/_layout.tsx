@@ -8,14 +8,7 @@ export default function AnalyticsLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        headerStyle: {
-          backgroundColor: theme.colors.background.primary,
-        },
-        headerTintColor: theme.colors.text.primary,
-        headerTitleStyle: {
-          color: theme.colors.text.primary,
-          fontWeight: '600',
-        },
+        contentStyle: {backgroundColor: 'transparent'},
       }}>
       <Stack.Screen name="index" options={{title: 'Analytics'}} />
       <Stack.Screen name="performance" options={{title: 'Performance Overview'}} />

@@ -1,5 +1,6 @@
 import React from 'react';
-import LegalContentPage, { ContentItem } from '@/components/profile/LegalContentPage';
+import LegalContentPage, {ContentItem} from '@/components/profile/LegalContentPage';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 const content: ContentItem[] = [
   {
@@ -25,11 +26,13 @@ const content: ContentItem[] = [
 ];
 
 const PrivacyPolicyScreen = () => {
+  const insets = useSafeAreaInsets();
   return (
     <LegalContentPage
       title="Privacy Policy"
       lastUpdated={new Date().toLocaleDateString()}
       content={content}
+      insets={insets}
     />
   );
 };

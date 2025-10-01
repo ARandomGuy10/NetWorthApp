@@ -60,10 +60,15 @@ export default function AuthLayout() {
   }
 
   return (
-    <Stack screenOptions={{headerShown: false}}>
-      <Stack.Screen name="welcome" />
-      <Stack.Screen name="sign-in" />
-      <Stack.Screen name="sign-up" />
-    </Stack>
+    // By removing the custom screenOptions, we revert to the default
+    // native stack navigator, which provides the smooth, platform-standard
+    // slide animation seen in the rest of the app.
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        // Use 'none' to prevent any background color from being applied by the navigator
+        contentStyle: {backgroundColor: 'transparent'},
+      }}
+    />
   );
 }

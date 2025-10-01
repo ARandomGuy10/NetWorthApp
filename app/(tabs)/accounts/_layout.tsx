@@ -1,13 +1,12 @@
 import React from 'react';
-import { Stack } from 'expo-router';
-import { useAuth } from '@clerk/clerk-expo';
-import { useEffect } from 'react';
-import { router } from 'expo-router';
-import { View, ActivityIndicator } from 'react-native';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
+import {Stack} from 'expo-router';
+import {useAuth} from '@clerk/clerk-expo';
+import {useEffect} from 'react';
+import {router} from 'expo-router';
+import {View, ActivityIndicator} from 'react-native';
 
 export default function AccountsLayout() {
-  const { isSignedIn, isLoaded } = useAuth();
+  const {isSignedIn, isLoaded} = useAuth();
 
   // Redirect if user is not authenticated
   useEffect(() => {
@@ -20,7 +19,7 @@ export default function AccountsLayout() {
   // Show loading while auth is loading
   if (!isLoaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" />
       </View>
     );
@@ -31,14 +30,12 @@ export default function AccountsLayout() {
     return null; // Redirect is happening in useEffect
   }
 
-  const { theme } = useTheme();
-
   return (
     <Stack
       screenOptions={{
         headerShown: false, // Each screen in this stack has its own custom header.
         contentStyle: {
-          backgroundColor: theme.colors.background.primary,
+          backgroundColor: 'transparent',
         },
       }}
     >
@@ -50,19 +47,19 @@ export default function AccountsLayout() {
         name="[id]" 
         options={{ title: 'Account Details' }} 
       />
-      <Stack.Screen 
-        name="add-account" 
-        options={{ 
+      <Stack.Screen
+        name="add-account"
+        options={{
           presentation: 'modal',
           title: 'Add Account',
-        }} 
+        }}
       />
-      <Stack.Screen 
-        name="add-balance" 
-        options={{ 
+      <Stack.Screen
+        name="add-balance"
+        options={{
           presentation: 'modal',
           title: 'Add Balance',
-        }} 
+        }}
       />
     </Stack>
   );

@@ -1,25 +1,24 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking, Alert} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {Theme} from '@/lib/supabase';
 import FaqItem from '@/components/ui/FaqItem';
 
 const HelpScreen = () => {
-  const { theme } = useTheme();
+  const {theme} = useTheme();
   const styles = getStyles(theme);
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {paddingTop: insets.top}]}>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={{
           paddingTop: theme.spacing.xl,
           paddingBottom: insets.bottom + theme.spacing.lg,
-        }}
-      >
+        }}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
           <FaqItem
@@ -53,8 +52,7 @@ const HelpScreen = () => {
                     Alert.alert('Cannot Open Email', 'No email client is available on this device.');
                   }
                 });
-              }}
-            >
+              }}>
               <Text style={styles.emailButtonText}>networthtrackr.app@gmail.com</Text>
             </TouchableOpacity>
           </View>

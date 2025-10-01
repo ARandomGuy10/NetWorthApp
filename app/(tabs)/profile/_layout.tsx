@@ -1,23 +1,16 @@
-import { Stack } from 'expo-router';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
+import {Stack} from 'expo-router';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 
 export default function ProfileLayout() {
-  const { theme } = useTheme();
+  const {theme} = useTheme();
 
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: theme.colors.background.card,
-        },
-        headerTintColor: theme.colors.text.primary,
-        headerTitleStyle: {
-          color: theme.colors.text.primary,
-          fontWeight: '600',
-        },
+        headerShown: false, // Screens manage their own headers
+        contentStyle: {backgroundColor: 'transparent'},
         headerBackTitle: 'Profile',
-      }}
-    >
+      }}>
       <Stack.Screen
         name="index"
         options={{

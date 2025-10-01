@@ -1,13 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {View, Text, StyleSheet, ScrollView, Image} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import * as Application from 'expo-application';
 
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {Theme} from '@/lib/supabase';
 
 const AboutScreen = () => {
-  const { theme } = useTheme();
+  const {theme} = useTheme();
   const styles = getStyles(theme);
   const insets = useSafeAreaInsets();
 
@@ -15,14 +15,13 @@ const AboutScreen = () => {
   const buildVersion = Application.nativeBuildVersion;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {paddingTop: insets.top}]}>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={{
           paddingTop: theme.spacing.xl,
           paddingBottom: insets.bottom + theme.spacing.lg,
-        }}
-      >
+        }}>
         <View style={styles.headerContainer}>
           <Image source={require('../../../assets/adaptive-icon.png')} style={styles.appIcon} />
           <Text style={styles.appName}>NetWorthTrackr</Text>
@@ -36,7 +35,7 @@ const AboutScreen = () => {
               <Text style={styles.infoLabel}>App Version</Text>
               <Text style={styles.infoValue}>{appVersion}</Text>
             </View>
-            <View style={[styles.infoRow, { borderBottomWidth: 0 }]}>
+            <View style={[styles.infoRow, {borderBottomWidth: 0}]}>
               <Text style={styles.infoLabel}>Build Version</Text>
               <Text style={styles.infoValue}>{buildVersion}</Text>
             </View>
@@ -46,10 +45,8 @@ const AboutScreen = () => {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>What's New in v{appVersion}</Text>
           <Text style={styles.bodyText}>
-            • Implemented a brand new Profile screen!{'\n'}
-            • Added an in-app feedback form.{'\n'}
-            • Redesigned legal and info pages.{'\n'}
-            • Squashed some bugs and made performance improvements.
+            • Implemented a brand new Profile screen!{'\n'}• Added an in-app feedback form.{'\n'}• Redesigned legal and
+            info pages.{'\n'}• Squashed some bugs and made performance improvements.
           </Text>
         </View>
       </ScrollView>
