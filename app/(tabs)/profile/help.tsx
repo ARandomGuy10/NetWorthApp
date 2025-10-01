@@ -12,7 +12,7 @@ const HelpScreen = () => {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, {paddingTop: insets.top}]}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={{

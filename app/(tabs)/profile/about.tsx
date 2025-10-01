@@ -15,7 +15,7 @@ const AboutScreen = () => {
   const buildVersion = Application.nativeBuildVersion;
 
   return (
-    <View style={[styles.container, {paddingTop: insets.top}]}>
+    <View style={styles.container}>
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={{

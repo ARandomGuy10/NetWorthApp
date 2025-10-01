@@ -18,6 +18,7 @@ const ProfileHeader: React.FC = () => {
       <View style={styles.titleContainer}>
         <Text style={styles.title}>Settings</Text>
       </View>
+      <View style={styles.placeholder} />
     </View>
   );
 };

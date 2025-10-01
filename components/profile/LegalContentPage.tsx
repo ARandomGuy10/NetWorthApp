@@ -39,7 +39,7 @@ const LegalContentPage: React.FC<LegalContentPageProps> = ({title, lastUpdated, 
   };
 
   return (
-    <View style={[styles.container, {paddingTop: insets.top}]}>
+    <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
