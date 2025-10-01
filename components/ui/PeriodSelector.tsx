@@ -42,7 +42,6 @@ const PeriodSelector: React.FC<PeriodSelectorProps> = ({selectedPeriod, onPeriod
       shadowOpacity: 0.18,
       shadowRadius: 8,
       shadowOffset: {width: 0, height: 3},
-      elevation: 6,
     },
     button: {
       flex: 1,

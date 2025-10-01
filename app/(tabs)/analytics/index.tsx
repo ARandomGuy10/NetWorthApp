@@ -273,7 +273,8 @@ const HeroSection = ({theme, fullWidth = true}: {theme: any; fullWidth?: boolean
 
   const netWorth = dashboardData?.totalNetWorth || 0;
   const change = historyData?.insights?.performanceSummary?.percent || 0;
-  const daysSince = dashboardData?.analytics?.daysSinceLastUpdate || 0;
+  // ✅ FIX: Prevent negative days due to timezone differences
+  const daysSince = Math.max(0, dashboardData?.analytics?.daysSinceLastUpdate || 0);
 
   const getFreshnessColor = (days: number) => {
     if (days <= 1) return theme.colors.success;
@@ -462,7 +463,6 @@ export default function AnalyticsIndexScreen() {
         {/* ✅ UPDATED: HeroSection now contains the title and subtitle */}
         <HeroSection theme={theme} fullWidth={FULL_WIDTH_HEADER} />
         <BadgesStrip theme={theme} badges={badges} />
-
 
         {analyticsItems.map((item, index) => (
           <AnimatedCard key={item.href} item={item} index={index} fullWidth={FULL_WIDTH_CARDS} />

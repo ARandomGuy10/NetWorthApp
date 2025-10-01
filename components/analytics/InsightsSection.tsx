@@ -6,6 +6,7 @@ import {LinearGradient} from 'expo-linear-gradient';
 import Animated, {FadeInUp} from 'react-native-reanimated';
 import {Ionicons} from '@expo/vector-icons';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {getGradientColors} from '@/src/utils/formatters';
 
 export interface InsightItem {
   icon: string;
@@ -39,15 +40,16 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({
       <Animated.View entering={FadeInUp.duration(400)} style={styles.headerContainer}>
         {/* ✅ NEW: Header background with gradient */}
         <LinearGradient
-          colors={[`${theme.colors.primary}08`, `${theme.colors.primary}04`, `${theme.colors.primary}02`]}
+          colors={getGradientColors(theme, 'header')}
+          locations={[0, 0.5, 1]}
           style={styles.headerBackground}
           start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}>
+          end={{x: 0, y: 1}}>
           {/* ✅ NEW: Icon and title row */}
           <View style={styles.headerTopRow}>
             <View style={styles.iconContainer}>
               <LinearGradient
-                colors={[theme.colors.primary, theme.colors.primaryDark]}
+                colors={getGradientColors(theme, 'primary')}
                 style={styles.iconGradient}
                 start={{x: 0, y: 0}}
                 end={{x: 1, y: 1}}>
@@ -90,10 +92,10 @@ const InsightsSection: React.FC<InsightsSectionProps> = ({
             entering={FadeInUp.delay(index * 100 + 200)} // ✅ Delay after header
             style={styles.insightCard}>
             <LinearGradient
-              colors={[theme.colors.background.card, theme.colors.background.elevated]}
+              colors={getGradientColors(theme, 'card')}
               style={styles.insightGradient}
               start={{x: 0, y: 0}}
-              end={{x: 1, y: 1}}>
+              end={{x: 0, y: 1}}>
               <View style={styles.insightHeader}>
                 <View style={[styles.insightIconContainer, {backgroundColor: `${insight.color}15`}]}>
                   <Text style={styles.insightIcon}>{insight.icon}</Text>
@@ -138,7 +140,6 @@ const getStyles = (theme: any, paddingBottom: number) =>
       },
       shadowOpacity: 0.1,
       shadowRadius: 12,
-      elevation: 4,
     },
 
     // ✅ NEW: Top row with icon and title
