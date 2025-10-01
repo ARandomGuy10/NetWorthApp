@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, LayoutAnimation, UIManager, Platform } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, {useState} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, LayoutAnimation} from 'react-native';
+import {Ionicons} from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
-
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {Theme} from '@/lib/supabase';
 
 interface FaqItemProps {
   question: string;
   answer: string;
 }
 
-const FaqItem: React.FC<FaqItemProps> = ({ question, answer }) => {
-  const { theme } = useTheme();
+const FaqItem: React.FC<FaqItemProps> = ({question, answer}) => {
+  const {theme} = useTheme();
   const styles = getStyles(theme);
   const [isOpen, setIsOpen] = useState(false);
 

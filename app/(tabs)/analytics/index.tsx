@@ -22,7 +22,7 @@ import {
 import {LinearGradient} from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import AnalyticsNavigationCard from '@/components/analytics/AnalyticsNavigationCard';
-import {formatSmartNumber} from '@/src/utils/formatters';
+import {formatSmartNumber, getGradientColors} from '@/src/utils/formatters';
 import {useDashboardData} from '@/hooks/useDashboard';
 import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
@@ -225,11 +225,8 @@ const AchievementBadge = ({badge, index}: {badge: any; index: number}) => {
           <LinearGradient
             colors={getPremiumGradient(badge)}
             style={styles.badgeGradient}
-            start={{x: 0, y: 0}}
+            start={{x: 0, y: 1}}
             end={{x: 1, y: 1}}>
-            {/* Shine overlay */}
-            <Animated.View style={[styles.shineOverlay, shineStyle]} />
-
             {/* ✅ UPDATED: Only use database icon and title, no hardcoded fallbacks */}
             <Text style={[styles.badgeLabel, {color: '#FFFFFF'}]} numberOfLines={1}>
               {badge.icon}
@@ -272,13 +269,11 @@ const HeroSection = ({theme, fullWidth = true}: {theme: any; fullWidth?: boolean
   const {data: dashboardData} = useDashboardData();
   const {data: historyData} = useNetWorthHistory({period: '12M'});
 
+  const insets = useSafeAreaInsets();
+
   const netWorth = dashboardData?.totalNetWorth || 0;
   const change = historyData?.insights?.performanceSummary?.percent || 0;
   const daysSince = dashboardData?.analytics?.daysSinceLastUpdate || 0;
-
-  const headerGradient =
-    theme.colors.gradient?.header ||
-    ([theme.colors.background.primary, theme.colors.background.secondary, `${theme.colors.primary}08`] as const);
 
   const getFreshnessColor = (days: number) => {
     if (days <= 1) return theme.colors.success;
@@ -289,8 +284,20 @@ const HeroSection = ({theme, fullWidth = true}: {theme: any; fullWidth?: boolean
   const styles = getStyles(theme, fullWidth);
 
   return (
-    <View style={styles.heroContainer}>
-      <LinearGradient colors={headerGradient} style={styles.heroCard}>
+    <View style={[styles.heroContainer, {paddingTop: insets.top}]}>
+      <LinearGradient
+        colors={getGradientColors(theme, 'header')}
+        locations={[0, 0.5, 1]}
+        start={{x: 0, y: 0}}
+        end={{x: 0, y: 1}}
+        style={styles.heroCard}>
+        {/* ✅ ADDED: Screen title and subtitle now inside the gradient */}
+        <View style={styles.headerTextContainer}>
+          <Text style={[styles.screenTitle, {color: theme.colors.text.onGradient}]}>Analytics</Text>
+          <Text style={[styles.screenSubtitle, {color: theme.colors.text.onGradient, opacity: 0.8}]}>
+            A clear view of progress and opportunities
+          </Text>
+        </View>
         <View style={styles.heroContent}>
           <Text style={[styles.heroLabel, {color: theme.colors.text.secondary}]}>Your Portfolio</Text>
 
@@ -452,15 +459,10 @@ export default function AnalyticsIndexScreen() {
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={[styles.contentContainer, {paddingBottom: insets.bottom + 120}]}
         showsVerticalScrollIndicator={false}>
-        <Text style={[styles.screenTitle, {color: theme.colors.text.primary}]}>Analytics</Text>
-        <Text style={[styles.screenSubtitle, {color: theme.colors.text.secondary}]}>
-          A clear view of progress and opportunities
-        </Text>
-
+        {/* ✅ UPDATED: HeroSection now contains the title and subtitle */}
         <HeroSection theme={theme} fullWidth={FULL_WIDTH_HEADER} />
         <BadgesStrip theme={theme} badges={badges} />
 
-        <View style={{height: theme.spacing.lg}} />
 
         {analyticsItems.map((item, index) => (
           <AnimatedCard key={item.href} item={item} index={index} fullWidth={FULL_WIDTH_CARDS} />
@@ -486,21 +488,23 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
     contentContainer: {
       paddingHorizontal: fullWidth ? 0 : theme.spacing.lg,
     },
+    // ✅ ADDED: Container for the header text
+    headerTextContainer: {
+      paddingHorizontal: theme.spacing.lg,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing.xl,
+    },
     screenTitle: {
       fontSize: 28,
       fontWeight: '800',
       letterSpacing: -0.5,
       textAlign: 'center',
-      marginTop: theme.spacing.lg,
       marginBottom: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.lg,
     },
     screenSubtitle: {
       fontSize: 15,
       textAlign: 'center',
-      marginBottom: theme.spacing.xl,
       opacity: 0.8,
-      paddingHorizontal: theme.spacing.lg,
     },
     heroContainer: {
       ...(fullWidth
@@ -511,19 +515,22 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
         : {
             marginHorizontal: theme.spacing.xs,
           }),
-      marginBottom: theme.spacing.lg,
-    },
-    heroCard: {
-      borderRadius: fullWidth ? 0 : theme.borderRadius.xl,
-      overflow: 'hidden',
-      elevation: 8,
+      // ✅ MOVED: Shadow properties moved here to prevent clipping
       shadowColor: theme.colors.primary,
       shadowOffset: {width: 0, height: 4},
       shadowOpacity: 0.12,
       shadowRadius: 16,
+      elevation: 8,
+      paddingBottom: theme.spacing.lg,
+    },
+    heroCard: {
+      borderRadius: fullWidth ? 0 : theme.borderRadius.xl,
+      overflow: 'hidden',
+      // ✅ REMOVED: Shadow properties are now on the container
     },
     heroContent: {
-      padding: theme.spacing.xxl,
+      paddingHorizontal: theme.spacing.xxl,
+      paddingBottom: theme.spacing.xxl,
       alignItems: 'center',
     },
     heroLabel: {
@@ -568,7 +575,7 @@ const getStyles = (theme: any, fullWidth: boolean = true) =>
     },
     // Badge Styles
     badgesContainer: {
-      marginBottom: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
     },
     badgesScroll: {
       flexGrow: 0,
