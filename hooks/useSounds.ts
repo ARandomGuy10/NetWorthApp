@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useRef } from 'react';
-import { Audio } from 'expo-av';
-import { useSettingsStore } from '@/stores/settingsStore';
-  
+import {useCallback, useEffect, useRef} from 'react';
+import {createAudioPlayer, setAudioModeAsync, AudioPlayer} from 'expo-audio';
+import {useSettingsStore} from '@/stores/settingsStore';
 // Define sound types for type safety and easy management
 export type SoundType = 'success' | 'error' | 'tap_light';
 
@@ -14,27 +13,55 @@ const soundFiles: Record<SoundType, any> = {
 };
 
 export const useSounds = () => {
-  const soundsEnabled = useSettingsStore((state) => state.soundsEnabled);
+  // Store loaded sound objects in a ref to persist them across re-renders
+  const soundPlayers = useRef<Partial<Record<SoundType, AudioPlayer>>>({});
+  const soundsEnabled = useSettingsStore(state => state.soundsEnabled);
+
+  // Effect to pre-load sounds and clean them up on unmount
+  useEffect(() => {
+    const loadSounds = async () => {
+      // Configure audio mode to play sound even in silent mode on iOS
+      await setAudioModeAsync({
+        playsInSilentMode: true,
+      });
+
+      for (const key in soundFiles) {
+        const type = key as SoundType;
+        try {
+          const player = createAudioPlayer(soundFiles[type]);
+          soundPlayers.current[type] = player;
+        } catch (error) {
+          console.error(`Error loading sound (${type}):`, error);
+        }
+      }
+    };
+
+    loadSounds();
+
+    // Cleanup function to unload all sounds when the hook is no longer in use
+    return () => {
+      for (const key in soundPlayers.current) {
+        const player = soundPlayers.current[key as SoundType];
+        player?.release();
+      }
+    };
+  }, []); // Empty dependency array ensures this runs only once
 
   const playSound = useCallback(
     async (type: SoundType) => {
-      if (soundsEnabled) {
+      const player = soundPlayers.current[type];
+      if (soundsEnabled && player) {
         try {
-          const { sound } = await Audio.Sound.createAsync(soundFiles[type]);
-          await sound.playAsync();
-          // Unload the sound from memory after it's done playing to free up resources.
-          sound.setOnPlaybackStatusUpdate(async (status) => {
-            if (status.isLoaded && status.didJustFinish) {
-              await sound.unloadAsync();
-            }
-          });
+          // Replay the sound by seeking to the start and playing
+          await player.seekTo(0);
+          await player.play();
         } catch (error) {
           console.error(`Error playing sound (${type}):`, error);
         }
       }
     },
-    [soundsEnabled]
+    [soundsEnabled] // Dependency on soundsEnabled to respect user settings
   );
 
-  return { playSound };
+  return {playSound};
 };
