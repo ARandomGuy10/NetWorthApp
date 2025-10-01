@@ -181,7 +181,7 @@ const WelcomeContent: React.FC = () => {
 
       <Animated.View style={[styles.buttonsSection, buttonsStyle]}>
         <AnimatedButton
-          style={{...styles.primaryButton, backgroundColor: '#22c55e'}}
+          style={[styles.primaryButton, {backgroundColor: '#22c55e'}]}
           onPress={handleStart}
           hapticType="medium">
           <Text style={sharedStyles.socialButtonText}>Get Started</Text>

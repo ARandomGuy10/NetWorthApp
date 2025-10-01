@@ -3,24 +3,12 @@ import {View, ActivityIndicator} from 'react-native';
 import {Stack, router} from 'expo-router';
 import {useAuth} from '@clerk/clerk-expo';
 import {useFonts, Inter_400Regular, Inter_600SemiBold, Inter_700Bold} from '@expo-google-fonts/inter';
-
 import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 import {useWarmUpBrowser} from '../../hooks/useWarmUpBrowser';
 
 export default function AuthLayout() {
   const {isSignedIn, isLoaded} = useAuth();
 
-  useEffect(() => {
-    if (!isLoaded) return;
-
-    // This is the "safety net". If the user is signed in, this layout will
-    // redirect them away from any screen in the (auth) group.
-    if (isSignedIn) {
-      router.replace('/(tabs)/dashboard');
-    }
-  }, [isSignedIn, isLoaded]);
-
-  // Warm up the browser for OAuth flows on Android
   useWarmUpBrowser();
 
   const [fontsLoaded, fontError] = useFonts({
@@ -29,7 +17,19 @@ export default function AuthLayout() {
     Inter_700Bold,
   });
 
-  // Show a loading screen while Clerk and fonts are loading.
+  useEffect(() => {
+    if (!isLoaded) return;
+
+    if (isSignedIn) {
+      // Small delay to prevent flash - works for both OAuth and email/password
+      const timer = setTimeout(() => {
+        router.replace('/(tabs)/dashboard');
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [isSignedIn, isLoaded]);
+
+  // Show loading while auth is loading OR during redirect
   if (!isLoaded || (!fontsLoaded && !fontError)) {
     return (
       <View
@@ -44,19 +44,26 @@ export default function AuthLayout() {
     );
   }
 
-  // If the user is signed in and not on the forgot password screen, the redirect is in progress.
-  // Return null to prevent a flash of the auth screen.
+  // Prevent showing auth screens if user is signed in
   if (isSignedIn) {
-    return null;
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: onboardingTheme.colors.background.primary,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+        <ActivityIndicator size="large" color={onboardingTheme.colors.primary} />
+      </View>
+    );
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        // Allow screens to control their own background color for full-screen effects
-        contentStyle: {backgroundColor: 'transparent'},
-      }}
-    />
+    <Stack screenOptions={{headerShown: false}}>
+      <Stack.Screen name="welcome" />
+      <Stack.Screen name="sign-in" />
+      <Stack.Screen name="sign-up" />
+    </Stack>
   );
 }

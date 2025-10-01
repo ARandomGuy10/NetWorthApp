@@ -32,6 +32,8 @@ const sizes = responsiveSizes;
 // ✅ FIXED: Add colors alias from the theme
 const colors = onboardingTheme.colors;
 
+const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+
 // Proper TypeScript interfaces
 export interface AnimatedButtonProps extends TouchableOpacityProps {
   children: React.ReactNode;
@@ -64,11 +66,6 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
   const opacity = useSharedValue(1);
   const {impactAsync} = useHaptics();
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{scale: scale.value}],
-    opacity: opacity.value,
-  }));
-
   const handlePressIn = () => {
     if (!disabled) {
       scale.value = withTiming(0.96, {duration: 100});
@@ -92,19 +89,24 @@ export const AnimatedButton: React.FC<AnimatedButtonProps> = ({
     }
   };
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{scale: scale.value}],
+    opacity: opacity.value,
+  }));
+
   return (
-    <TouchableOpacity
+    <AnimatedTouchableOpacity
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       onPress={handlePress}
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      accessibilityRole={accessibilityRole}
+      accessibilityRole={accessibilityRole || 'button'}
       style={[style, animatedStyle]}
       {...otherProps}>
-      <Animated.View style={animatedStyle}>{children}</Animated.View>
-    </TouchableOpacity>
+      {children}
+    </AnimatedTouchableOpacity>
   );
 };
 

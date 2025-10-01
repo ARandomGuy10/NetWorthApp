@@ -179,7 +179,8 @@ const SignInScreen: React.FC = () => {
         setIsSuccess(true);
         // Success haptic handled by GradientButton component
         await setActive({session: completeSignIn.createdSessionId});
-        router.replace('/(tabs)/dashboard');
+        //Redirect handled by useEffect in auth layout
+        //router.replace('/(tabs)/dashboard');
       }
     } catch (err: any) {
       // 🎯 FIXED: Handle errors privately and show user-friendly messages

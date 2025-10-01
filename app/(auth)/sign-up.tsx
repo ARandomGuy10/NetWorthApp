@@ -358,7 +358,7 @@ const SignUpScreen: React.FC = () => {
 
           <Link href="/(auth)/sign-in" asChild>
             <AnimatedButton style={sharedStyles.headerButtonDark} hapticType="light">
-              <Text style={sharedStyles.headerButtonText}>Login</Text>
+              <Text style={sharedStyles.headerButtonText}>Sign In</Text>
             </AnimatedButton>
           </Link>
         </View>

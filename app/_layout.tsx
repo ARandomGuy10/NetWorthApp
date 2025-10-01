@@ -6,7 +6,6 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {StatusBar} from 'expo-status-bar';
 import {tokenCache} from '@clerk/clerk-expo/token-cache';
 
-import {ThemeProvider} from '../src/styles/theme/ThemeContext';
 import {ToastProvider} from '../hooks/providers/ToastProvider';
 import {queryClient} from '../lib/queryClient';
 
