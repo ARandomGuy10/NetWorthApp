@@ -232,7 +232,7 @@ export default function AddAccountScreen() {
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 44 : 0}>
         <Animated.ScrollView
           style={[
             styles.scrollView,
@@ -242,7 +242,8 @@ export default function AddAccountScreen() {
             },
           ]}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={styles.scrollContentContainer}>
           {/* Account Name */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Account Name *</Text>
@@ -483,6 +484,9 @@ const getStyles = (theme: Theme) =>
       paddingHorizontal: theme.spacing.xl,
       paddingTop: theme.spacing.sm,
     },
+    scrollContentContainer: {
+      paddingBottom: 100, // Increased padding to ensure buttons are scrollable above the tab bar
+    },
     inputGroup: {
       marginTop: theme.spacing.xl,
     },
@@ -581,8 +585,8 @@ const getStyles = (theme: Theme) =>
     },
     buttonContainer: {
       marginTop: theme.spacing.xxl,
-      paddingBottom: theme.spacing.xxxl,
       gap: theme.spacing.md,
+      paddingBottom: theme.spacing.lg,
     },
     saveButton: {
       backgroundColor: theme.colors.primary,
