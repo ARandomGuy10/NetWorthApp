@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  ActivityIndicator,
   Animated,
   Dimensions,
 } from 'react-native';
@@ -32,6 +31,7 @@ import ActionMenu, { Action } from '@/components/ui/ActionMenu';
 import type { Balance } from '@/lib/supabase';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import { Theme } from '@/lib/supabase';
+import LoadingView from '@/components/ui/LoadingView';
 
 
   export default function AccountDetailScreen() {
@@ -95,12 +95,7 @@ import { Theme } from '@/lib/supabase';
 
   /* ───────── loading / error states ───────── */
   if (accLoading || balLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading account…</Text>
-      </View>
-    );
+    return <LoadingView message="Loading account…" />;
   }
 
   if (!account) {
@@ -286,7 +281,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
-  loadingText: { marginTop: theme.spacing.lg, fontSize: 16, color: theme.colors.text.secondary },
   errorText:   { fontSize: 16, color: theme.colors.error, marginBottom: theme.spacing.lg },
 
   backBtn: {

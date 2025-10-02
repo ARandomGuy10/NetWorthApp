@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Alert,
   RefreshControl,
-  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -32,6 +31,7 @@ import AccountRow from '../../../components/accounts/AccountRow';
 import QuickEditSheet from '../../../components/accounts/QuickEditSheet';
 import { isAccountOutdated } from '@/src/utils/dateUtils'; // Import the new utility
 import SortOptionsSheet, { SortOption } from '../../../components/accounts/SortOptionsSheet';
+import LoadingView from '../../../components/ui/LoadingView';
 
 
 // Define types for FlashList items
@@ -316,12 +316,7 @@ function AccountsScreen() {
   const showLoadingSpinner = (isLoading || (!accountsData && isFetching)) && !accounts.length;
 
   if (showLoadingSpinner) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading accounts...</Text>
-      </View>
-    );
+    return <LoadingView message="Loading accounts..." />;
   }
 
   // Prepare data for FlashList
@@ -496,15 +491,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   container: { 
     flex: 1, 
     backgroundColor: theme.colors.background.primary 
-  },
-  centered: { 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  loadingText: { 
-    marginTop: theme.spacing.lg, 
-    fontSize: 16, 
-    color: theme.colors.text.secondary 
   },
   flashListContent: { // New style for FlashList content container
     paddingBottom: 90 + theme.spacing.lg, // Padding to ensure content doesn't hide behind the tab bar

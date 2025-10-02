@@ -6,7 +6,6 @@ import {
   Image,
   TextInput,
   TouchableOpacity,
-  ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +25,7 @@ import { useToast } from '@/hooks/providers/ToastProvider';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
 import AvatarViewer from '@/components/profile/AvatarViewer';
 import { Theme, ProfileUpdate } from '@/lib/supabase';
+import LoadingView from '@/components/ui/LoadingView';
 
 const MAX_AVATAR_SIZE_MB = 5;
 
@@ -207,7 +207,7 @@ export default function EditProfileScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {isLoadingProfile ? (
-            <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginTop: theme.spacing.xxl }} />
+            <LoadingView />
           ) : (
             <View>
               <View style={styles.avatarSection}>

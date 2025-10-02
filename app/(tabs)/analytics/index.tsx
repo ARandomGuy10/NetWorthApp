@@ -28,6 +28,7 @@ import {useNetWorthHistory} from '@/hooks/useNetWorthHistory';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useHaptics} from '@/hooks/useHaptics';
+import LoadingView from '@/components/ui/LoadingView';
 
 // Analytics items array
 type AnalyticsNavItem = {
@@ -418,17 +419,7 @@ export default function AnalyticsIndexScreen() {
   const FULL_WIDTH_HEADER = true;
 
   if (!theme || !theme.colors) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: theme?.colors?.background?.primary || '#000',
-        }}>
-        <Text style={{color: '#FFFFFF'}}>Loading...</Text>
-      </View>
-    );
+    return <LoadingView message="Loading..." />;
   }
 
   const styles = getStyles(theme, FULL_WIDTH_CARDS);

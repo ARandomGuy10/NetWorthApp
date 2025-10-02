@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Animated,
@@ -26,6 +25,7 @@ import Switch from '@/components/ui/Switch';
 import CustomPicker from '@/components/ui/CustomPicker';
 import CategoryInput from '@/components/accounts/CategoryInput';
 import {Theme} from '@/lib/supabase';
+import LoadingView from '@/components/ui/LoadingView';
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
@@ -201,12 +201,7 @@ export default function AddAccountScreen() {
   const isLoading = Boolean(loading);
 
   if (initialLoading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading account...</Text>
-      </View>
-    );
+    return <LoadingView message="Loading account..." />;
   }
 
   return (
@@ -443,15 +438,6 @@ const getStyles = (theme: Theme) =>
     },
     keyboardView: {
       flex: 1,
-    },
-    centered: {
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    loadingText: {
-      marginTop: theme.spacing.lg,
-      fontSize: 16,
-      color: theme.colors.text.secondary,
     },
     header: {
       flexDirection: 'row',

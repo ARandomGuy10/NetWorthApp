@@ -6,10 +6,10 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -25,6 +25,7 @@ import CustomPicker from '@/components/ui/CustomPicker';
 import DatePicker from '@/components/ui/DatePicker';
 import { Balance, Theme } from '@/lib/supabase';
 import { useTheme } from '@/src/styles/theme/ThemeContext';
+import LoadingView from '@/components/ui/LoadingView';
 
 export default function AddBalanceScreen() {
   const insets = useSafeAreaInsets();
@@ -173,12 +174,7 @@ export default function AddBalanceScreen() {
   const loading = addBalanceMutation.isPending || updateBalanceMutation.isPending || initialLoading;
 
   if (initialLoading || accountsLoading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
+    return <LoadingView message="Loading..." />;
   }
 
   return (
@@ -315,15 +311,6 @@ const getStyles = (theme: Theme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: theme.spacing.lg,
-    fontSize: 16,
-    color: theme.colors.text.secondary,
   },
   header: {
     flexDirection: 'row',    

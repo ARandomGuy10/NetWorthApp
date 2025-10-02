@@ -1,5 +1,6 @@
 import React, { useCallback, memo } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import LoadingView from '@/components/ui/LoadingView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDashboardData } from '@/hooks/useDashboard';
 import { useProfile } from '@/hooks/useProfile';
@@ -42,11 +43,7 @@ function DashboardScreen() {
   const showLoadingSpinner = dashboardLoading && !dashboardData;
 
   if (showLoadingSpinner) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingView message="Loading your dashboard..." />;
   }
 
   // Show empty state when dashboard data is null/undefined
@@ -96,10 +93,6 @@ const getStyles = (theme: Theme, insets: any) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background.primary,
-    },
-    centered: {
-      justifyContent: 'center',
-      alignItems: 'center',
     },
     scrollView: {
       flex: 1,
