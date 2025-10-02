@@ -1,10 +1,10 @@
 import {useEffect} from 'react';
-import {View, ActivityIndicator} from 'react-native';
 import {Tabs, router} from 'expo-router';
 import {useAuth} from '@clerk/clerk-expo';
 import {ThemeProvider, useTheme} from '@/src/styles/theme/ThemeContext';
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
 import {useProfile, useCreateProfile} from '../../hooks/useProfile';
+import LoadingView from '@/components/ui/LoadingView';
 
 /**
  * This is the "gatekeeper" layout. It ensures the user is authenticated
@@ -54,17 +54,7 @@ function ProtectedLayout() {
   const showLoading = !isLoaded || isProfileLoading || !profile || !profile.has_completed_onboarding;
 
   if (showLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: theme.colors.background.primary,
-        }}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
+    return <LoadingView />;
   }
 
   // If all checks pass, render the main application tabs.
@@ -109,6 +99,12 @@ function ProtectedLayout() {
         name="profile"
         options={{
           title: undefined,
+        }}
+        listeners={{
+          tabPress: e => {
+            e.preventDefault();
+            router.navigate('/(tabs)/profile');
+          },
         }}
       />
     </Tabs>
