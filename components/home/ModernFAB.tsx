@@ -29,17 +29,16 @@ const ModernFAB: React.FC = () => {
   }, [isFocused]);
 
   const toggleFAB = (): void => {
-    impactAsync(isOpen ? Haptics.ImpactFeedbackStyle.Light : Haptics.ImpactFeedbackStyle.Medium);
     const toValue = isOpen ? 0 : 1;
+    setIsOpen(!isOpen);
+    impactAsync(!isOpen ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
 
     Animated.spring(animation, {
       toValue,
       friction: 6,
       tension: 100,
       useNativeDriver: true,
-    }).start();
-
-    setIsOpen(!isOpen);
+    }).start(); // The state is already updated, just run the animation
   };
 
   const handleAction = (action: 'account' | 'balance'): void => {
@@ -71,8 +70,8 @@ const ModernFAB: React.FC = () => {
   });
 
   const opacity = animation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0, 1], // Fade in slightly after the container starts expanding
   });
 
   return (
@@ -173,7 +172,7 @@ const getStyles = (theme: Theme) =>
       borderRadius: theme.borderRadius.lg,
       borderWidth: 1,
       borderColor: theme.colors.border.primary,
-      //...theme.shadows.md,
+      ...theme.shadows.md,
       minWidth: 160,
     },
     actionIcon: {
