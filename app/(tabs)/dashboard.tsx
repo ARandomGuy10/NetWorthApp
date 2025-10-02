@@ -1,28 +1,28 @@
-import React, { useCallback, memo } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import React, {useCallback, memo} from 'react';
+import {View, StyleSheet, ScrollView, RefreshControl} from 'react-native';
 import LoadingView from '@/components/ui/LoadingView';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useDashboardData } from '@/hooks/useDashboard';
-import { useProfile } from '@/hooks/useProfile';
-import type { Theme } from '@/lib/supabase';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useDashboardData} from '@/hooks/useDashboard';
+import {useProfile} from '@/hooks/useProfile';
+import type {Theme} from '@/lib/supabase';
 import IntegratedDashboard_Wagmi from '@/components/home/IntegratedDashboard_Wagmi';
 import AssetsLiabilitiesSection from '@/components/home/AssetsLiabilitiesSection';
 import ModernFAB from '@/components/home/ModernFAB';
 import EmptyDashboardState from '@/components/home/EmptyDashboardState';
 import StickyHeader from '@/components/home/StickyHeader'; // Add this import
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { router } from 'expo-router';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {router} from 'expo-router';
 import AccountSummary from '@/components/home/AccountSummary';
 
 function DashboardScreen() {
   console.log('DashboardScreen rendered');
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const {theme} = useTheme();
   const styles = getStyles(theme, insets);
 
   // Get both profile and dashboard data
-  const { data: profile, isLoading: profileLoading } = useProfile();
-  const { data: dashboardData, isLoading: dashboardLoading, error, refetch, isFetching } = useDashboardData();
+  const {data: profile, isLoading: profileLoading} = useProfile();
+  const {data: dashboardData, isLoading: dashboardLoading, error, refetch, isFetching} = useDashboardData();
 
   const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
 
@@ -43,7 +43,7 @@ function DashboardScreen() {
   const showLoadingSpinner = dashboardLoading && !dashboardData;
 
   if (showLoadingSpinner) {
-    return <LoadingView message="Loading your dashboard..." />;
+    return <LoadingView />;
   }
 
   // Show empty state when dashboard data is null/undefined
@@ -77,8 +77,8 @@ function DashboardScreen() {
 
         <AssetsLiabilitiesSection netWorthData={netWorthData} />
 
-       {/*  <AccountsList accounts={dashboardData?.accounts || []} /> */}
-       <AccountSummary accounts={dashboardData?.accounts || []} remindAfterDays={profile?.remind_after_days || 30} />
+        {/*  <AccountsList accounts={dashboardData?.accounts || []} /> */}
+        <AccountSummary accounts={dashboardData?.accounts || []} remindAfterDays={profile?.remind_after_days || 30} />
 
         {/* Bottom spacing for FAB */}
         <View style={styles.bottomSpacing} />

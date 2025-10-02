@@ -50,7 +50,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={onboardingTheme.colors.primary} />
-      <Text style={styles.loadingText}>Loading...</Text>
+      <Text style={styles.loadingText}></Text>
     </View>
   );
 }
