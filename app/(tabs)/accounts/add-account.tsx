@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
@@ -12,31 +12,31 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useRouter, useLocalSearchParams} from 'expo-router';
+import {Ionicons} from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 
-import { useAddAccount, useUpdateAccount } from '@/hooks/useAccounts';
-import { useHaptics } from '@/hooks/useHaptics';
-import { ACCOUNT_CATEGORIES, CURRENCIES } from '@/lib/supabase';
-import { useToast } from '@/hooks/providers/ToastProvider';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
+import {useAddAccount, useUpdateAccount} from '@/hooks/useAccounts';
+import {useHaptics} from '@/hooks/useHaptics';
+import {ACCOUNT_CATEGORIES, CURRENCIES} from '@/lib/supabase';
+import {useToast} from '@/hooks/providers/ToastProvider';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 import Switch from '@/components/ui/Switch';
 import CustomPicker from '@/components/ui/CustomPicker';
 import CategoryInput from '@/components/accounts/CategoryInput';
-import { Theme } from '@/lib/supabase';
+import {Theme} from '@/lib/supabase';
 
 export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { accountId, mode, accountData, type: accountType } = useLocalSearchParams();
+  const {accountId, mode, accountData, type: accountType} = useLocalSearchParams();
   const addAccountMutation = useAddAccount();
   const updateAccountMutation = useUpdateAccount();
-  const { theme } = useTheme();
-  const { impactAsync, notificationAsync } = useHaptics();
+  const {theme} = useTheme();
+  const {impactAsync, notificationAsync} = useHaptics();
   const styles = getStyles(theme);
-  
+
   const isEditMode = mode === 'edit' && accountId;
 
   const [formData, setFormData] = useState({
@@ -51,7 +51,7 @@ export default function AddAccountScreen() {
 
   const [initialLoading, setInitialLoading] = useState(isEditMode);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const { showToast } = useToast();
+  const {showToast} = useToast();
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
@@ -76,7 +76,7 @@ export default function AddAccountScreen() {
   useEffect(() => {
     if (accountType && !isEditMode && !didPrefillRef.current) {
       if (accountType === 'asset' || accountType === 'liability') {
-        setFormData(prev => ({ ...prev, type: accountType as 'asset' | 'liability' }));
+        setFormData(prev => ({...prev, type: accountType as 'asset' | 'liability'}));
         didPrefillRef.current = true;
       }
     }
@@ -84,13 +84,11 @@ export default function AddAccountScreen() {
 
   // Load existing account data for edit mode
   useEffect(() => {
-    console.log("useEffect");
+    console.log('useEffect');
     if (isEditMode && accountData && !didPrefillRef.current) {
       try {
-        const parsedData = typeof accountData === 'string' 
-          ? JSON.parse(accountData) 
-          : accountData;
-        
+        const parsedData = typeof accountData === 'string' ? JSON.parse(accountData) : accountData;
+
         setFormData({
           name: parsedData.account_name || parsedData.name || '',
           type: parsedData.account_type || parsedData.type || 'asset',
@@ -100,7 +98,7 @@ export default function AddAccountScreen() {
           initial_balance: '',
           include_in_net_worth: parsedData.include_in_net_worth,
         });
-        
+
         didPrefillRef.current = true;
       } catch (error) {
         console.error('Error parsing account data:', error);
@@ -117,15 +115,19 @@ export default function AddAccountScreen() {
     if (!formData.name.trim()) {
       newErrors.name = 'Please enter an account name.';
     }
-    
+
     if (!formData.category.trim()) {
       newErrors.category = 'Please select or enter a category.';
     }
-    
-    if (!isEditMode && formData.initial_balance && (isNaN(parseFloat(formData.initial_balance)) || parseFloat(formData.initial_balance) < 0)) {
+
+    if (
+      !isEditMode &&
+      formData.initial_balance &&
+      (isNaN(parseFloat(formData.initial_balance)) || parseFloat(formData.initial_balance) < 0)
+    ) {
       newErrors.initial_balance = 'Please enter a valid initial balance.';
     }
-    
+
     setErrors(newErrors);
 
     if (Object.keys(newErrors).length > 0) {
@@ -153,7 +155,7 @@ export default function AddAccountScreen() {
 
         await updateAccountMutation.mutateAsync({
           id: accountId as string,
-          updates: saveData
+          updates: saveData,
         });
 
         notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -166,7 +168,7 @@ export default function AddAccountScreen() {
           currency: formData.currency,
           institution: formData.institution.trim() || null,
           include_in_net_worth: formData.include_in_net_worth,
-          initial_balance: parseFloat(formData.initial_balance) || 0
+          initial_balance: parseFloat(formData.initial_balance) || 0,
         };
 
         await addAccountMutation.mutateAsync(accountWithBalance);
@@ -177,24 +179,23 @@ export default function AddAccountScreen() {
     } catch (error) {
       console.error('Error saving account:', error);
       showToast(`Failed to ${isEditMode ? 'update' : 'create'} account. Please try again.`, 'error');
-      
+
       notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
   };
 
   const handleTypeChange = (type: 'asset' | 'liability') => {
     impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setFormData({ ...formData, type, category: '' });
+    setFormData({...formData, type, category: ''});
   };
 
   const availableCategories = ACCOUNT_CATEGORIES[formData.type] || [];
 
   const currencyOptions = CURRENCIES.map(currency => ({
     label: currency,
-    value: currency
+    value: currency,
   }));
 
-  
   const loading = addAccountMutation.isPending || updateAccountMutation.isPending || initialLoading;
   // Make sure loading is always a boolean
   const isLoading = Boolean(loading);
@@ -209,53 +210,52 @@ export default function AddAccountScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: Math.min(insets.top + 8, 24)}]}>
+    <View style={[styles.container, {paddingTop: insets.top}]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => {
             impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.back();
-          }}          style={styles.headerButton}
+          }}
+          style={styles.headerButton}
           activeOpacity={0.7}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Ionicons name="close" size={24} color={theme.colors.text.primary} />
         </TouchableOpacity>
-        
-        <Text style={styles.headerTitle}>
-          {isEditMode ? 'Edit Account' : 'Add Account'}
-        </Text>
-        
+
+        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Account' : 'Add Account'}</Text>
+
         <View style={styles.headerButton} />
       </View>
 
-      <KeyboardAvoidingView 
-        style={styles.keyboardView} 
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-      >
-        <Animated.ScrollView 
-          style={[styles.scrollView, {
-            opacity: fadeAnim,
-            transform: [{ translateY: slideAnim }]
-          }]}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+        <Animated.ScrollView
+          style={[
+            styles.scrollView,
+            {
+              opacity: fadeAnim,
+              transform: [{translateY: slideAnim}],
+            },
+          ]}
           showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
+          keyboardShouldPersistTaps="handled">
           {/* Account Name */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Account Name *</Text>
             <TextInput
               style={[styles.textInput, loading && styles.textInputDisabled, !!errors.name && styles.errorBorder]}
               value={formData.name}
-              onChangeText={(text) => setFormData({ ...formData, name: text })}
+              onChangeText={text => setFormData({...formData, name: text})}
               placeholder="e.g., Chase Checking, Vanguard IRA"
               placeholderTextColor={theme.colors.text.secondary}
               editable={!loading}
               autoCapitalize="words"
               returnKeyType="next"
-              onFocus={() => setErrors(prev => ({ ...prev, name: '' }))}
+              onFocus={() => setErrors(prev => ({...prev, name: ''}))}
             />
             {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
           </View>
@@ -268,13 +268,12 @@ export default function AddAccountScreen() {
                 style={[
                   styles.typeButton,
                   formData.type === 'asset'
-                    ? { backgroundColor: theme.colors.asset, ...theme.shadows.sm }
+                    ? {backgroundColor: theme.colors.asset, ...theme.shadows.sm}
                     : styles.typeButtonInactive,
                 ]}
                 onPress={() => handleTypeChange('asset')}
                 disabled={isLoading}
-                activeOpacity={0.8}
-              >
+                activeOpacity={0.8}>
                 <Ionicons
                   name="trending-up"
                   size={16}
@@ -284,26 +283,22 @@ export default function AddAccountScreen() {
                 <Text
                   style={[
                     styles.typeButtonText,
-                    formData.type === 'asset' 
-                      ? styles.typeButtonTextActive 
-                      : { color: theme.colors.asset }
-                  ]}
-                >
+                    formData.type === 'asset' ? styles.typeButtonTextActive : {color: theme.colors.asset},
+                  ]}>
                   Asset
                 </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[
                   styles.typeButton,
                   formData.type === 'liability'
-                    ? { backgroundColor: theme.colors.liability, ...theme.shadows.sm }
+                    ? {backgroundColor: theme.colors.liability, ...theme.shadows.sm}
                     : styles.typeButtonInactive,
                 ]}
                 onPress={() => handleTypeChange('liability')}
                 disabled={isLoading}
-                activeOpacity={0.8}
-              >
+                activeOpacity={0.8}>
                 <Ionicons
                   name="trending-down"
                   size={16}
@@ -313,11 +308,8 @@ export default function AddAccountScreen() {
                 <Text
                   style={[
                     styles.typeButtonText,
-                    formData.type === 'liability' 
-                      ? styles.typeButtonTextActive 
-                      : { color: theme.colors.liability }
-                  ]}
-                >
+                    formData.type === 'liability' ? styles.typeButtonTextActive : {color: theme.colors.liability},
+                  ]}>
                   Liability
                 </Text>
               </TouchableOpacity>
@@ -329,12 +321,12 @@ export default function AddAccountScreen() {
             <Text style={styles.label}>Category *</Text>
             <CategoryInput
               value={formData.category}
-              onChangeText={(text) => setFormData({ ...formData, category: text })}
+              onChangeText={text => setFormData({...formData, category: text})}
               suggestions={availableCategories}
               disabled={isLoading}
               accountType={formData.type}
               error={errors.category}
-              onFocus={() => setErrors(prev => ({ ...prev, category: '' }))}
+              onFocus={() => setErrors(prev => ({...prev, category: ''}))}
             />
           </View>
 
@@ -344,9 +336,9 @@ export default function AddAccountScreen() {
               <Text style={styles.label}>Currency</Text>
               <CustomPicker
                 value={formData.currency}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setFormData({ ...formData, currency: value });
+                  setFormData({...formData, currency: value});
                 }}
                 items={currencyOptions}
                 disabled={isLoading}
@@ -357,15 +349,19 @@ export default function AddAccountScreen() {
               <View style={[styles.inputGroup, styles.halfWidth]}>
                 <Text style={styles.label}>Initial Balance</Text>
                 <TextInput
-                  style={[styles.textInput, loading && styles.textInputDisabled, !!errors.initial_balance && styles.errorBorder]}
+                  style={[
+                    styles.textInput,
+                    loading && styles.textInputDisabled,
+                    !!errors.initial_balance && styles.errorBorder,
+                  ]}
                   value={formData.initial_balance}
-                  onChangeText={(text) => setFormData({ ...formData, initial_balance: text })}
+                  onChangeText={text => setFormData({...formData, initial_balance: text})}
                   placeholder="0.00"
                   placeholderTextColor={theme.colors.text.secondary}
                   keyboardType="decimal-pad"
                   editable={!loading}
                   returnKeyType="next"
-                  onFocus={() => setErrors(prev => ({ ...prev, initial_balance: '' }))}
+                  onFocus={() => setErrors(prev => ({...prev, initial_balance: ''}))}
                 />
                 {errors.initial_balance && <Text style={styles.errorText}>{errors.initial_balance}</Text>}
               </View>
@@ -378,7 +374,7 @@ export default function AddAccountScreen() {
             <TextInput
               style={[styles.textInput, loading && styles.textInputDisabled]}
               value={formData.institution}
-              onChangeText={(text) => setFormData({ ...formData, institution: text })}
+              onChangeText={text => setFormData({...formData, institution: text})}
               placeholder="Optional"
               placeholderTextColor={theme.colors.text.secondary}
               editable={!loading}
@@ -392,15 +388,13 @@ export default function AddAccountScreen() {
             <View style={styles.switchContainer}>
               <View style={styles.switchLabel}>
                 <Text style={styles.label}>Include in Net Worth</Text>
-                <Text style={styles.switchDescription}>
-                  Include this account when calculating your total net worth
-                </Text>
+                <Text style={styles.switchDescription}>Include this account when calculating your total net worth</Text>
               </View>
               <Switch
                 value={formData.include_in_net_worth}
-                onValueChange={(value) => {
+                onValueChange={value => {
                   impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setFormData({ ...formData, include_in_net_worth: value });
+                  setFormData({...formData, include_in_net_worth: value});
                 }}
                 disabled={isLoading}
                 activeColor={theme.colors.primary}
@@ -412,20 +406,14 @@ export default function AddAccountScreen() {
           {/* Action Buttons */}
           <View style={styles.buttonContainer}>
             <TouchableOpacity
-              style={[
-                styles.saveButton,
-                isLoading && styles.saveButtonDisabled
-              ]}
+              style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
               onPress={handleSave}
               disabled={isLoading}
-              activeOpacity={0.8}
-            >
+              activeOpacity={0.8}>
               {loading ? (
                 <ActivityIndicator size="small" color={theme.colors.text.inverse} />
               ) : (
-                <Text style={styles.saveButtonText}>
-                  {isEditMode ? 'Update Account' : 'Save Account'}
-                </Text>
+                <Text style={styles.saveButtonText}>{isEditMode ? 'Update Account' : 'Save Account'}</Text>
               )}
             </TouchableOpacity>
 
@@ -436,198 +424,194 @@ export default function AddAccountScreen() {
                 router.back();
               }}
               disabled={isLoading}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.cancelButtonText, isLoading && styles.cancelButtonTextDisabled]}>
-                Cancel
-              </Text>
+              activeOpacity={0.7}>
+              <Text style={[styles.cancelButtonText, isLoading && styles.cancelButtonTextDisabled]}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </Animated.ScrollView>
       </KeyboardAvoidingView>
-
-      
     </View>
   );
 }
 
-const getStyles = (theme: Theme) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: theme.spacing.lg,
-    fontSize: 16,
-    color: theme.colors.text.secondary,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    paddingBottom: theme.spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
-    minHeight: 44,
-  },
-  headerButton: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1, // Ensure button is tappable over the absolute positioned title
-  },
-  headerTitle: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    fontSize: 17,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-  },
-  scrollView: {
-    flex: 1,
-    paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.sm,
-  },
-  inputGroup: {
-    marginTop: theme.spacing.xl,
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: theme.spacing.lg,
-    marginTop: theme.spacing.xl,
-  },
-  halfWidth: {
-    flex: 1,
-    marginTop: 0,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
-  },
-  textInput: {
-    backgroundColor: theme.colors.background.card,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.lg,
-    fontSize: 16,
-    color: theme.colors.text.primary,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-    minHeight: 52,
-    ...theme.shadows.sm,
-  },
-  errorBorder: {
-    borderColor: theme.colors.error,
-  },
-  errorText: {
-    color: theme.colors.error,
-    fontSize: 13,
-    marginTop: theme.spacing.sm,
-    marginLeft: theme.spacing.xs,
-    fontWeight: '500',
-  },
-  textInputDisabled: {
-    opacity: 0.6,
-  },
-  typeSelector: {
-    flexDirection: 'row',
-    backgroundColor: theme.colors.background.card,
-    borderRadius: theme.borderRadius.md,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-    ...theme.shadows.sm,
-  },
-  typeButton: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
-    borderRadius: theme.borderRadius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 44,
-  },
-  typeButtonInactive: {
-    backgroundColor: 'transparent',
-  },
-  typeButtonText: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  typeButtonTextActive: {
-    color: theme.colors.text.inverse,
-  },
-  iconSpacing: {
-    marginRight: theme.spacing.sm,
-  },
-  switchContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background.card,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-    ...theme.shadows.sm,
-  },
-  switchLabel: {
-    flex: 1,
-    marginRight: theme.spacing.lg,
-  },
-  switchDescription: {
-    fontSize: 13,
-    color: theme.colors.text.secondary,
-    marginTop: theme.spacing.xs,
-    lineHeight: 18,
-  },
-  buttonContainer: {
-    marginTop: theme.spacing.xxl,
-    paddingBottom: theme.spacing.xxxl,
-    gap: theme.spacing.md,
-  },
-  saveButton: {
-    backgroundColor: theme.colors.primary,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.lg,
-    alignItems: 'center',
-    minHeight: 52,
-    justifyContent: 'center',
-    ...theme.shadows.md,
-  },
-  saveButtonDisabled: {
-    opacity: 0.6,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: theme.colors.text.inverse,
-  },
-  cancelButton: {
-    padding: theme.spacing.lg,
-    alignItems: 'center',
-    borderRadius: theme.borderRadius.md,
-  },
-  cancelButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
-    color: theme.colors.text.secondary,
-  },
-  cancelButtonTextDisabled: {
-    opacity: 0.5,
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background.primary,
+    },
+    keyboardView: {
+      flex: 1,
+    },
+    centered: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: theme.spacing.lg,
+      fontSize: 16,
+      color: theme.colors.text.secondary,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      paddingBottom: theme.spacing.md,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.primary,
+      minHeight: 44,
+    },
+    headerButton: {
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1, // Ensure button is tappable over the absolute positioned title
+    },
+    headerTitle: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      textAlign: 'center',
+      fontSize: 17,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+    },
+    scrollView: {
+      flex: 1,
+      paddingHorizontal: theme.spacing.xl,
+      paddingTop: theme.spacing.sm,
+    },
+    inputGroup: {
+      marginTop: theme.spacing.xl,
+    },
+    rowContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: theme.spacing.lg,
+      marginTop: theme.spacing.xl,
+    },
+    halfWidth: {
+      flex: 1,
+      marginTop: 0,
+    },
+    label: {
+      fontSize: 15,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      marginBottom: theme.spacing.sm,
+    },
+    textInput: {
+      backgroundColor: theme.colors.background.card,
+      borderRadius: theme.borderRadius.md,
+      padding: theme.spacing.lg,
+      fontSize: 16,
+      color: theme.colors.text.primary,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+      minHeight: 52,
+      ...theme.shadows.sm,
+    },
+    errorBorder: {
+      borderColor: theme.colors.error,
+    },
+    errorText: {
+      color: theme.colors.error,
+      fontSize: 13,
+      marginTop: theme.spacing.sm,
+      marginLeft: theme.spacing.xs,
+      fontWeight: '500',
+    },
+    textInputDisabled: {
+      opacity: 0.6,
+    },
+    typeSelector: {
+      flexDirection: 'row',
+      backgroundColor: theme.colors.background.card,
+      borderRadius: theme.borderRadius.md,
+      padding: 4,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+      ...theme.shadows.sm,
+    },
+    typeButton: {
+      flex: 1,
+      flexDirection: 'row',
+      paddingVertical: theme.spacing.md,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.borderRadius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 44,
+    },
+    typeButtonInactive: {
+      backgroundColor: 'transparent',
+    },
+    typeButtonText: {
+      fontSize: 15,
+      fontWeight: '600',
+    },
+    typeButtonTextActive: {
+      color: theme.colors.text.inverse,
+    },
+    iconSpacing: {
+      marginRight: theme.spacing.sm,
+    },
+    switchContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background.card,
+      borderRadius: theme.borderRadius.md,
+      padding: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+      ...theme.shadows.sm,
+    },
+    switchLabel: {
+      flex: 1,
+      marginRight: theme.spacing.lg,
+    },
+    switchDescription: {
+      fontSize: 13,
+      color: theme.colors.text.secondary,
+      marginTop: theme.spacing.xs,
+      lineHeight: 18,
+    },
+    buttonContainer: {
+      marginTop: theme.spacing.xxl,
+      paddingBottom: theme.spacing.xxxl,
+      gap: theme.spacing.md,
+    },
+    saveButton: {
+      backgroundColor: theme.colors.primary,
+      borderRadius: theme.borderRadius.md,
+      padding: theme.spacing.lg,
+      alignItems: 'center',
+      minHeight: 52,
+      justifyContent: 'center',
+      ...theme.shadows.md,
+    },
+    saveButtonDisabled: {
+      opacity: 0.6,
+    },
+    saveButtonText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: theme.colors.text.inverse,
+    },
+    cancelButton: {
+      padding: theme.spacing.lg,
+      alignItems: 'center',
+      borderRadius: theme.borderRadius.md,
+    },
+    cancelButtonText: {
+      fontSize: 15,
+      fontWeight: '500',
+      color: theme.colors.text.secondary,
+    },
+    cancelButtonTextDisabled: {
+      opacity: 0.5,
+    },
+  });

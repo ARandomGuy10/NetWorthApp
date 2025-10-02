@@ -1,21 +1,21 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator } from 'react-native';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
-import { useAuth } from '@clerk/clerk-expo';
-import { useDeleteUser } from '@/hooks/useProfile';
-import { useQueryClient } from '@tanstack/react-query';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Modal, ActivityIndicator} from 'react-native';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {Theme} from '@/lib/supabase';
+import {useAuth} from '@clerk/clerk-expo';
+import {useDeleteUser} from '@/hooks/useProfile';
+import {useQueryClient} from '@tanstack/react-query';
 import ConfirmationModal from '../ui/ConfirmationModal';
 import * as Haptics from 'expo-haptics';
-import { useHaptics } from '@/hooks/useHaptics';
+import {useHaptics} from '@/hooks/useHaptics';
 
 const AccountActionsSection = () => {
-  const { theme } = useTheme();
+  const {theme} = useTheme();
   const styles = getStyles(theme);
-  const { signOut } = useAuth();
+  const {signOut} = useAuth();
   const deleteUserMutation = useDeleteUser();
   const queryClient = useQueryClient();
-  const { impactAsync } = useHaptics();
+  const {impactAsync} = useHaptics();
 
   const [isSignOutModalVisible, setSignOutModalVisible] = useState(false);
   const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -82,14 +82,14 @@ const AccountActionsSection = () => {
       />
 
       <View style={styles.container}>
-        <TouchableOpacity style={styles.button} onPress={handleSignOut} activeOpacity={0.7}>
+        <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut} activeOpacity={0.8}>
           <Text style={styles.signOutText}>Sign Out</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.button}
+          style={[styles.deleteButton, deleteUserMutation.isPending && styles.buttonDisabled]}
           onPress={handleDeleteAccount}
           disabled={deleteUserMutation.isPending}
-        >
+          activeOpacity={0.8}>
           <Text style={styles.deleteButtonText}>Delete Account</Text>
         </TouchableOpacity>
       </View>
@@ -97,49 +97,62 @@ const AccountActionsSection = () => {
   );
 };
 
-const getStyles = (theme: Theme) => StyleSheet.create({
-  container: {
-    width: '100%',
-    marginTop: theme.spacing.lg,
-    gap: theme.spacing.md,
-  },
-  button: {
-    backgroundColor: theme.colors.background.card,
-    padding: theme.spacing.lg,
-    borderRadius: theme.borderRadius.lg,
-    alignItems: 'center',
-  },
-  signOutText: {
-    color: theme.colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteButtonText: {
-    color: '#FF3B30', // Use a specific, hardcoded red for destructive actions
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalBackground: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
-  },
-  activityIndicatorWrapper: {
-    backgroundColor: theme.colors.background.card,
-    padding: theme.spacing.xxl,
-    borderRadius: theme.borderRadius.lg,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: theme.spacing.lg,
-    ...theme.shadows.lg,
-  },
-  loadingText: {
-    color: theme.colors.text.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      width: '100%',
+      marginTop: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    signOutButton: {
+      backgroundColor: theme.colors.primary,
+      padding: theme.spacing.lg,
+      borderRadius: theme.borderRadius.lg,
+      alignItems: 'center',
+      ...theme.shadows.md,
+    },
+    deleteButton: {
+      backgroundColor: theme.colors.background.card,
+      padding: theme.spacing.lg,
+      borderRadius: theme.borderRadius.lg,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    signOutText: {
+      color: theme.colors.text.inverse,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    deleteButtonText: {
+      color: theme.colors.error,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+    modalBackground: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    },
+    activityIndicatorWrapper: {
+      backgroundColor: theme.colors.background.card,
+      padding: theme.spacing.xxl,
+      borderRadius: theme.borderRadius.lg,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: theme.spacing.lg,
+      ...theme.shadows.lg,
+    },
+    loadingText: {
+      color: theme.colors.text.primary,
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
 
 export default AccountActionsSection;
