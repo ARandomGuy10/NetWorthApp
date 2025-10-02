@@ -6,15 +6,13 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#000000"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "bundleIdentifier": "com.lightlabs.studio.networthtrackr",
       "supportsTablet": true,
@@ -38,10 +36,7 @@
               "host": "oauth"
             }
           ],
-          "category": [
-            "BROWSABLE",
-            "DEFAULT"
-          ]
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ],
       "edgeToEdgeEnabled": true
@@ -54,16 +49,8 @@
         "Cross-Origin-Embedder-Policy": "require-corp"
       }
     },
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
-    "plugins": [
-      "expo-font",
-      "expo-router",
-      "expo-audio"
-    ],
+    "platforms": ["ios", "android", "web"],
+    "plugins": ["expo-font", "expo-router", "expo-audio", "expo-web-browser"],
     "extra": {
       "router": {},
       "eas": {

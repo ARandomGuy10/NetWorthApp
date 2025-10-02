@@ -5,6 +5,7 @@ import {ThemeProvider, useTheme} from '@/src/styles/theme/ThemeContext';
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
 import {useProfile, useCreateProfile} from '../../hooks/useProfile';
 import LoadingView from '@/components/ui/LoadingView';
+import {ThemeProvider as NavigationThemeProvider, DarkTheme} from '@react-navigation/native';
 
 /**
  * This is the "gatekeeper" layout. It ensures the user is authenticated
@@ -57,57 +58,68 @@ function ProtectedLayout() {
     return <LoadingView />;
   }
 
+  const navigationTheme = {
+    ...DarkTheme,
+    colors: {
+      ...DarkTheme.colors,
+      background: theme.colors.background.primary,
+      card: theme.colors.background.primary,
+    },
+  };
+
   // If all checks pass, render the main application tabs.
   return (
-    <Tabs
-      tabBar={props => <CustomBottomTabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-      }}>
-      <Tabs.Screen
-        name="dashboard"
-        options={{title: 'Home'}}
-        listeners={{
-          tabPress: e => {
-            e.preventDefault();
-            router.navigate('/(tabs)/dashboard');
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="accounts"
-        options={{title: 'Accounts'}}
-        listeners={{
-          tabPress: e => {
-            e.preventDefault();
-            router.navigate('/(tabs)/accounts');
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="analytics"
-        options={{title: 'Analytics'}}
-        listeners={{
-          tabPress: e => {
-            e.preventDefault();
-            router.navigate('/(tabs)/analytics');
-          },
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: undefined,
-        }}
-        listeners={{
-          tabPress: e => {
-            e.preventDefault();
-            router.navigate('/(tabs)/profile');
-          },
-        }}
-      />
-    </Tabs>
+    <NavigationThemeProvider value={navigationTheme}>
+      <Tabs
+        tabBar={props => <CustomBottomTabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          tabBarShowLabel: false,
+        }}>
+        <Tabs.Screen
+          name="dashboard"
+          options={{title: 'Home'}}
+          listeners={{
+            tabPress: e => {
+              e.preventDefault();
+              router.navigate('/(tabs)/dashboard');
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="accounts"
+          options={{title: 'Accounts'}}
+          listeners={{
+            tabPress: e => {
+              e.preventDefault();
+              router.navigate('/(tabs)/accounts');
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="analytics"
+          options={{title: 'Analytics'}}
+          listeners={{
+            tabPress: e => {
+              e.preventDefault();
+              router.navigate('/(tabs)/analytics');
+            },
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: undefined,
+          }}
+          listeners={{
+            tabPress: e => {
+              e.preventDefault();
+              router.navigate('/(tabs)/profile');
+            },
+          }}
+        />
+      </Tabs>
+    </NavigationThemeProvider>
   );
 }
 

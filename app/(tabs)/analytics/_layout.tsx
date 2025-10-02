@@ -9,6 +9,7 @@ export default function AnalyticsLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: {backgroundColor: 'transparent'},
+        //animation: 'slide_from_bottom',
       }}>
       <Stack.Screen name="index" options={{title: 'Analytics'}} />
       <Stack.Screen name="performance" options={{title: 'Performance Overview'}} />

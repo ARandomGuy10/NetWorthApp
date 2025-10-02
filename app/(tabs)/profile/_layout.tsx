@@ -9,7 +9,7 @@ export default function ProfileLayout() {
       screenOptions={{
         // Default to showing the header. Screens that manage their own can opt-out.
         headerShown: true,
-        contentStyle: {backgroundColor: theme.colors.background.primary},
+        contentStyle: {backgroundColor: 'transparent'},
         headerBackTitle: 'Profile',
         headerStyle: {backgroundColor: theme.colors.background.primary},
         headerTintColor: theme.colors.text.primary,
