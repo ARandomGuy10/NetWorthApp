@@ -199,9 +199,6 @@ const MonthlyPerformanceOverview: React.FC<Props> = ({insights, currency, period
 
   const [sortBy, setSortBy] = useState<SortOption>('chrono');
   const [showVolInfo, setShowVolInfo] = useState(false);
-  // State for dynamic list height
-  const [rowHeight, setRowHeight] = useState(70); // Default estimate
-  const maxVisibleRows = 6;
 
   const handleSortChange = async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -247,19 +244,6 @@ const MonthlyPerformanceOverview: React.FC<Props> = ({insights, currency, period
   const sectionGap = theme.spacing.lg;
   const rowGap = theme.spacing.sm;
 
-  // Callback to measure the first row for dynamic maxHeight
-  const onFirstRowLayout = useCallback(
-    (event: any) => {
-      const {height} = event.nativeEvent.layout;
-      // The row has a `marginBottom` which isn't part of the layout height. We must add it for an accurate calculation.
-      const totalRowSpace = height + theme.spacing.lg;
-      if (totalRowSpace > 0 && totalRowSpace !== rowHeight) {
-        setRowHeight(totalRowSpace);
-      }
-    },
-    [theme.spacing.lg]
-  );
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -286,15 +270,12 @@ const MonthlyPerformanceOverview: React.FC<Props> = ({insights, currency, period
         </LinearGradient>
       </View>
 
-      <ScrollView
-        style={[styles.contentContainer, {maxHeight: rowHeight * maxVisibleRows}]}
-        showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {/* List */}
         <View style={styles.listWrapper}>
           {months.map((item, index) => (
             <Row
               key={item.month}
-              onLayout={index === 0 ? onFirstRowLayout : undefined}
               item={item}
               idx={index}
               maxAbsDelta={maxAbsDelta}

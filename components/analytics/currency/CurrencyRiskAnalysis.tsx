@@ -23,10 +23,6 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
   const styles = getStyles(theme);
   const [activeTooltip, setActiveTooltip] = useState<string | null>(null);
 
-  // State for dynamic list height
-  const [rowHeight, setRowHeight] = useState(68); // Default estimate
-  const maxVisibleRows = 6;
-
   // ✅ SAFE: Simple exposure calculation with colors but neutral language
   const getExposureLevel = (foreignExposure: number) => {
     if (foreignExposure <= 0.2)
@@ -131,14 +127,6 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
         return {title: '', content: []};
     }
   };
-
-  // Callback to measure the first row for dynamic maxHeight
-  const onFirstRowLayout = useCallback((event: any) => {
-    const {height} = event.nativeEvent.layout;
-    if (height > 0 && height !== rowHeight) {
-      setRowHeight(height);
-    }
-  }, []);
 
   const showTooltip = (type: string) => setActiveTooltip(type);
   const hideTooltip = () => setActiveTooltip(null);
@@ -245,13 +233,10 @@ const CurrencyRiskAnalysis: React.FC<CurrencyRiskAnalysisProps> = ({data, theme,
             </TouchableOpacity>
           </View>
 
-          <ScrollView
-            style={[styles.listContainer, {maxHeight: rowHeight * maxVisibleRows}]}
-            showsVerticalScrollIndicator={false}>
+          <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
             {netExposures.map((exposure, index) => (
               <View
                 key={exposure.currency}
-                onLayout={index === 0 ? onFirstRowLayout : undefined}
                 style={[styles.positionItem, index === netExposures.length - 1 && styles.lastPositionItem]}>
                 {/* ✅ FIXED: Beautiful circular currency icon with border */}
                 <View

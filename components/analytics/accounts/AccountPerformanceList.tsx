@@ -70,11 +70,6 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period, 
   const {theme} = useTheme();
   const router = useRouter();
   const [sortBy, setSortBy] = useState<SortOption>('performance');
-
-  // State for dynamic list height
-  const [rowHeight, setRowHeight] = useState(80); // Default estimate
-  const maxVisibleRows = 6;
-
   const {data: rawAccounts} = useAccountsWithBalances();
 
   // ✅ Updated logic to use convertedBalance for consistent currency calculations
@@ -156,14 +151,6 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period, 
     setSortBy(options[nextIndex]);
   };
 
-  // Callback to measure the first row for dynamic maxHeight
-  const onFirstRowLayout = useCallback((event: any) => {
-    const {height} = event.nativeEvent.layout;
-    if (height > 0 && height !== rowHeight) {
-      setRowHeight(height);
-    }
-  }, []);
-
   const styles = getStyles(theme);
 
   return (
@@ -194,16 +181,13 @@ const AccountPerformanceList: React.FC<AccountPerformanceListProps> = ({period, 
       </View>
 
       {/* ✅ Enhanced Account List with Touch Functionality */}
-      <ScrollView
-        style={[styles.listContainer, {maxHeight: rowHeight * maxVisibleRows}]}
-        showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false}>
         {accountPerformances.map((account, index) => {
           const isTopPerformer = index < 3;
           const isPositiveChange = account.change >= 0;
 
           return (
             <Pressable
-              onLayout={index === 0 ? onFirstRowLayout : undefined}
               key={account.id}
               style={({pressed}) => [
                 styles.accountItem,

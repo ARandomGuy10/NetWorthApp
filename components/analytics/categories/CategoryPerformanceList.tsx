@@ -82,10 +82,6 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
   const [sortBy, setSortBy] = useState<SortOption>('value');
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
-  // State to dynamically calculate maxHeight for 6 rows
-  const [rowHeight, setRowHeight] = useState(65); // Default estimate
-  const maxVisibleRows = 6;
-
   // ✅ HELPER: Get account count for a category and type
   const getCategoryAccountCount = (category: string, type: 'asset' | 'liability'): number => {
     if (!accountsData) return 0;
@@ -156,7 +152,12 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
     const accounts = Array.isArray(accountsData) ? accountsData.flat() : [];
     return accounts
       .filter(
-        acc => acc.category === category && acc.account_type === type && acc.include_in_net_worth && !acc.is_archived
+        acc =>
+          acc.category === category &&
+          acc.account_type === type &&
+          (acc.latest_balance ?? 0) >= 0 &&
+          acc.include_in_net_worth &&
+          !acc.is_archived
       )
       .sort((a, b) => (b.latest_balance || 0) - (a.latest_balance || 0));
   };
@@ -188,14 +189,6 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
       params: {id: accountId},
     });
   };
-
-  // Callback to measure the first row and set the dynamic maxHeight
-  const onFirstRowLayout = useCallback((event: any) => {
-    const {height} = event.nativeEvent.layout;
-    if (height > 0 && height !== rowHeight) {
-      setRowHeight(height);
-    }
-  }, []);
 
   if (processedCategories.length === 0) {
     return (
@@ -233,15 +226,13 @@ const CategoryPerformanceList: React.FC<CategoryPerformanceListProps> = ({data, 
 
       {/* Category List */}
       <ScrollView
-        style={[styles.listContainer, {maxHeight: rowHeight * maxVisibleRows}]}
+        style={styles.listContainer}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}>
         {processedCategories.map((category, index) => (
           <Animated.View key={`${category.category}-${category.type}`} entering={FadeInUp.delay(index * 50)}>
             {/* Main Category Item */}
             <Pressable
-              // Add onLayout to the first item to measure its height
-              onLayout={index === 0 ? onFirstRowLayout : undefined}
               style={({pressed}) => [
                 styles.categoryItem,
                 expandedCategory === `${category.category}-${category.type}` && styles.expandedItem,
