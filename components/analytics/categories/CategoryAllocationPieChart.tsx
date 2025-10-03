@@ -18,7 +18,7 @@ interface Props {
 const INNER_RATIO = 0.6;
 const HOVER_OUTER_GAIN = 1.08;
 const HOVER_OFFSET = 12;
-const LABEL_THRESHOLD_PERCENT = 4;
+const LABEL_THRESHOLD_PERCENT = 2;
 
 const ASSET_PALETTE = [
   '#22C55E',
@@ -173,7 +173,11 @@ const CategoryAllocationPieChart: React.FC<Props> = ({
               const {dx, dy} = getSliceTranslate(a, i);
               return (
                 <G key={i} transform={`translate(${dx},${dy})`}>
-                  <Path d={arcGen(a) as string} fill={`url(#grad-${i})`} onPress={() => onSlicePress(i)} />
+                  <Path
+                    d={arcGen(a) as string}
+                    fill={`url(#grad-${i})`}
+                    onPressIn={() => onSlicePress(i)} // ✅ FIX: Use onPressIn for better reliability on iOS
+                  />
                   {/* Percent label */}
                   {a.data.percentage * 100 > LABEL_THRESHOLD_PERCENT && (
                     <SvgText
