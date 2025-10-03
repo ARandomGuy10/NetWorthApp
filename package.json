@@ -5,7 +5,6 @@
   "scripts": {
     "start": "expo start",
     "prebuild": "expo prebuild --clean",
-    "postinstall": "expo generate:assets && npx expo-router@latest sync",
     "android": "expo run:android --no-build-cache",
     "ios": "expo run:ios --no-build-cache",
     "web": "expo start --web",

@@ -199,7 +199,7 @@ const getStyles = (theme: any) =>
       },
       shadowOpacity: 0.08,
       shadowRadius: 12,
-      elevation: 4,
+      //elevation: 4,
     },
 
     // Card Content

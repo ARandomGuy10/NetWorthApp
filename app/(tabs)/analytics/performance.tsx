@@ -42,6 +42,10 @@ const PerformanceScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         contentInsetAdjustmentBehavior="automatic">
+        {/* Overlay Back Button */}
+        <TouchableOpacity onPress={onBack} style={styles.overlayBackButton}>
+          <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
+        </TouchableOpacity>
         {/* ✅ Pass period handlers to chart */}
 
         <View style={styles.sectionContainer}>
@@ -67,11 +71,6 @@ const PerformanceScreen: React.FC = () => {
           </>
         )}
       </ScrollView>
-
-      {/* Overlay Back Button */}
-      <TouchableOpacity onPress={onBack} style={styles.overlayBackButton}>
-        <Ionicons name="chevron-back" size={24} color={theme.colors.text.primary} />
-      </TouchableOpacity>
     </View>
   );
 };
