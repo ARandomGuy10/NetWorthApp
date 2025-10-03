@@ -5,6 +5,7 @@ import type {NetWorthHistoryResponse, Period, SamplingStrategy} from '@/lib/supa
 
 import {useProfile} from './useProfile';
 import {useSupabase} from './useSupabase';
+import { getYYYYMMDD } from '@/src/utils/dateUtils';
 
 interface UseNetWorthHistoryOptions {
   period: Period;
@@ -50,6 +51,7 @@ export const useNetWorthHistory = (options: UseNetWorthHistoryOptions) => {
       const requestBody: any = {
         period,
         toCurrency: profile?.preferred_currency || 'EUR',
+        endDate: getYYYYMMDD(new Date()),
       };
 
       // Only include optional parameters if they're provided
@@ -57,6 +59,7 @@ export const useNetWorthHistory = (options: UseNetWorthHistoryOptions) => {
         if (!startDate || !endDate) {
           throw new Error('Start and end dates are required for CUSTOM period');
         }
+        // For custom, we use the user-provided dates. The endDate from above will be overwritten.
         requestBody.startDate = startDate;
         requestBody.endDate = endDate;
       }

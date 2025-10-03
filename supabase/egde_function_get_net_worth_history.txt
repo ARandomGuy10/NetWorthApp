@@ -421,7 +421,8 @@ Deno.serve(async (req)=>{
     } else {
       const dateRange = await calculateDateRange(params.period, supabase);
       startDate = dateRange.startDate;
-      endDate = new Date();
+      // ✅ Prioritize client-provided endDate to solve timezone issues, fallback to server's `new Date()`.
+      endDate = params.endDate ? new Date(params.endDate) : new Date();
       defaultSampling = dateRange.defaultSampling;
       defaultMaxPoints = dateRange.defaultMaxPoints;
     }
