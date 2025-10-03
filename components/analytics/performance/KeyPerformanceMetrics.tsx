@@ -50,17 +50,22 @@ const KeyPerformanceMetrics: React.FC<KeyPerformanceMetricsProps> = ({insights, 
     },
     {
       title: 'MONTHLY AVG',
-      value:
+      value: formatSmartNumber(
         insights.monthlyDeltas.length > 0
-          ? formatSmartNumber(
-              insights.monthlyDeltas.reduce((sum, delta) => sum + delta.delta, 0) / insights.monthlyDeltas.length,
-              currency
-            )
-          : formatSmartNumber(0, currency),
+          ? insights.monthlyDeltas.reduce((sum, delta) => sum + delta.delta, 0) / insights.monthlyDeltas.length
+          : 0,
+        currency
+      ),
       percentage: 'per month',
-      color: theme.colors.info,
+      color:
+        insights.monthlyDeltas.reduce((sum, delta) => sum + delta.delta, 0) >= 0
+          ? theme.colors.success
+          : theme.colors.error,
       icon: Calendar,
-      gradient: [`${theme.colors.info}15`, `${theme.colors.info}08`, `${theme.colors.info}05`] as const,
+      gradient:
+        insights.monthlyDeltas.reduce((sum, delta) => sum + delta.delta, 0) >= 0
+          ? (['#22C55E15', '#22C55E08', '#22C55E05'] as const)
+          : (['#EF444415', '#EF444408', '#EF444405'] as const),
     },
     {
       title: 'BEST MONTH',
