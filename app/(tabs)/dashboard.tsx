@@ -15,14 +15,22 @@ import {router} from 'expo-router';
 import AccountSummary from '@/components/home/AccountSummary';
 
 function DashboardScreen() {
-  console.log('DashboardScreen rendered');
   const insets = useSafeAreaInsets();
   const {theme} = useTheme();
   const styles = getStyles(theme, insets);
 
   // Get both profile and dashboard data
   const {data: profile, isLoading: profileLoading} = useProfile();
-  const {data: dashboardData, isLoading: dashboardLoading, error, refetch, isFetching} = useDashboardData();
+  const {
+    data: dashboardData,
+    isLoading: dashboardLoading,
+    refetch,
+  } = useDashboardData({
+    sentry: {
+      location: 'dashboard',
+      component: 'DashboardScreen',
+    },
+  });
 
   const [isManualRefreshing, setIsManualRefreshing] = React.useState(false);
 
@@ -36,7 +44,6 @@ function DashboardScreen() {
   }, [refetch]);
 
   const handleAddFirstAccount = () => {
-    console.log('Navigate to add account screen');
     router.push('accounts/add-account');
   };
 

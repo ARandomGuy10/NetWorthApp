@@ -1,19 +1,22 @@
 import React, {useEffect} from 'react';
 import {Tabs, router} from 'expo-router';
 import {useAuth} from '@clerk/clerk-expo';
+import * as Sentry from '@sentry/react-native';
+
 import {ThemeProvider, useTheme} from '@/src/styles/theme/ThemeContext';
 import CustomBottomTabBar from '../../components/ui/CustomBottomTabBar';
 import {useProfile, useCreateProfile} from '../../hooks/useProfile';
 import LoadingView from '@/components/ui/LoadingView';
+import AppErrorState from '@/components/AppErrorState';
 import {ThemeProvider as NavigationThemeProvider, DarkTheme} from '@react-navigation/native';
+import {View} from 'react-native';
+import {captureSentryException} from '@/lib/sentry';
 
 /**
  * This is the "gatekeeper" layout. It ensures the user is authenticated
  * and has completed the initial onboarding setup.
  */
 function ProtectedLayout() {
-  console.log('TabsLayout rendered');
-
   const {isSignedIn, isLoaded} = useAuth();
   const {data: profile, isLoading: isProfileLoading} = useProfile();
   const {mutate: createProfile} = useCreateProfile();
@@ -38,7 +41,15 @@ function ProtectedLayout() {
     // Scenario 2: Signed in, but no profile exists yet.
     // This happens for brand new users (both email and social).
     if (isLoaded && isSignedIn && profile === null) {
-      createProfile();
+      createProfile(undefined, {
+        onError: error => {
+          captureSentryException(error, {
+            location: 'gatekeeper',
+            context: 'profile_creation',
+            level: 'fatal',
+          });
+        },
+      });
       // The useProfile query will refetch after creation, triggering the next check.
       return;
     } // FIXED: Added missing closing brace
@@ -69,59 +80,42 @@ function ProtectedLayout() {
 
   // If all checks pass, render the main application tabs.
   return (
-    <NavigationThemeProvider value={navigationTheme}>
-      <Tabs
-        tabBar={props => <CustomBottomTabBar {...props} />}
-        screenOptions={{
-          headerShown: false,
-          tabBarShowLabel: false,
-        }}>
-        <Tabs.Screen
-          name="dashboard"
-          options={{title: 'Home'}}
-          listeners={{
-            tabPress: e => {
-              e.preventDefault();
-              router.navigate('/(tabs)/dashboard');
-            },
-          }}
-        />
-        <Tabs.Screen
-          name="accounts"
-          options={{title: 'Accounts'}}
-          listeners={{
-            tabPress: e => {
-              e.preventDefault();
-              router.navigate('/(tabs)/accounts');
-            },
-          }}
-        />
-        <Tabs.Screen
-          name="analytics"
-          options={{title: 'Analytics'}}
-          listeners={{
-            tabPress: e => {
-              e.preventDefault();
-              router.navigate('/(tabs)/analytics');
-            },
-          }}
-        />
-        <Tabs.Screen
-          name="profile"
-          options={{
-            title: undefined,
-          }}
-          listeners={{
-            tabPress: e => {
-              e.preventDefault();
-              router.navigate('/(tabs)/profile');
-            },
-          }}
-        />
-      </Tabs>
-    </NavigationThemeProvider>
+    <Sentry.ErrorBoundary fallback={<AppErrorState />}>
+      <NavigationThemeProvider value={navigationTheme}>
+        <View style={{flex: 1, backgroundColor: theme.colors.background.primary}}>
+          <Tabs
+            tabBar={props => <CustomBottomTabBar {...props} />}
+            screenOptions={{
+              headerShown: false,
+              tabBarShowLabel: false,
+            }}>
+            <Tabs.Screen name="dashboard" options={{title: 'Home'}} />
+            <Tabs.Screen
+              name="accounts"
+              options={{title: 'Accounts'}}
+              listeners={{tabPress: e => handleTabPress(e, 'accounts')}}
+            />
+            <Tabs.Screen
+              name="analytics"
+              options={{title: 'Analytics'}}
+              listeners={{tabPress: e => handleTabPress(e, 'analytics')}}
+            />
+            <Tabs.Screen
+              name="profile"
+              options={{title: 'Profile'}}
+              listeners={{tabPress: e => handleTabPress(e, 'profile')}}
+            />
+          </Tabs>
+        </View>
+      </NavigationThemeProvider>
+    </Sentry.ErrorBoundary>
   );
 }
+
+const handleTabPress = (e: any, routeName: string) => {
+  e.preventDefault();
+  router.navigate(`/(tabs)/${routeName}`);
+};
 
 /**
  * This is the root layout for the authenticated part of the app.
