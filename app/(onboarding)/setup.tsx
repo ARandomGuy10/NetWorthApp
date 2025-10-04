@@ -30,6 +30,8 @@ import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 import {useHaptics} from '@/hooks/useHaptics';
 import {useUpdateProfile} from '@/hooks/useProfile';
 import {CURRENCIES, ProfileUpdate} from '@/lib/supabase';
+import {captureSentryException} from '@/lib/sentry';
+import {useToast} from '@/hooks/providers/ToastProvider';
 import OnboardingCurrencyPicker from '@/components/auth/OnboardingCurrencyPicker';
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -38,6 +40,7 @@ const InitialSetupScreen = () => {
   const insets = useSafeAreaInsets();
   const {impactAsync, selectionAsync, notificationAsync} = useHaptics();
   const {mutate: updateProfile, isPending: isUpdating} = useUpdateProfile();
+  const {showToast} = useToast();
 
   const [profileData, setProfileData] = useState<Partial<ProfileUpdate>>({
     first_name: '',
@@ -64,6 +67,19 @@ const InitialSetupScreen = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   }, [profileData.first_name]);
+
+  const handleProfileUpdateError = useCallback(
+    (error: unknown) => {
+      captureSentryException(error, {
+        location: 'onboarding',
+        context: 'profile_update',
+        component: 'InitialSetupScreen',
+      });
+      showToast('Failed to save your profile. Please try again.', 'error');
+      notificationAsync(Haptics.NotificationFeedbackType.Error);
+    },
+    [notificationAsync, showToast]
+  );
 
   const handleUpdate = (field: keyof typeof profileData, value: any) => {
     setProfileData(prev => ({...prev, [field]: value}));
@@ -104,13 +120,10 @@ const InitialSetupScreen = () => {
         onSuccess: () => {
           router.replace('/(tabs)/dashboard');
         },
-        onError: error => {
-          console.error('Failed to update profile', error);
-          // Optionally show an alert to the user
-        },
+        onError: handleProfileUpdateError,
       }
     );
-  }, [profileData, updateProfile, impactAsync, validateForm, notificationAsync]);
+  }, [profileData, updateProfile, impactAsync, validateForm, notificationAsync, handleProfileUpdateError]);
 
   const onSkip = useCallback(() => {
     impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -120,9 +133,10 @@ const InitialSetupScreen = () => {
         onSuccess: () => {
           router.replace('/(tabs)/dashboard');
         },
+        onError: handleProfileUpdateError,
       }
     );
-  }, [updateProfile, impactAsync]);
+  }, [updateProfile, impactAsync, handleProfileUpdateError]);
 
   const clearError = (field: keyof typeof errors) => {
     if (errors[field]) {
@@ -157,7 +171,12 @@ const InitialSetupScreen = () => {
               <View style={styles.formContainer}>
                 <TouchableWithoutFeedback onPress={() => firstNameRef.current?.focus()}>
                   <Animated.View style={[sharedStyles.inputWrapper, firstNameAnimatedStyle]}>
-                    <Ionicons name="person" size={responsiveSizes.fontSize} color="#FFFFFF" style={sharedStyles.inputIcon} />
+                    <Ionicons
+                      name="person"
+                      size={responsiveSizes.fontSize}
+                      color="#FFFFFF"
+                      style={sharedStyles.inputIcon}
+                    />
                     <AnimatedTextInput
                       ref={firstNameRef}
                       placeholder="First Name"
@@ -176,7 +195,12 @@ const InitialSetupScreen = () => {
 
                 <TouchableWithoutFeedback onPress={() => lastNameRef.current?.focus()}>
                   <Animated.View style={[sharedStyles.inputWrapper, lastNameAnimatedStyle]}>
-                    <Ionicons name="person" size={responsiveSizes.fontSize} color="#FFFFFF" style={sharedStyles.inputIcon} />
+                    <Ionicons
+                      name="person"
+                      size={responsiveSizes.fontSize}
+                      color="#FFFFFF"
+                      style={sharedStyles.inputIcon}
+                    />
                     <AnimatedTextInput
                       ref={lastNameRef}
                       placeholder="Last Name (Optional)"

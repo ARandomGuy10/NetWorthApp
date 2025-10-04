@@ -1,31 +1,27 @@
-import { useQuery } from '@tanstack/react-query';
-import { useUser } from '@clerk/clerk-expo';
-import { useSupabase } from './useSupabase';
-import type { Profile, ProfileUpdate } from '../lib/supabase';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSettingsStore } from '../stores/settingsStore';
+import {useQuery} from '@tanstack/react-query';
+import {useUser} from '@clerk/clerk-expo';
+import {useSupabase} from './useSupabase';
+import type {Profile, ProfileUpdate} from '../lib/supabase';
+import {useMutation, useQueryClient} from '@tanstack/react-query';
+import {useSettingsStore} from '../stores/settingsStore';
 
-import { useToast } from './providers/ToastProvider';
+import {useToast} from './providers/ToastProvider';
 
 export const useProfile = () => {
-  const { user } = useUser();
+  const {user} = useUser();
   const supabase = useSupabase();
-  const initializeSettings = useSettingsStore((state) => state.initializeSettings);
-  
+  const initializeSettings = useSettingsStore(state => state.initializeSettings);
+
   return useQuery({
     queryKey: ['profile', user?.id],
     queryFn: async (): Promise<Profile | null> => {
       console.log('🔥 CALLING DATABASE - useProfile queryFn');
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user!.id)
-        .single();
-      
+
+      const {data, error} = await supabase.from('profiles').select('*').eq('id', user!.id).single();
+
       if (error?.code === 'PGRST116') return null; // No profile found
       if (error) throw error;
-      
+
       if (data) {
         initializeSettings({
           hapticsEnabled: data.haptic_feedback_enabled ?? true,
@@ -39,17 +35,17 @@ export const useProfile = () => {
 };
 
 export const useCreateProfile = () => {
-  const { user } = useUser();
+  const {user} = useUser();
   const supabase = useSupabase();
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const {showToast} = useToast();
 
   return useMutation({
     mutationFn: async () => {
       console.log('🔥 CALLING DATABASE - useCreateProfile mutationFn');
       if (!user) throw new Error('User not authenticated');
 
-      const { data, error } = await supabase
+      const {data, error} = await supabase
         .from('profiles')
         .insert([
           {
@@ -70,34 +66,28 @@ export const useCreateProfile = () => {
 
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    onSuccess: data => {
+      queryClient.invalidateQueries({queryKey: ['profile']});
       queryClient.setQueryData(['profile', user?.id], data);
       showToast('Profile created successfully!', 'success');
     },
-    onError: (error) => {
+    onError: () => {
       showToast('Failed to create profile. Please try again.', 'error');
-      console.error('Error creating profile:', error);
     },
   });
 };
 
 export const useUpdateProfile = () => {
-  const { user } = useUser();
-  const supabase     = useSupabase();
-  const queryClient  = useQueryClient();
-  const { showToast } = useToast();
-  const initializeSettings = useSettingsStore((state) => state.initializeSettings);
+  const {user} = useUser();
+  const supabase = useSupabase();
+  const queryClient = useQueryClient();
+  const {showToast} = useToast();
+  const initializeSettings = useSettingsStore(state => state.initializeSettings);
 
   return useMutation({
     mutationFn: async (updates: ProfileUpdate) => {
       console.log('🔥 CALLING DATABASE - useUpdateProfile mutationFn');
-      const { data, error } = await supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', user!.id)
-        .select()
-        .single();
+      const {data, error} = await supabase.from('profiles').update(updates).eq('id', user!.id).select().single();
       if (error) throw error;
       return data;
     },
@@ -116,29 +106,29 @@ export const useUpdateProfile = () => {
       // If the currency was changed, invalidate all queries that depend on it.
       // This is much more efficient than invalidating on every profile update.
       if (updates.preferred_currency) {
-        queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-        queryClient.invalidateQueries({ queryKey: ['accountsWithBalances'] });
-        queryClient.invalidateQueries({ queryKey: ['netWorthHistory'] });
+        queryClient.invalidateQueries({queryKey: ['dashboard']});
+        queryClient.invalidateQueries({queryKey: ['accountsWithBalances']});
+        queryClient.invalidateQueries({queryKey: ['netWorthHistory']});
       }
 
       showToast('Profile updated successfully!', 'success');
     },
     onError: (error: Error) => {
-      showToast('Failed to update profile', 'error', { text: error.message });
+      showToast('Failed to update profile', 'error', {text: error.message});
       console.error('Error updating profile:', error);
-    }
+    },
   });
 };
 
 export const useDeleteUser = () => {
   const supabase = useSupabase();
   const queryClient = useQueryClient();
-  const { showToast } = useToast();
+  const {showToast} = useToast();
 
   return useMutation({
     mutationFn: async () => {
       console.log('🔥 CALLING EDGE FUNCTION - delete-user');
-      const { error } = await supabase.functions.invoke('delete-user');
+      const {error} = await supabase.functions.invoke('delete-user');
       if (error) throw error;
     },
     onSuccess: () => {
