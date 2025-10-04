@@ -6,6 +6,7 @@ import {router} from 'expo-router';
 
 import * as ScreenOrientation from 'expo-screen-orientation';
 import {useAuth} from '@clerk/clerk-expo';
+import * as Sentry from '@sentry/react-native';
 
 import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 
@@ -26,20 +27,29 @@ export default function Index() {
 
     // Use setTimeout to ensure navigation happens after initial render
     const timer = setTimeout(() => {
-      if (Platform.OS === 'web') {
-        // On web, redirect to landing page
-        if (!window.location.pathname.startsWith('/landing')) {
-          router.replace('/landing');
-        }
-      } else {
-        // On mobile, use the existing auth flow
-        if (isSignedIn) {
-          console.log('User is signed in, redirecting to /(tabs)/dashboard');
-          router.replace('/(tabs)/dashboard');
+      try {
+        if (Platform.OS === 'web') {
+          // On web, redirect to landing page
+          if (!window.location.pathname.startsWith('/landing')) {
+            router.replace('/landing');
+          }
         } else {
-          console.log('User is not signed in, redirecting to /(auth)/welcome');
-          router.replace('/(auth)/welcome');
+          // On mobile, use the existing auth flow
+          if (isSignedIn) {
+            router.replace('/(tabs)/dashboard');
+          } else {
+            router.replace('/(auth)/welcome');
+          }
         }
+      } catch (error) {
+        Sentry.withScope(scope => {
+          scope.setTag('location', 'initial-redirect');
+          scope.setExtra('isLoaded', isLoaded);
+          scope.setExtra('isSignedIn', isSignedIn);
+          scope.setExtra('platform', Platform.OS);
+          scope.setLevel('fatal');
+          Sentry.captureException(error);
+        });
       }
     }, 0);
 
@@ -50,7 +60,7 @@ export default function Index() {
   return (
     <View style={styles.container}>
       <ActivityIndicator size="large" color={onboardingTheme.colors.primary} />
-      <Text style={styles.loadingText}></Text>
+      <Text style={styles.loadingText}>Initializing...</Text>
     </View>
   );
 }
