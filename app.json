@@ -50,7 +50,20 @@
       }
     },
     "platforms": ["ios", "android", "web"],
-    "plugins": ["expo-font", "expo-router", "expo-audio", "expo-web-browser"],
+    "plugins": [
+      "expo-font",
+      "expo-router",
+      "expo-audio",
+      "expo-web-browser",
+      [
+        "@sentry/react-native/expo",
+        {
+          "url": "https://sentry.io/",
+          "project": "react-native",
+          "organization": "networthtrackr"
+        }
+      ]
+    ],
     "extra": {
       "router": {},
       "eas": {

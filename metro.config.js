@@ -1,7 +1,7 @@
-const {getDefaultConfig} = require('expo/metro-config');
 const path = require('path');
+const {getSentryExpoConfig} = require('@sentry/react-native/metro');
 
-const config = getDefaultConfig(__dirname);
+const config = getSentryExpoConfig(__dirname);
 
 // Configure resolver for React Native 0.79+ compatibility
 config.resolver.resolverMainFields = ['react-native', 'browser', 'main'];
