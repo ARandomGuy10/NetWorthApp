@@ -5,13 +5,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
-  ActivityIndicator,
 } from 'react-native';
 
 import {Link, router} from 'expo-router';
@@ -19,7 +17,6 @@ import {Link, router} from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, {useSharedValue, useAnimatedStyle, withTiming} from 'react-native-reanimated';
 import {Ionicons} from '@expo/vector-icons';
-import {LinearGradient} from 'expo-linear-gradient';
 import {StatusBar} from 'expo-status-bar';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useSignIn} from '@clerk/clerk-expo';
@@ -38,19 +35,12 @@ import {
 import {SignInCredentials, FormErrors} from '@/src/types/auth';
 import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 import {useAuthForm} from '@/hooks/useAuthForm';
+import {captureSentryException, captureSentryMessage} from '@/lib/sentry';
+import {useToast} from '@/hooks/providers/ToastProvider';
+import {AuthScreenWrapper} from '@/components/auth/AuthScreenWrapper';
 import {useHaptics} from '@/hooks/useHaptics';
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
-
-// 🎯 Helper function to log errors privately (not to user UI)
-const logErrorPrivately = (error: any, context: string) => {
-  // Remove console.error that shows at bottom of screen
-  // Instead, send to monitoring service like Sentry
-  // console.error('Sign-in error:', error); // ❌ Remove this line
-  // ✅ Use proper error monitoring instead
-  // Sentry.captureException(error, { tags: { context } });
-  // Or your preferred monitoring solution
-};
 
 // 🎯 Helper function to get user-friendly error messages
 const getUserFriendlyError = (error: any): {field?: string; message: string} => {
@@ -86,6 +76,7 @@ const SignInScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const {signIn, setActive, isLoaded} = useSignIn();
   const {impactAsync, notificationAsync, selectionAsync} = useHaptics();
+  const {showToast} = useToast();
 
   // 🎯 MOVE useAuthForm TO TOP - BEFORE ANY USAGE
   const emailInputRef = useRef<TextInput>(null);
@@ -105,37 +96,6 @@ const SignInScreen: React.FC = () => {
   // 🎯 NOW errors can be safely used
   const emailAnimatedStyle = useInputFocusAnimation(focusedField === 'emailAddress', !!errors.emailAddress);
   const passwordAnimatedStyle = useInputFocusAnimation(focusedField === 'password', !!errors.password);
-
-  // 🎯 Show loading screen while Clerk initializes
-  if (!isLoaded) {
-    return (
-      <LinearGradient colors={['#0a1120', '#112a52', '#1a4e8d']} style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#22c55e" />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </LinearGradient>
-    );
-  }
-
-  // 🎯 Show error screen if signIn is undefined after loading
-  if (!signIn) {
-    return (
-      <LinearGradient colors={['#0a1120', '#112a52', '#1a4e8d']} style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Ionicons name="warning-outline" size={48} color="#ef4444" />
-          <Text style={styles.errorTitle}>Service Unavailable</Text>
-          <Text style={styles.errorMessage}>
-            Authentication service is currently unavailable.{'\n'}
-            Please check your internet connection and try again.
-          </Text>
-          <AnimatedButton style={styles.retryButton} onPress={() => router.back()} hapticType="medium">
-            <Text style={styles.retryButtonText}>Go Back</Text>
-          </AnimatedButton>
-        </View>
-      </LinearGradient>
-    );
-  }
 
   const validateForm = useCallback((): boolean => {
     const newErrors: FormErrors = {};
@@ -184,7 +144,12 @@ const SignInScreen: React.FC = () => {
       }
     } catch (err: any) {
       // 🎯 FIXED: Handle errors privately and show user-friendly messages
-      logErrorPrivately(err, 'sign_in');
+      captureSentryException(err, {
+        location: 'auth',
+        context: 'sign_in',
+        component: 'SignInScreen',
+        extraData: {email: credentials.emailAddress.trim()},
+      });
 
       const userError = getUserFriendlyError(err);
       notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -194,7 +159,7 @@ const SignInScreen: React.FC = () => {
         setFieldErrors({[userError.field]: userError.message});
       } else {
         // Show generic alert for non-field errors
-        Alert.alert('Sign In Error', userError.message);
+        showToast(userError.message, 'error');
       }
     } finally {
       setLoading(false);
@@ -245,181 +210,185 @@ const SignInScreen: React.FC = () => {
   }, [impactAsync]);
 
   return (
-    <>
-      <StatusBar style="light" translucent />
-      <MeshBackgroundGlow
-        colors={onboardingTheme.intro.meshBackground}
-        glowColors={onboardingTheme.final.meshBackground.map(color => [color, 'transparent']) as [string, string][]}
-        glowDurations={[8000, 10000, 12000]}
-      />
-      <View style={[styles.safeArea, {paddingTop: insets.top}]}>
-        {/* Enhanced Header with Haptics */}
-        <View style={styles.headerContainer}>
-          <AnimatedButton style={sharedStyles.headerButtonDark} onPress={handleBackPress} hapticType="light">
-            <Ionicons name="arrow-back" size={responsiveSizes.fontSize + 2} color="#FFFFFF" />
-          </AnimatedButton>
-
-          <Link href="/(auth)/sign-up" asChild>
-            <AnimatedButton style={sharedStyles.headerButtonDark} hapticType="light">
-              <Text style={sharedStyles.headerButtonText}>Sign Up</Text>
+    <AuthScreenWrapper isLoaded={isLoaded} authHook={signIn} componentName="SignInScreen">
+      <>
+        <StatusBar style="light" translucent />
+        <MeshBackgroundGlow
+          colors={onboardingTheme.intro.meshBackground}
+          glowColors={onboardingTheme.final.meshBackground.map(color => [color, 'transparent']) as [string, string][]}
+          glowDurations={[8000, 10000, 12000]}
+        />
+        <View style={[styles.safeArea, {paddingTop: insets.top}]}>
+          {/* Enhanced Header with Haptics */}
+          <View style={styles.headerContainer}>
+            <AnimatedButton style={sharedStyles.headerButtonDark} onPress={handleBackPress} hapticType="light">
+              <Ionicons name="arrow-back" size={responsiveSizes.fontSize + 2} color="#FFFFFF" />
             </AnimatedButton>
-          </Link>
+
+            <Link href="/(auth)/sign-up" asChild>
+              <AnimatedButton style={sharedStyles.headerButtonDark} hapticType="light">
+                <Text style={sharedStyles.headerButtonText}>Sign Up</Text>
+              </AnimatedButton>
+            </Link>
+          </View>
+
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={styles.keyboardAvoidingView}>
+            <TouchableWithoutFeedback onPress={handleDismissKeyboard}>
+              <ScrollView
+                contentContainerStyle={[
+                  styles.scrollContentContainer,
+                  {paddingBottom: responsiveSizes.verticalSpacing * 2 + insets.bottom},
+                ]}
+                keyboardShouldPersistTaps="never"
+                showsVerticalScrollIndicator={false}
+                bounces={false}>
+                <View>
+                  <Text style={sharedStyles.title} allowFontScaling={false}>
+                    Welcome Back!
+                  </Text>
+                  <Text style={sharedStyles.subtitle} allowFontScaling={false}>
+                    Sign in to access your account
+                  </Text>
+                </View>
+                <View>
+                  {/* Enhanced Email Input with Haptics */}
+                  <TouchableWithoutFeedback onPress={() => emailInputRef.current?.focus()}>
+                    <Animated.View style={[sharedStyles.inputWrapper, emailAnimatedStyle]}>
+                      <Ionicons
+                        name="mail"
+                        size={responsiveSizes.fontSize}
+                        color="#FFFFFF"
+                        style={sharedStyles.inputIcon}
+                      />
+                      <AnimatedTextInput
+                        ref={emailInputRef}
+                        placeholder="Enter your email"
+                        placeholderTextColor="rgba(255,255,255,0.5)"
+                        value={credentials.emailAddress}
+                        onChangeText={text => updateCredentials('emailAddress', text)}
+                        onFocus={() => handleFieldFocus('emailAddress')}
+                        onBlur={handleFieldBlur}
+                        style={sharedStyles.input}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        textContentType="emailAddress"
+                        returnKeyType="next"
+                        allowFontScaling={false}
+                        accessibilityLabel="Email address input"
+                        accessibilityHint="Enter your email address to sign in"
+                        accessibilityRole="text"
+                        accessible={true}
+                      />
+                    </Animated.View>
+                  </TouchableWithoutFeedback>
+                  <ErrorMessage message={errors.emailAddress} />
+
+                  {/* Enhanced Password Input with Haptic Toggle */}
+                  <TouchableWithoutFeedback onPress={() => passwordInputRef.current?.focus()}>
+                    <Animated.View style={[sharedStyles.inputWrapper, passwordAnimatedStyle]}>
+                      <Ionicons
+                        name="lock-closed"
+                        size={responsiveSizes.fontSize}
+                        color="#FFFFFF"
+                        style={sharedStyles.inputIcon}
+                      />
+                      <AnimatedTextInput
+                        ref={passwordInputRef}
+                        placeholder="Enter your password"
+                        placeholderTextColor="rgba(255,255,255,0.5)"
+                        value={credentials.password}
+                        onChangeText={text => updateCredentials('password', text)}
+                        onFocus={() => handleFieldFocus('password')}
+                        onBlur={handleFieldBlur}
+                        style={sharedStyles.input}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        textContentType="password"
+                        returnKeyType="done"
+                        onSubmitEditing={onSignInPress}
+                        allowFontScaling={false}
+                        accessibilityLabel="Password input"
+                        accessibilityHint="Enter your password to sign in"
+                        accessibilityRole="text"
+                        accessible={true}
+                      />
+                      <PasswordToggle showPassword={showPassword} onToggle={togglePasswordVisibility} />
+                    </Animated.View>
+                  </TouchableWithoutFeedback>
+                  <ErrorMessage message={errors.password} />
+
+                  {/* Enhanced Options Row with Haptics */}
+                  <View style={styles.optionsContainer}>
+                    <Text
+                      style={styles.forgotPasswordText}
+                      onPress={() => {
+                        impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push('/(auth)/forgot-password');
+                      }}>
+                      Forgot Password?
+                    </Text>
+                  </View>
+
+                  {/* Enhanced Sign In Button with Success Haptics */}
+                  <GradientButton onPress={onSignInPress} loading={loading} success={isSuccess}>
+                    <Text style={sharedStyles.gradientButtonText} allowFontScaling={false}>
+                      Sign In
+                    </Text>
+                  </GradientButton>
+                </View>
+                <View>
+                  {/* Divider */}
+                  <View style={sharedStyles.dividerContainer}>
+                    <View style={sharedStyles.dividerLine} />
+                    <Text style={sharedStyles.dividerText} allowFontScaling={false}>
+                      Or
+                    </Text>
+                    <View style={sharedStyles.dividerLine} />
+                  </View>
+
+                  {/* Enhanced Social Buttons with Haptics */}
+                  <View style={sharedStyles.socialContainer}>
+                    <SocialButton
+                      strategy="google"
+                      onPress={handleOAuth}
+                      loading={socialLoading === 'google'}
+                      disabled={socialLoading !== null}
+                    />
+                    {Platform.OS !== 'android' && (
+                      <SocialButton
+                        strategy="apple"
+                        onPress={handleOAuth}
+                        loading={socialLoading === 'apple'}
+                        disabled={socialLoading !== null}
+                      />
+                    )}
+                  </View>
+
+                  {/* Link with Haptics */}
+                  <View style={styles.linkContainer}>
+                    <Text style={styles.linkText} allowFontScaling={false}>
+                      Don't have an account?{' '}
+                    </Text>
+                    <Text
+                      style={styles.linkTextBold}
+                      onPress={() => {
+                        impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        router.push('/(auth)/sign-up');
+                      }}>
+                      Create account
+                    </Text>
+                  </View>
+                </View>
+              </ScrollView>
+            </TouchableWithoutFeedback>
+          </KeyboardAvoidingView>
         </View>
-
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardAvoidingView}>
-          <TouchableWithoutFeedback onPress={handleDismissKeyboard}>
-            <ScrollView
-              contentContainerStyle={[
-                styles.scrollContentContainer,
-                {paddingBottom: responsiveSizes.verticalSpacing * 2 + insets.bottom},
-              ]}
-              keyboardShouldPersistTaps="never"
-              showsVerticalScrollIndicator={false}
-              bounces={false}>
-              <View>
-                <Text style={sharedStyles.title} allowFontScaling={false}>
-                  Welcome Back!
-                </Text>
-                <Text style={sharedStyles.subtitle} allowFontScaling={false}>
-                  Sign in to access your account
-                </Text>
-              </View>
-              <View>
-                {/* Enhanced Email Input with Haptics */}
-                <TouchableWithoutFeedback onPress={() => emailInputRef.current?.focus()}>
-                  <Animated.View style={[sharedStyles.inputWrapper, emailAnimatedStyle]}>
-                    <Ionicons
-                      name="mail"
-                      size={responsiveSizes.fontSize}
-                      color="#FFFFFF"
-                      style={sharedStyles.inputIcon}
-                    />
-                    <AnimatedTextInput
-                      ref={emailInputRef}
-                      placeholder="Enter your email"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
-                      value={credentials.emailAddress}
-                      onChangeText={text => updateCredentials('emailAddress', text)}
-                      onFocus={() => handleFieldFocus('emailAddress')}
-                      onBlur={handleFieldBlur}
-                      style={sharedStyles.input}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      textContentType="emailAddress"
-                      returnKeyType="next"
-                      allowFontScaling={false}
-                      accessibilityLabel="Email address input"
-                      accessibilityHint="Enter your email address to sign in"
-                      accessibilityRole="text"
-                      accessible={true}
-                    />
-                  </Animated.View>
-                </TouchableWithoutFeedback>
-                <ErrorMessage message={errors.emailAddress} />
-
-                {/* Enhanced Password Input with Haptic Toggle */}
-                <TouchableWithoutFeedback onPress={() => passwordInputRef.current?.focus()}>
-                  <Animated.View style={[sharedStyles.inputWrapper, passwordAnimatedStyle]}>
-                    <Ionicons
-                      name="lock-closed"
-                      size={responsiveSizes.fontSize}
-                      color="#FFFFFF"
-                      style={sharedStyles.inputIcon}
-                    />
-                    <AnimatedTextInput
-                      ref={passwordInputRef}
-                      placeholder="Enter your password"
-                      placeholderTextColor="rgba(255,255,255,0.5)"
-                      value={credentials.password}
-                      onChangeText={text => updateCredentials('password', text)}
-                      onFocus={() => handleFieldFocus('password')}
-                      onBlur={handleFieldBlur}
-                      style={sharedStyles.input}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      textContentType="password"
-                      returnKeyType="done"
-                      onSubmitEditing={onSignInPress}
-                      allowFontScaling={false}
-                      accessibilityLabel="Password input"
-                      accessibilityHint="Enter your password to sign in"
-                      accessibilityRole="text"
-                      accessible={true}
-                    />
-                    <PasswordToggle showPassword={showPassword} onToggle={togglePasswordVisibility} />
-                  </Animated.View>
-                </TouchableWithoutFeedback>
-                <ErrorMessage message={errors.password} />
-
-                {/* Enhanced Options Row with Haptics */}
-                <View style={styles.optionsContainer}>
-                  <Text
-                    style={styles.forgotPasswordText}
-                    onPress={() => {
-                      impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push('/(auth)/forgot-password');
-                    }}>
-                    Forgot Password?
-                  </Text>
-                </View>
-
-                {/* Enhanced Sign In Button with Success Haptics */}
-                <GradientButton onPress={onSignInPress} loading={loading} success={isSuccess}>
-                  <Text style={sharedStyles.gradientButtonText} allowFontScaling={false}>
-                    Sign In
-                  </Text>
-                </GradientButton>
-              </View>
-              <View>
-                {/* Divider */}
-                <View style={sharedStyles.dividerContainer}>
-                  <View style={sharedStyles.dividerLine} />
-                  <Text style={sharedStyles.dividerText} allowFontScaling={false}>
-                    Or
-                  </Text>
-                  <View style={sharedStyles.dividerLine} />
-                </View>
-
-                {/* Enhanced Social Buttons with Haptics */}
-                <View style={sharedStyles.socialContainer}>
-                  <SocialButton
-                    strategy="google"
-                    onPress={handleOAuth}
-                    loading={socialLoading === 'google'}
-                    disabled={socialLoading !== null}
-                  />
-                  <SocialButton
-                    strategy="apple"
-                    onPress={handleOAuth}
-                    loading={socialLoading === 'apple'}
-                    disabled={socialLoading !== null}
-                  />
-                </View>
-
-                {/* Link with Haptics */}
-                <View style={styles.linkContainer}>
-                  <Text style={styles.linkText} allowFontScaling={false}>
-                    Don't have an account?{' '}
-                  </Text>
-                  <Text
-                    style={styles.linkTextBold}
-                    onPress={() => {
-                      impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push('/(auth)/sign-up');
-                    }}>
-                    Create account
-                  </Text>
-                </View>
-              </View>
-            </ScrollView>
-          </TouchableWithoutFeedback>
-        </KeyboardAvoidingView>
-      </View>
-    </>
+      </>
+    </AuthScreenWrapper>
   );
 };
 
@@ -475,52 +444,6 @@ const styles = StyleSheet.create({
     fontSize: responsiveSizes.fontSize - 1,
     fontFamily: 'Inter_600SemiBold',
     textDecorationLine: 'underline',
-  },
-  // Loading screen styles
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Inter_500Medium',
-    marginTop: 16,
-  },
-  // Error screen styles
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: '10%',
-  },
-  errorTitle: {
-    color: '#ef4444',
-    fontSize: 24,
-    fontFamily: 'Inter_700Bold',
-    textAlign: 'center',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  errorMessage: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 16,
-    fontFamily: 'Inter_400Regular',
-    textAlign: 'center',
-    lineHeight: 24,
-    marginBottom: 32,
-  },
-  retryButton: {
-    backgroundColor: '#22c55e',
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 25,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontFamily: 'Inter_600SemiBold',
   },
 });
 

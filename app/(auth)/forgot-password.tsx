@@ -33,6 +33,7 @@ import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
 import {useAuthForm} from '@/hooks/useAuthForm';
 import {useHaptics} from '@/hooks/useHaptics';
 import {useToast} from '@/hooks/providers/ToastProvider';
+import {captureSentryException} from '@/lib/sentry';
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
@@ -183,13 +184,19 @@ const ForgotPasswordScreen: React.FC = () => {
       notificationAsync(Haptics.NotificationFeedbackType.Success);
       setPendingReset(true);
     } catch (err: any) {
+      captureSentryException(err, {
+        location: 'auth',
+        context: 'forgot_password_request',
+        component: 'ForgotPasswordScreen',
+        extraData: {email: emailAddress.trim()},
+      });
       const userError = getUserFriendlyError(err);
       notificationAsync(Haptics.NotificationFeedbackType.Error);
 
       if (userError.field) {
         setFieldErrors({[userError.field]: userError.message});
       } else {
-        Alert.alert('Error', userError.message);
+        showToast(userError.message, 'error');
       }
     } finally {
       setLoading(false);
@@ -219,18 +226,34 @@ const ForgotPasswordScreen: React.FC = () => {
         return; // Exit to prevent setLoading(false) from being called.
       }
     } catch (err: any) {
+      captureSentryException(err, {
+        location: 'auth',
+        context: 'forgot_password_reset',
+        component: 'ForgotPasswordScreen',
+      });
       notificationAsync(Haptics.NotificationFeedbackType.Error);
       const userError = getResetPasswordError(err);
 
       if (userError.field) {
         setFieldErrors({[userError.field]: userError.message});
       } else {
-        Alert.alert('Error', userError.message);
+        showToast(userError.message, 'error');
       }
     }
     // This line is only reached if an error occurred.
     setLoading(false);
-  }, [isLoaded, signIn, setActive, validateResetForm, code, password, setLoading, setFieldErrors, notificationAsync, showToast]);
+  }, [
+    isLoaded,
+    signIn,
+    setActive,
+    validateResetForm,
+    code,
+    password,
+    setLoading,
+    setFieldErrors,
+    notificationAsync,
+    showToast,
+  ]);
 
   const updateEmail = useCallback(
     (value: string) => {

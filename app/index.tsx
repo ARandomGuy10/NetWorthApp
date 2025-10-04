@@ -6,9 +6,9 @@ import {router} from 'expo-router';
 
 import * as ScreenOrientation from 'expo-screen-orientation';
 import {useAuth} from '@clerk/clerk-expo';
-import * as Sentry from '@sentry/react-native';
 
 import {onboardingTheme} from '@/src/styles/theme/onboardingTheme';
+import {captureSentryException} from '@/lib/sentry';
 
 /**
  * Initial route component that handles the app's initial routing
@@ -42,13 +42,12 @@ export default function Index() {
           }
         }
       } catch (error) {
-        Sentry.withScope(scope => {
-          scope.setTag('location', 'initial-redirect');
-          scope.setExtra('isLoaded', isLoaded);
-          scope.setExtra('isSignedIn', isSignedIn);
-          scope.setExtra('platform', Platform.OS);
-          scope.setLevel('fatal');
-          Sentry.captureException(error);
+        captureSentryException(error, {
+          location: 'app-launch',
+          context: 'initial-redirect',
+          component: 'IndexScreen',
+          level: 'fatal',
+          extraData: {isLoaded, isSignedIn, platform: Platform.OS},
         });
       }
     }, 0);
