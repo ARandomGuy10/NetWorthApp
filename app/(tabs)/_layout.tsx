@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import React, {useEffect} from 'react';
 import {Tabs, router} from 'expo-router';
 import {useAuth} from '@clerk/clerk-expo';
 import {ThemeProvider, useTheme} from '@/src/styles/theme/ThemeContext';

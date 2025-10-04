@@ -1,4 +1,4 @@
-import {useEffect} from 'react';
+import React, {useEffect} from 'react';
 import {View, ActivityIndicator} from 'react-native';
 import {Stack, router} from 'expo-router';
 import {useAuth} from '@clerk/clerk-expo';
