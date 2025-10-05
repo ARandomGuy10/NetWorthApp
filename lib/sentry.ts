@@ -15,6 +15,39 @@ interface SentryLogOptions {
   extraData?: Record<string, any>;
 }
 
+// A list of substrings that indicate a predictable user error, not a system error.
+// These errors should not be logged to Sentry to avoid noise and save quota.
+const KNOWN_USER_ERROR_SUBSTRINGS = [
+  'password or email address is incorrect', // General login failure
+  'incorrect password', // Specific password failure
+  'identifier or password incorrect', // Another common Clerk error
+  'too many attempts', // Rate limiting
+  'too many login attempts', // Rate limiting
+  'no account found', // Forgot password with non-existent email
+  'form_code_incorrect', // Incorrect verification code
+  'password has been found in a data breach', // Pwned Passwords check
+  'is already in use or invalid', // Email already exists on sign up
+];
+
+/**
+ * Checks if an error is a known, predictable user error that should not be logged.
+ * @param error The error object to check.
+ * @returns `true` if the error is a known user error, `false` otherwise.
+ */
+const isKnownUserError = (error: unknown): boolean => {
+  if (!(error instanceof Error) && typeof error !== 'string') {
+    return false;
+  }
+
+  const errorMessage = (error instanceof Error ? error.message : String(error)).toLowerCase();
+
+  // Also check Clerk's specific error structure for more accuracy
+  const clerkErrorMessage = ((error as any)?.errors?.[0]?.message || '').toLowerCase();
+
+  return KNOWN_USER_ERROR_SUBSTRINGS.some(
+    substring => errorMessage.includes(substring) || clerkErrorMessage.includes(substring)
+  );
+};
 /**
  * A centralized utility for capturing exceptions with Sentry,
  * ensuring consistent tagging and context.
@@ -23,6 +56,12 @@ interface SentryLogOptions {
  * @param options Contextual information for the Sentry event.
  */
 export const captureSentryException = (error: unknown, options: SentryLogOptions) => {
+  // First, check if this is a known user error that we should ignore.
+  if (isKnownUserError(error)) {
+    // In development, it can be useful to know an error was ignored.
+    if (__DEV__) console.log('Sentry: Ignoring known user error:', (error as any)?.message || error);
+    return; // Do not log to Sentry
+  }
   const {context, location, component, level = 'error', extraData = {}} = options;
 
   Sentry.withScope(scope => {
