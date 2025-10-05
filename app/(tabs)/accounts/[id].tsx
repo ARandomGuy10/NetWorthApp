@@ -145,17 +145,19 @@ export default function AccountDetailScreen() {
     },
   ];
 
-  const confirmBalanceDeletion = async () => {
+  const confirmBalanceDeletion = () => {
     if (!selectedBal) return;
-    try {
-      await deleteBalance.mutateAsync({id: selectedBal.id, account_id: id as string});
-    } catch (error) {
-      // Error is handled by the mutation's onError callback
-    } finally {
-      setIsDeleteModalVisible(false);
-      // Reset the selected balance after the operation
-      setSelectedBal(null);
-    }
+    deleteBalance.mutate(
+      {id: selectedBal.id, account_id: id as string},
+      {
+        // The hook's own onSuccess/onError handles toasts.
+        // We just need to manage the UI state.
+        onSettled: () => {
+          setIsDeleteModalVisible(false);
+          setSelectedBal(null);
+        },
+      }
+    );
   };
 
   /* ───────── render ───────── */

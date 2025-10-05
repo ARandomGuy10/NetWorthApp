@@ -21,6 +21,7 @@ import {useAddAccount, useUpdateAccount} from '@/hooks/useAccounts';
 import {useHaptics} from '@/hooks/useHaptics';
 import {ACCOUNT_CATEGORIES, CURRENCIES} from '@/lib/supabase';
 import {useToast} from '@/hooks/providers/ToastProvider';
+import {captureSentryException} from '@/lib/sentry';
 import {useTheme} from '@/src/styles/theme/ThemeContext';
 import Switch from '@/components/ui/Switch';
 import CustomPicker from '@/components/ui/CustomPicker';
@@ -107,8 +108,14 @@ export default function AddAccountScreen() {
 
         didPrefillRef.current = true;
       } catch (error) {
-        console.error('Error parsing account data:', error);
-        showToast('Error loading account data', 'error');
+        captureSentryException(error, {
+          location: 'add_edit_account',
+          context: 'load_initial_data_edit',
+          component: 'AddAccountScreen',
+          level: 'error',
+        });
+        showToast('Failed to load account data.', 'error');
+        router.back(); // Go back if data is corrupt
       } finally {
         setInitialLoading(false);
       }
@@ -143,51 +150,50 @@ export default function AddAccountScreen() {
     return true;
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!validateForm()) return;
 
     impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    try {
-      if (isEditMode) {
-        const saveData = {
-          name: formData.name.trim(),
-          type: formData.type,
-          category: formData.category.trim(),
-          currency: formData.currency,
-          institution: formData.institution.trim() || null,
-          include_in_net_worth: formData.include_in_net_worth,
-        };
+    if (isEditMode) {
+      const saveData = {
+        name: formData.name.trim(),
+        type: formData.type,
+        category: formData.category.trim(),
+        currency: formData.currency,
+        institution: formData.institution.trim() || null,
+        include_in_net_worth: formData.include_in_net_worth,
+      };
 
-        await updateAccountMutation.mutateAsync({
+      updateAccountMutation.mutate(
+        {
           id: accountId as string,
           updates: saveData,
-        });
-
-        notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setTimeout(() => router.back(), 1500);
-      } else {
-        const accountWithBalance = {
-          name: formData.name.trim(),
-          type: formData.type,
-          category: formData.category.trim(),
-          currency: formData.currency,
-          institution: formData.institution.trim() || null,
-          include_in_net_worth: formData.include_in_net_worth,
-          initial_balance: parseFloat(formData.initial_balance) || 0,
-        };
-
-        addAccountMutation.mutate(accountWithBalance, {
+        },
+        {
           onSuccess: () => {
             notificationAsync(Haptics.NotificationFeedbackType.Success);
             router.back();
           },
-        });
-      }
-    } catch (error) {
-      showToast(`Failed to ${isEditMode ? 'update' : 'create'} account. Please try again.`, 'error');
+        }
+      );
+    } else {
+      const accountWithBalance = {
+        name: formData.name.trim(),
+        type: formData.type,
+        category: formData.category.trim(),
+        currency: formData.currency,
+        institution: formData.institution.trim() || null,
+        include_in_net_worth: formData.include_in_net_worth,
+        initial_balance: parseFloat(formData.initial_balance) || 0,
+      };
 
-      notificationAsync(Haptics.NotificationFeedbackType.Error);
+      addAccountMutation.mutate(accountWithBalance, {
+        onSuccess: () => {
+          notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.back();
+        },
+      });
     }
   };
 

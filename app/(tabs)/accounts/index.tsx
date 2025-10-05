@@ -51,20 +51,22 @@ function AccountsScreen() {
   const {data: profile} = useProfile(mutationOptions);
   const deleteAccountMutation = useDeleteAccount(mutationOptions);
   const updateAccountMutation = useUpdateAccount(mutationOptions);
-  const addBalanceMutation = useAddBalance();
+  const addBalanceMutation = useAddBalance(mutationOptions);
   const {impactAsync, notificationAsync} = useHaptics();
 
   const {showToast} = useToast(); // Get showToast from the hook
 
-  const handleArchiveAccount = async (account: AccountWithBalance) => {
-    try {
-      await updateAccountMutation.mutateAsync({id: account.account_id, updates: {is_archived: !account.is_archived}});
-      showToast(`Account ${account.is_archived ? 'unarchived' : 'archived'} successfully!`, 'success');
-      notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error) {
-      showToast(`Failed to ${account.is_archived ? 'unarchive' : 'archive'} account.`, 'error');
-      notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
+  const handleArchiveAccount = (account: AccountWithBalance) => {
+    updateAccountMutation.mutate(
+      {id: account.account_id, updates: {is_archived: !account.is_archived}},
+      {
+        onSuccess: () => {
+          showToast(`Account ${account.is_archived ? 'unarchived' : 'archived'} successfully!`, 'success');
+          notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+        // onError is handled by the hook, which shows a generic "Failed to update" toast.
+      }
+    );
   };
 
   // Consolidated handler for deleting an account with confirmation
@@ -73,21 +75,18 @@ function AccountsScreen() {
     setIsDeleteModalVisible(true);
   };
 
-  const confirmAccountDeletion = async () => {
+  const confirmAccountDeletion = () => {
     if (!accountToDelete) return;
 
-    try {
-      await deleteAccountMutation.mutateAsync(accountToDelete.id);
-      notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch (error) {
-      // Error is handled by the mutation's onError callback
-      notificationAsync(Haptics.NotificationFeedbackType.Error);
-    } finally {
-      // Close the modal regardless of success or failure
-      setIsDeleteModalVisible(false);
-      // Reset the account to delete
-      setAccountToDelete(null);
-    }
+    deleteAccountMutation.mutate(accountToDelete.id, {
+      // The useDeleteAccount hook's own onSuccess/onError callbacks handle
+      // showing toasts and triggering the appropriate haptic feedback.
+      // We only need to handle UI state changes here.
+      onSettled: () => {
+        setIsDeleteModalVisible(false);
+        setAccountToDelete(null);
+      },
+    });
   };
 
   const {theme} = useTheme();
