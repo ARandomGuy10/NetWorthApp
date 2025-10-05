@@ -4,7 +4,7 @@
 // fully adapted for the single dark theme defined in src/styles/colors.ts
 // ────────────────────────────────────────────────────────────────────────────
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, {useRef, useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -16,47 +16,54 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {LinearGradient} from 'expo-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {Ionicons} from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import {useRouter, useLocalSearchParams} from 'expo-router';
 
-import { useAccountDetails } from '@/hooks/useAccounts';
-import { useBalances, useDeleteBalance } from '@/hooks/useBalances';
-import { useHaptics } from '@/hooks/useHaptics';
-import { formatCurrency } from '@/src/utils/formatters';
-import { formatDate } from '@/src/utils/dateUtils';
-import ActionMenu, { Action } from '@/components/ui/ActionMenu';
-import type { Balance } from '@/lib/supabase';
-import { useTheme } from '@/src/styles/theme/ThemeContext';
-import { Theme } from '@/lib/supabase';
+import {useAccountDetails} from '@/hooks/useAccounts';
+import {useBalances, useDeleteBalance} from '@/hooks/useBalances';
+import {useHaptics} from '@/hooks/useHaptics';
+import {formatCurrency} from '@/src/utils/formatters';
+import {formatDate} from '@/src/utils/dateUtils';
+import ActionMenu, {Action} from '@/components/ui/ActionMenu';
+import type {Balance} from '@/lib/supabase';
+import {useTheme} from '@/src/styles/theme/ThemeContext';
+import {Theme} from '@/lib/supabase';
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import LoadingView from '@/components/ui/LoadingView';
 
-
-  export default function AccountDetailScreen() {
+export default function AccountDetailScreen() {
   /* ───────── nav / params ───────── */
-  const { id }       = useLocalSearchParams();
-  const insets       = useSafeAreaInsets();
-  const router       = useRouter();
-  const { theme } = useTheme();
+  const {id} = useLocalSearchParams();
+  const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const {theme} = useTheme();
   const styles = getStyles(theme);
-  const { impactAsync } = useHaptics();
+  const {impactAsync} = useHaptics();
+  const sentryContext = {
+    sentry: {
+      location: 'account_details',
+      component: 'AccountDetailScreen',
+    },
+  };
 
   /* ───────── queries ───────── */
-  const { data: account,   isLoading: accLoading } = useAccountDetails(id as string);
-  const { data: balances,  isLoading: balLoading, refetch, isFetching } = useBalances(id as string);
-  const deleteBalance = useDeleteBalance();
+  const {data: account, isLoading: accLoading} = useAccountDetails(id as string, sentryContext);
+  const {data: balances, isLoading: balLoading, refetch, isFetching} = useBalances(id as string, sentryContext);
+  const deleteBalance = useDeleteBalance(sentryContext);
 
   /* ───────── local state ───────── */
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedBal, setSelectedBal] = useState<Balance | null>(null);
-  const [menuPos,     setMenuPos]     = useState({ x: 0, y: 0 });
+  const [menuPos, setMenuPos] = useState({x: 0, y: 0});
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
 
   /* ───────── fade-in anim ───────── */
   const fade = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    Animated.timing(fade, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    Animated.timing(fade, {toValue: 1, duration: 300, useNativeDriver: true}).start();
   }, []);
 
   /* ───────── utilities ───────── */
@@ -84,9 +91,9 @@ import LoadingView from '@/components/ui/LoadingView';
   /* ───────── menu placement (clamped) ───────── */
   const handleBalanceMenu = (balance: Balance, e: any) => {
     impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const { pageY } = e.nativeEvent;
+    const {pageY} = e.nativeEvent;
     setSelectedBal(balance);
-    setMenuPos({ x: 0, y: pageY });   // that’s it
+    setMenuPos({x: 0, y: pageY}); // that’s it
     setMenuVisible(true);
   };
 
@@ -118,7 +125,7 @@ import LoadingView from '@/components/ui/LoadingView';
         if (!selectedBal) return;
         router.push({
           pathname: 'accounts/add-balance',
-          params: { accountId: id, balanceId: selectedBal.id, mode: 'edit', balanceData: JSON.stringify(selectedBal) },
+          params: {accountId: id, balanceId: selectedBal.id, mode: 'edit', balanceData: JSON.stringify(selectedBal)},
         });
         setMenuVisible(false);
       },
@@ -129,39 +136,60 @@ import LoadingView from '@/components/ui/LoadingView';
       destructive: true,
       onPress: async () => {
         if (!selectedBal) return;
-        impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        await deleteBalance.mutate({ id: selectedBal.id, account_id: id as string });
         setMenuVisible(false);
+        // A short delay ensures the UI transition is smooth
+        setTimeout(() => {
+          setIsDeleteModalVisible(true);
+        }, 150);
       },
     },
   ];
 
+  const confirmBalanceDeletion = async () => {
+    if (!selectedBal) return;
+    try {
+      await deleteBalance.mutateAsync({id: selectedBal.id, account_id: id as string});
+    } catch (error) {
+      // Error is handled by the mutation's onError callback
+    } finally {
+      setIsDeleteModalVisible(false);
+      // Reset the selected balance after the operation
+      setSelectedBal(null);
+    }
+  };
+
   /* ───────── render ───────── */
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, {paddingTop: insets.top}]}>
       {/* ───── Header ───── */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.hBtn} onPress={() => {
-          impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            // Fallback: navigate directly to accounts
-            router.push('/(tabs)/accounts');
-          }
-        }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity
+          style={styles.hBtn}
+          onPress={() => {
+            impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              // Fallback: navigate directly to accounts
+              router.push('/(tabs)/accounts');
+            }
+          }}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Ionicons name="arrow-back" size={22} color={theme.colors.text.primary} />
         </TouchableOpacity>
-        <Text style={styles.hTitle} numberOfLines={1}>{account.name}</Text>
+        <Text style={styles.hTitle} numberOfLines={1}>
+          {account.name}
+        </Text>
         <TouchableOpacity
           style={styles.hBtn}
           onPress={() => {
             impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push({
               pathname: 'accounts/add-account',
-              params: { accountId: id, mode: 'edit', accountData: JSON.stringify(account) },
-            })
-          }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              params: {accountId: id, mode: 'edit', accountData: JSON.stringify(account)},
+            });
+          }}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Ionicons name="create-outline" size={20} color={theme.colors.text.primary} />
         </TouchableOpacity>
       </View>
@@ -176,36 +204,32 @@ import LoadingView from '@/components/ui/LoadingView';
             onRefresh={onRefresh}
             tintColor={theme.colors.primary}
           />
-        }
-      >
+        }>
         {/* Summary card */}
-        <Animated.View style={[styles.cardWrapper, { opacity: fade }]}>
-          <LinearGradient 
-            colors={[`${theme.colors.primary}1A`, theme.colors.background.card]} 
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
+        <Animated.View style={[styles.cardWrapper, {opacity: fade}]}>
+          <LinearGradient
+            colors={[`${theme.colors.primary}1A`, theme.colors.background.card]}
+            start={{x: 0.5, y: 0}}
+            end={{x: 0.5, y: 1}}
             style={styles.card}>
             <View style={styles.cardRow}>
               <View style={styles.iconWrap}>
                 <Ionicons name={iconFor(account.category)} size={24} color={theme.colors.text.inverse} />
               </View>
               <View style={styles.meta}>
-                <Text style={[styles.metaName, { color: theme.colors.text.primary }]}>{account.name}</Text>
-                <Text style={[styles.metaSub,  { color: theme.colors.text.secondary  }]}>
+                <Text style={[styles.metaName, {color: theme.colors.text.primary}]}>{account.name}</Text>
+                <Text style={[styles.metaSub, {color: theme.colors.text.secondary}]}>
                   {account.type === 'asset' ? 'Asset' : 'Liability'} · {account.category}
                 </Text>
               </View>
             </View>
 
-            <Text style={[styles.balanceLabel, { color: theme.colors.text.secondary }]}>Current Balance</Text>
+            <Text style={[styles.balanceLabel, {color: theme.colors.text.secondary}]}>Current Balance</Text>
             <Text
               style={[
                 styles.balanceValue,
-                account.type === 'liability'
-                  ? { color: theme.colors.liability }
-                  : { color: theme.colors.asset },
-              ]}
-            >
+                account.type === 'liability' ? {color: theme.colors.liability} : {color: theme.colors.asset},
+              ]}>
               {account.type === 'liability' ? '-' : ''}
               {formatCurrency(currentBal, account.currency)}
             </Text>
@@ -218,29 +242,26 @@ import LoadingView from '@/components/ui/LoadingView';
           activeOpacity={0.85}
           onPress={() => {
             impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push({ pathname: 'accounts/add-balance', params: { accountId: id } });
-          }}
-        >
+            router.push({pathname: 'accounts/add-balance', params: {accountId: id}});
+          }}>
           <Ionicons name="add" size={18} color={theme.colors.text.inverse} />
           <Text style={styles.ctaTxt}>Record New Balance</Text>
         </TouchableOpacity>
 
         {/* History header */}
-        <Text style={[styles.sectionHdr, { color: theme.colors.text.primary }]}>Balance History</Text>
+        <Text style={[styles.sectionHdr, {color: theme.colors.text.primary}]}>Balance History</Text>
 
         {/* History list */}
-        {(!balances || balances.length === 0) ? (
+        {!balances || balances.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons
               name="time-outline"
               size={36}
               color={theme.colors.text.tertiary}
-              style={{ marginBottom: theme.spacing.lg }}
+              style={{marginBottom: theme.spacing.lg}}
             />
             <Text style={styles.emptyTitle}>No entries yet</Text>
-            <Text style={styles.emptySub}>
-              Record your first balance to start tracking this account.
-            </Text>
+            <Text style={styles.emptySub}>Record your first balance to start tracking this account.</Text>
           </View>
         ) : (
           balances.map(b => (
@@ -248,8 +269,7 @@ import LoadingView from '@/components/ui/LoadingView';
               key={b.id}
               style={styles.itemCard}
               activeOpacity={0.7}
-              onPress={e => handleBalanceMenu(b, e)}
-            >
+              onPress={e => handleBalanceMenu(b, e)}>
               <View>
                 <Text style={styles.itemDate}>{formatDate(b.date)}</Text>
                 {b.notes && <Text style={styles.itemNotes}>{b.notes}</Text>}
@@ -270,114 +290,130 @@ import LoadingView from '@/components/ui/LoadingView';
         actions={actions}
         anchorPosition={menuPos}
       />
+
+      {/* Deletion Confirmation Modal */}
+      <ConfirmationModal
+        isVisible={isDeleteModalVisible}
+        onClose={() => setIsDeleteModalVisible(false)}
+        onConfirm={confirmBalanceDeletion}
+        title="Delete Balance Entry"
+        message={`Are you sure you want to delete this balance entry dated ${selectedBal ? formatDate(selectedBal.date) : ''}? This action cannot be undone.`}
+        confirmText="Delete"
+        isDestructive={true}
+        isLoading={deleteBalance.isPending}
+      />
     </View>
   );
 }
 
-const getStyles = (theme: Theme) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background.primary,
-  },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background.primary,
+    },
+    centered: {flex: 1, justifyContent: 'center', alignItems: 'center'},
 
-  errorText:   { fontSize: 16, color: theme.colors.error, marginBottom: theme.spacing.lg },
+    errorText: {fontSize: 16, color: theme.colors.error, marginBottom: theme.spacing.lg},
 
-  backBtn: {
-    backgroundColor: theme.colors.primary,
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-  },
-  backTxt: { color: theme.colors.text.inverse, fontWeight: '600' },
+    backBtn: {
+      backgroundColor: theme.colors.primary,
+      paddingHorizontal: theme.spacing.xl,
+      paddingVertical: theme.spacing.md,
+      borderRadius: theme.borderRadius.md,
+    },
+    backTxt: {color: theme.colors.text.inverse, fontWeight: '600'},
 
-  /* Header */
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.lg,
-    height: 56,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
-  },
-  hBtn:   { 
-    width: 44, 
-    height: 44, 
-    justifyContent: 'center', 
-    alignItems: 'center' 
-  },
-  hTitle: { flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: theme.colors.text.primary },
+    /* Header */
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing.lg,
+      height: 56,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.colors.border.primary,
+    },
+    hBtn: {
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    hTitle: {flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '600', color: theme.colors.text.primary},
 
-  /* ScrollView */
-  scrollContent: { paddingBottom: theme.spacing.xxxl },
+    /* ScrollView */
+    scrollContent: {paddingBottom: theme.spacing.xxxl},
 
-  /* Summary card */
-  cardWrapper: {
-    marginHorizontal: theme.spacing.lg,
-    marginTop: theme.spacing.lg,
-  },
-  card: {
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-  },
+    /* Summary card */
+    cardWrapper: {
+      marginHorizontal: theme.spacing.lg,
+      marginTop: theme.spacing.lg,
+    },
+    card: {
+      borderRadius: theme.borderRadius.lg,
+      padding: theme.spacing.lg,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+    },
 
-  cardRow:  { flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.lg },
-  iconWrap: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: theme.colors.primary,
-    justifyContent: 'center', alignItems: 'center',
-    marginRight: theme.spacing.lg,
-  },
-  meta:      { flex: 1 },
-  metaName:  { fontSize: 18, fontWeight: '600' },
-  metaSub:   { fontSize: 13 },
-  balanceLabel: { fontSize: 14, textAlign: 'center', marginBottom: theme.spacing.xs },
-  balanceValue: { fontSize: 32, fontWeight: 'bold', textAlign: 'center' },
+    cardRow: {flexDirection: 'row', alignItems: 'center', marginBottom: theme.spacing.lg},
+    iconWrap: {
+      width: 48,
+      height: 48,
+      borderRadius: 24,
+      backgroundColor: theme.colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: theme.spacing.lg,
+    },
+    meta: {flex: 1},
+    metaName: {fontSize: 18, fontWeight: '600'},
+    metaSub: {fontSize: 13},
+    balanceLabel: {fontSize: 14, textAlign: 'center', marginBottom: theme.spacing.xs},
+    balanceValue: {fontSize: 32, fontWeight: 'bold', textAlign: 'center'},
 
-  /* CTA */
-  cta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: theme.colors.primary,
-    marginHorizontal: theme.spacing.lg,
-    marginVertical: theme.spacing.xl,
-    paddingVertical: theme.spacing.lg,
-    borderRadius: theme.borderRadius.md,
-    ...theme.shadows.md,
-  },
-  ctaTxt: { color: theme.colors.text.inverse, fontSize: 15, fontWeight: '700', marginLeft: theme.spacing.sm },
+    /* CTA */
+    cta: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: theme.colors.primary,
+      marginHorizontal: theme.spacing.lg,
+      marginVertical: theme.spacing.xl,
+      paddingVertical: theme.spacing.lg,
+      borderRadius: theme.borderRadius.md,
+      ...theme.shadows.md,
+    },
+    ctaTxt: {color: theme.colors.text.inverse, fontSize: 15, fontWeight: '700', marginLeft: theme.spacing.sm},
 
-  /* Section header */
-  sectionHdr: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
-  },
+    /* Section header */
+    sectionHdr: {
+      fontSize: 18,
+      fontWeight: '600',
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.md,
+    },
 
-  /* Empty state */
-  empty:      { alignItems: 'center', padding: theme.spacing.xxxl, marginTop: theme.spacing.xl },
-  emptyTitle: { fontSize: 16, fontWeight: '600', color: theme.colors.text.primary, marginTop: theme.spacing.lg },
-  emptySub:   { fontSize: 14, color: theme.colors.text.secondary, textAlign: 'center', marginTop: theme.spacing.xs },
+    /* Empty state */
+    empty: {alignItems: 'center', padding: theme.spacing.xxxl, marginTop: theme.spacing.xl},
+    emptyTitle: {fontSize: 16, fontWeight: '600', color: theme.colors.text.primary, marginTop: theme.spacing.lg},
+    emptySub: {fontSize: 14, color: theme.colors.text.secondary, textAlign: 'center', marginTop: theme.spacing.xs},
 
-  /* History item */
-  itemCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: theme.colors.background.elevated,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-    padding: theme.spacing.lg,
-    marginHorizontal: theme.spacing.lg,
-    marginBottom: theme.spacing.sm,
-  },
-  itemDate:  { fontSize: 15, fontWeight: '600', color: theme.colors.text.primary },
-  itemNotes: { fontSize: 13, color: theme.colors.text.secondary, marginTop: 2 },
-  itemRight: { flexDirection: 'row', alignItems: 'center' },
-  itemAmt:   { fontSize: 15, fontWeight: 'bold', color: theme.colors.text.primary, marginRight: theme.spacing.sm },
-});
+    /* History item */
+    itemCard: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      backgroundColor: theme.colors.background.elevated,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+      padding: theme.spacing.lg,
+      marginHorizontal: theme.spacing.lg,
+      marginBottom: theme.spacing.sm,
+    },
+    itemDate: {fontSize: 15, fontWeight: '600', color: theme.colors.text.primary},
+    itemNotes: {fontSize: 13, color: theme.colors.text.secondary, marginTop: 2},
+    itemRight: {flexDirection: 'row', alignItems: 'center'},
+    itemAmt: {fontSize: 15, fontWeight: 'bold', color: theme.colors.text.primary, marginRight: theme.spacing.sm},
+  });

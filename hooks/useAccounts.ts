@@ -35,16 +35,27 @@ export const useAccounts = () => {
 };
 
 /* ---------- details ---------- */
-export const useAccountDetails = (accountId: string) => {
+export const useAccountDetails = (accountId: string, options?: MutationOptions) => {
   const supabase = useSupabase();
+  const {showToast} = useToast();
 
-  return useQuery({
+  return useQuery<Account | null, Error>({
     queryKey: ['account', accountId],
     queryFn: async (): Promise<Account | null> => {
-      console.log('🔥 CALLING DATABASE - useAccountDetails queryFn', accountId);
-      const {data, error} = await supabase.from('accounts').select('*').eq('id', accountId).single();
-      if (error) throw error;
-      return data;
+      try {
+        const {data, error} = await supabase.from('accounts').select('*').eq('id', accountId).single();
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        showToast('Could not load account details.', 'error');
+        captureSentryException(error, {
+          location: options?.sentry?.location || 'account_details',
+          context: 'data_fetch',
+          component: options?.sentry?.component || 'useAccountDetails',
+          level: 'warning',
+        });
+        throw error;
+      }
     },
     enabled: !!accountId,
   });
