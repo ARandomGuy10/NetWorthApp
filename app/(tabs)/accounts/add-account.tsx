@@ -32,8 +32,14 @@ export default function AddAccountScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {accountId, mode, accountData, type: accountType} = useLocalSearchParams();
-  const addAccountMutation = useAddAccount();
-  const updateAccountMutation = useUpdateAccount();
+  const mutationOptions = {
+    sentry: {
+      location: 'add_edit_account',
+      component: 'AddAccountScreen',
+    },
+  };
+  const addAccountMutation = useAddAccount(mutationOptions);
+  const updateAccountMutation = useUpdateAccount(mutationOptions);
   const {theme} = useTheme();
   const {impactAsync, notificationAsync} = useHaptics();
   const styles = getStyles(theme);
@@ -85,7 +91,6 @@ export default function AddAccountScreen() {
 
   // Load existing account data for edit mode
   useEffect(() => {
-    console.log('useEffect');
     if (isEditMode && accountData && !didPrefillRef.current) {
       try {
         const parsedData = typeof accountData === 'string' ? JSON.parse(accountData) : accountData;
@@ -172,13 +177,14 @@ export default function AddAccountScreen() {
           initial_balance: parseFloat(formData.initial_balance) || 0,
         };
 
-        await addAccountMutation.mutateAsync(accountWithBalance);
-
-        notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setTimeout(() => router.back(), 1500);
+        addAccountMutation.mutate(accountWithBalance, {
+          onSuccess: () => {
+            notificationAsync(Haptics.NotificationFeedbackType.Success);
+            router.back();
+          },
+        });
       }
     } catch (error) {
-      console.error('Error saving account:', error);
       showToast(`Failed to ${isEditMode ? 'update' : 'create'} account. Please try again.`, 'error');
 
       notificationAsync(Haptics.NotificationFeedbackType.Error);
