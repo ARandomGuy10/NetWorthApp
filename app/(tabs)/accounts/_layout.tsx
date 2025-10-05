@@ -11,7 +11,6 @@ export default function AccountsLayout() {
   // Redirect if user is not authenticated
   useEffect(() => {
     if (isLoaded && !isSignedIn) {
-      console.log('User not signed in, redirecting to auth');
       router.replace('/(auth)/sign-in');
     }
   }, [isLoaded, isSignedIn]);
@@ -37,16 +36,9 @@ export default function AccountsLayout() {
         contentStyle: {
           backgroundColor: 'transparent',
         },
-      }}
-    >
-      <Stack.Screen 
-        name="index" 
-        options={{ title: 'Accounts' }} 
-      />
-      <Stack.Screen 
-        name="[id]" 
-        options={{ title: 'Account Details' }} 
-      />
+      }}>
+      <Stack.Screen name="index" options={{title: 'Accounts'}} />
+      <Stack.Screen name="[id]" options={{title: 'Account Details'}} />
       <Stack.Screen
         name="add-account"
         options={{
@@ -64,4 +56,3 @@ export default function AccountsLayout() {
     </Stack>
   );
 }
-

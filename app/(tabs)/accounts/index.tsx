@@ -1,38 +1,31 @@
-import React, { memo, useState, useMemo, useRef, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-  RefreshControl,
-} from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import React, {memo, useState, useMemo, useRef, useEffect} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Alert, RefreshControl} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useRouter} from 'expo-router';
+import {Ionicons} from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { useIsFocused } from '@react-navigation/native';
-import { FlashList, FlashListRef } from '@shopify/flash-list';
+import {useIsFocused} from '@react-navigation/native';
+import {FlashList, FlashListRef} from '@shopify/flash-list';
 
-import { useAccountsWithBalances } from '../../../hooks/useAccountsWithBalances'; // Updated hook
-import { useDeleteAccount, useUpdateAccount } from '../../../hooks/useAccounts';
-import { useAddBalance } from '../../../hooks/useBalances';
-import { useProfile } from '../../../hooks/useProfile'; // Import useProfile hook
-import { useHaptics } from '@/hooks/useHaptics';
-import { useToast } from '../../../hooks/providers/ToastProvider'; // Add this import
-import ActionMenu, { Action } from '../../../components/ui/ActionMenu';
-import { AccountWithBalance, Theme } from '../../../lib/supabase'; // Updated type
-import { useTheme } from '@/src/styles/theme/ThemeContext';
+import {useAccountsWithBalances} from '../../../hooks/useAccountsWithBalances'; // Updated hook
+import {useDeleteAccount, useUpdateAccount} from '../../../hooks/useAccounts';
+import {useAddBalance} from '../../../hooks/useBalances';
+import {useProfile} from '../../../hooks/useProfile'; // Import useProfile hook
+import {useHaptics} from '@/hooks/useHaptics';
+import {useToast} from '../../../hooks/providers/ToastProvider'; // Add this import
+import ActionMenu, {Action} from '../../../components/ui/ActionMenu';
+import {AccountWithBalance, Theme} from '../../../lib/supabase'; // Updated type
+import {useTheme} from '@/src/styles/theme/ThemeContext';
 import AccountsHeader from '../../../components/accounts/AccountsHeader'; // Import the new header
-import FilterChipsRow, { FilterType } from '../../../components/accounts/FilterChipsRow'; // Import the new filter chips
+import FilterChipsRow, {FilterType} from '../../../components/accounts/FilterChipsRow'; // Import the new filter chips
 import StatusShelf from '../../../components/accounts/StatusShelf'; // Import the new status shelf
 import AccountSectionHeader from '../../../components/accounts/AccountSectionHeader';
 import AccountRow from '../../../components/accounts/AccountRow';
 import QuickEditSheet from '../../../components/accounts/QuickEditSheet';
-import { isAccountOutdated } from '@/src/utils/dateUtils'; // Import the new utility
-import SortOptionsSheet, { SortOption } from '../../../components/accounts/SortOptionsSheet';
+import {isAccountOutdated} from '@/src/utils/dateUtils'; // Import the new utility
+import SortOptionsSheet, {SortOption} from '../../../components/accounts/SortOptionsSheet';
 import LoadingView from '../../../components/ui/LoadingView';
-
+import ConfirmationModal from '@/components/ui/ConfirmationModal';
 
 // Define types for FlashList items
 interface FlashListItem {
@@ -42,24 +35,30 @@ interface FlashListItem {
 }
 
 function AccountsScreen() {
-  console.log('AccountsScreen rendered');
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const flashListRef = useRef<FlashListRef<FlashListItem>>(null);
 
-  // Use useAccountsWithBalances hook as per new requirement
-  const { data: accountsData, isLoading, refetch, isFetching } = useAccountsWithBalances();
-  const { data: profile } = useProfile();
-  const deleteAccountMutation = useDeleteAccount();
-  const updateAccountMutation = useUpdateAccount();
-  const addBalanceMutation = useAddBalance();
-  const { impactAsync, notificationAsync } = useHaptics();
+  const mutationOptions = {
+    sentry: {
+      location: 'accounts',
+      component: 'AccountsScreen',
+    },
+  };
 
-  const { showToast } = useToast(); // Get showToast from the hook
+  // Use useAccountsWithBalances hook as per new requirement
+  const {data: accountsData, isLoading, refetch, isFetching} = useAccountsWithBalances(mutationOptions);
+  const {data: profile} = useProfile(mutationOptions);
+  const deleteAccountMutation = useDeleteAccount(mutationOptions);
+  const updateAccountMutation = useUpdateAccount(mutationOptions);
+  const addBalanceMutation = useAddBalance();
+  const {impactAsync, notificationAsync} = useHaptics();
+
+  const {showToast} = useToast(); // Get showToast from the hook
 
   const handleArchiveAccount = async (account: AccountWithBalance) => {
     try {
-      await updateAccountMutation.mutateAsync({ id: account.account_id, updates: { is_archived: !account.is_archived } });
+      await updateAccountMutation.mutateAsync({id: account.account_id, updates: {is_archived: !account.is_archived}});
       showToast(`Account ${account.is_archived ? 'unarchived' : 'archived'} successfully!`, 'success');
       notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
@@ -69,33 +68,29 @@ function AccountsScreen() {
   };
 
   // Consolidated handler for deleting an account with confirmation
-  const handleDeleteAccountWithConfirmation = (account: { id: string; name: string }, onCompletion?: () => void) => {
-    Alert.alert(
-      'Delete Account',
-      `Are you sure you want to delete "${account.name}"? This will also delete all balance entries.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);
-            try {
-              await deleteAccountMutation.mutateAsync(account.id);
-              notificationAsync(Haptics.NotificationFeedbackType.Success);
-              onCompletion?.();
-            } catch (error) {
-              notificationAsync(Haptics.NotificationFeedbackType.Error);
-            } finally {
-              setIsDeleting(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleDeleteAccountWithConfirmation = (account: {id: string; name: string}) => {
+    setAccountToDelete(account);
+    setIsDeleteModalVisible(true);
   };
 
-  const { theme } = useTheme();
+  const confirmAccountDeletion = async () => {
+    if (!accountToDelete) return;
+
+    try {
+      await deleteAccountMutation.mutateAsync(accountToDelete.id);
+      notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      // Error is handled by the mutation's onError callback
+      notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      // Close the modal regardless of success or failure
+      setIsDeleteModalVisible(false);
+      // Reset the account to delete
+      setAccountToDelete(null);
+    }
+  };
+
+  const {theme} = useTheme();
   const styles = getStyles(theme);
 
   // Extract accounts with latest balances from dashboard data
@@ -105,13 +100,14 @@ function AccountsScreen() {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
   const [menuVisible, setMenuVisible] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<AccountWithBalance | null>(null); // Updated type
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({x: 0, y: 0});
   const [isQuickEditVisible, setIsQuickEditVisible] = useState(false);
   const [isSortSheetVisible, setIsSortSheetVisible] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>('name_a_to_z');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<{id: string; name: string} | null>(null);
   const isFocused = useIsFocused();
 
   const [isManualRefreshing, setIsManualRefreshing] = useState(false);
@@ -119,7 +115,7 @@ function AccountsScreen() {
   // Scroll to top when filter changes
   useEffect(() => {
     if (flashListRef.current) {
-      flashListRef.current.scrollToOffset({ animated: true, offset: 0 });
+      flashListRef.current.scrollToOffset({animated: true, offset: 0});
     }
   }, [activeFilter]);
 
@@ -141,7 +137,7 @@ function AccountsScreen() {
 
   const handleToggleSection = (title: string) => {
     impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setCollapsedSections(prev => ({ ...prev, [title]: !prev[title] }));
+    setCollapsedSections(prev => ({...prev, [title]: !prev[title]}));
   };
 
   const handleSort = (option: SortOption) => {
@@ -180,12 +176,13 @@ function AccountsScreen() {
   };
 
   // Enhanced handleAccountMenu with haptic feedback and better positioning
-  const handleAccountMenu = (account: AccountWithBalance, event: any) => { // Updated type
+  const handleAccountMenu = (account: AccountWithBalance, event: any) => {
+    // Updated type
     impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    
-    const { pageY } = event.nativeEvent;
+
+    const {pageY} = event.nativeEvent;
     setSelectedAccount(account);
-    setMenuPosition({ x: 0, y: pageY });
+    setMenuPosition({x: 0, y: pageY});
     setMenuVisible(true);
   };
 
@@ -235,7 +232,7 @@ function AccountsScreen() {
             params: {
               accountId: selectedAccount.account_id,
               mode: 'edit',
-              accountData: JSON.stringify(selectedAccount)
+              accountData: JSON.stringify(selectedAccount),
             },
           });
           setMenuVisible(false);
@@ -248,9 +245,13 @@ function AccountsScreen() {
       destructive: true,
       onPress: () => {
         if (!selectedAccount) return;
-        handleDeleteAccountWithConfirmation(
-          { id: selectedAccount.account_id, name: selectedAccount.account_name },
-          () => setMenuVisible(false)
+        // Close the action menu first, then open the confirmation modal
+        setMenuVisible(false);
+        // A short delay ensures the UI transition is smooth
+        setTimeout(
+          () =>
+            handleDeleteAccountWithConfirmation({id: selectedAccount.account_id, name: selectedAccount.account_name}),
+          150
         );
       },
     },
@@ -310,7 +311,10 @@ function AccountsScreen() {
   }, [filteredAccounts, sortOption]);
 
   const assetAccounts = useMemo(() => sortedAccounts.filter(acc => acc.account_type === 'asset'), [sortedAccounts]);
-  const liabilityAccounts = useMemo(() => sortedAccounts.filter(acc => acc.account_type === 'liability'), [sortedAccounts]);
+  const liabilityAccounts = useMemo(
+    () => sortedAccounts.filter(acc => acc.account_type === 'liability'),
+    [sortedAccounts]
+  );
 
   // Fixed: Better loading logic that accounts for cached data
   const showLoadingSpinner = (isLoading || (!accountsData && isFetching)) && !accounts.length;
@@ -328,11 +332,11 @@ function AccountsScreen() {
       data.push({
         type: 'header',
         id: 'header-assets',
-        data: { title: 'Assets', count: assetAccounts.length, isCollapsed },
+        data: {title: 'Assets', count: assetAccounts.length, isCollapsed},
       });
       if (!isCollapsed) {
         assetAccounts.forEach(account => {
-          data.push({ type: 'account', id: account.account_id, data: account });
+          data.push({type: 'account', id: account.account_id, data: account});
         });
       }
     }
@@ -342,17 +346,17 @@ function AccountsScreen() {
       data.push({
         type: 'header',
         id: 'header-liabilities',
-        data: { title: 'Liabilities', count: liabilityAccounts.length, isCollapsed },
+        data: {title: 'Liabilities', count: liabilityAccounts.length, isCollapsed},
       });
       if (!isCollapsed) {
         liabilityAccounts.forEach(account => {
-          data.push({ type: 'account', id: account.account_id, data: account });
+          data.push({type: 'account', id: account.account_id, data: account});
         });
       }
     }
 
     if (filteredAccounts.length === 0 && !isLoading) {
-      data.push({ type: 'emptyState', id: 'empty-state' });
+      data.push({type: 'emptyState', id: 'empty-state'});
     }
 
     //data.push({ type: 'footer', id: 'footer-add-button' }); // Add a footer item for the button
@@ -363,7 +367,7 @@ function AccountsScreen() {
   const flashListData = prepareFlashListData();
 
   // Render function for FlashList items
-  const renderFlashListItem = ({ item }: { item: FlashListItem }) => {
+  const renderFlashListItem = ({item}: {item: FlashListItem}) => {
     switch (item.type) {
       case 'header':
         const headerData = item.data;
@@ -378,7 +382,7 @@ function AccountsScreen() {
               const type = headerData.title === 'Assets' ? 'asset' : 'liability';
               router.push({
                 pathname: 'accounts/add-account',
-                params: { type },
+                params: {type},
               });
             }}
           />
@@ -386,8 +390,8 @@ function AccountsScreen() {
       case 'account':
         const account: AccountWithBalance = item.data;
         return (
-          <AccountRow 
-            account={account} 
+          <AccountRow
+            account={account}
             onPress={() => {
               impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push(`/accounts/${account.account_id}`);
@@ -395,7 +399,7 @@ function AccountsScreen() {
             onEdit={() => handleQuickEdit(account)}
             onDelete={() => {
               impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              handleDeleteAccountWithConfirmation({ id: account.account_id, name: account.account_name });
+              handleDeleteAccountWithConfirmation({id: account.account_id, name: account.account_name});
             }}
             onArchive={() => handleArchiveAccount(account)}
             isIncludedInNetWorth={account.include_in_net_worth ?? false}
@@ -409,9 +413,7 @@ function AccountsScreen() {
               <Ionicons name="wallet-outline" size={48} color={theme.colors.text.tertiary} />
             </View>
             <Text style={styles.emptyTitle}>No accounts yet</Text>
-            <Text style={styles.emptyText}>
-              Add your first account to start tracking your net worth
-            </Text>
+            <Text style={styles.emptyText}>Add your first account to start tracking your net worth</Text>
           </View>
         );
       default:
@@ -420,7 +422,7 @@ function AccountsScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, {paddingTop: insets.top}]}>
       <AccountsHeader
         onAdd={() => {
           impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -432,28 +434,28 @@ function AccountsScreen() {
         }}
         search={searchProps}
       />
-      <FilterChipsRow 
-        activeFilter={activeFilter} 
-        onFilterChange={handleFilterChange} 
+      <FilterChipsRow
+        activeFilter={activeFilter}
+        onFilterChange={handleFilterChange}
         outdatedCount={outdatedAccounts.length}
         hiddenCount={hiddenAccounts.length}
       />
-      <StatusShelf 
-        outdatedCount={outdatedAccounts.length} 
-        remindAfterDays={profile?.remind_after_days || 30} 
-        onView={handleViewOutdated} 
+      <StatusShelf
+        outdatedCount={outdatedAccounts.length}
+        remindAfterDays={profile?.remind_after_days || 30}
+        onView={handleViewOutdated}
       />
 
       <FlashList
         ref={flashListRef}
         data={flashListData}
         renderItem={renderFlashListItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isManualRefreshing}
-            onRefresh={onRefresh} 
+            onRefresh={onRefresh}
             colors={[theme.colors.primary]}
             tintColor={theme.colors.primary}
           />
@@ -483,47 +485,61 @@ function AccountsScreen() {
         currentSort={sortOption}
         title="Sort Accounts"
       />
+
+      <ConfirmationModal
+        isVisible={isDeleteModalVisible}
+        onClose={() => setIsDeleteModalVisible(false)}
+        onConfirm={confirmAccountDeletion}
+        title="Delete Account"
+        message={`Are you sure you want to delete "${accountToDelete?.name}"? This will also delete all associated balance entries.`}
+        confirmText="Delete"
+        iconName="trash-outline"
+        isDestructive={true}
+        isLoading={deleteAccountMutation.isPending}
+      />
     </View>
   );
 }
 
-const getStyles = (theme: Theme) => StyleSheet.create({
-  container: { 
-    flex: 1, 
-    backgroundColor: theme.colors.background.primary 
-  },
-  flashListContent: { // New style for FlashList content container
-    paddingBottom: 90 + theme.spacing.lg, // Padding to ensure content doesn't hide behind the tab bar
-  },
-  emptyState: { 
-    padding: theme.spacing.xxxl, 
-    alignItems: 'center', 
-    marginTop: theme.spacing.xxxl,
-    flex: 1,
-    justifyContent: 'center',
-  },
-  emptyIcon: { 
-    marginBottom: theme.spacing.xl,
-    opacity: 0.7,
-  },
-  emptyTitle: { 
-    fontSize: 20, 
-    fontWeight: '600', 
-    color: theme.colors.text.primary, 
-    marginBottom: theme.spacing.sm 
-  },
-  emptyText: { 
-    fontSize: 15, 
-    color: theme.colors.text.secondary, 
-    textAlign: 'center', 
-    lineHeight: 22 
-  },
-  addAccountText: { 
-    fontSize: 15, 
-    fontWeight: 'bold', 
-    color: theme.colors.text.inverse, 
-    marginLeft: theme.spacing.sm 
-  },
-});
+const getStyles = (theme: Theme) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: theme.colors.background.primary,
+    },
+    flashListContent: {
+      // New style for FlashList content container
+      paddingBottom: 90 + theme.spacing.lg, // Padding to ensure content doesn't hide behind the tab bar
+    },
+    emptyState: {
+      padding: theme.spacing.xxxl,
+      alignItems: 'center',
+      marginTop: theme.spacing.xxxl,
+      flex: 1,
+      justifyContent: 'center',
+    },
+    emptyIcon: {
+      marginBottom: theme.spacing.xl,
+      opacity: 0.7,
+    },
+    emptyTitle: {
+      fontSize: 20,
+      fontWeight: '600',
+      color: theme.colors.text.primary,
+      marginBottom: theme.spacing.sm,
+    },
+    emptyText: {
+      fontSize: 15,
+      color: theme.colors.text.secondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    addAccountText: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      color: theme.colors.text.inverse,
+      marginLeft: theme.spacing.sm,
+    },
+  });
 
 export default memo(AccountsScreen);

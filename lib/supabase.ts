@@ -37,6 +37,7 @@ export type Database = {
         Insert: {
           id: string;
           first_name?: string | null;
+          avatar_url?: string | null;
           last_name?: string | null;
           email?: string | null;
           preferred_currency?: string;
@@ -153,7 +154,7 @@ export type Balance = Database['public']['Tables']['balance_entries']['Row'];
 export type BalanceInsert = Database['public']['Tables']['balance_entries']['Insert'];
 export type Profile = Database['public']['Tables']['profiles']['Row'];
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update'];
-export type AccountWithBalance = Database['public']['Functions']['get_accounts_with_balances']['Returns'];
+export type AccountWithBalance = Database['public']['Functions']['get_accounts_with_balances']['Returns'][number];
 
 // -----------------------------------------------------------------------------
 // Analytics and Dashboard interfaces

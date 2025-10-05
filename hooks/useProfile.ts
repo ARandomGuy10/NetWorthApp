@@ -4,31 +4,50 @@ import {useSupabase} from './useSupabase';
 import type {Profile, ProfileUpdate} from '../lib/supabase';
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useSettingsStore} from '../stores/settingsStore';
+import {captureSentryException} from '@/lib/sentry';
 
 import {useToast} from './providers/ToastProvider';
 
-export const useProfile = () => {
+interface UseProfileOptions {
+  sentry?: {
+    location: string;
+    component: string;
+  };
+}
+
+export const useProfile = (options?: UseProfileOptions) => {
   const {user} = useUser();
   const supabase = useSupabase();
   const initializeSettings = useSettingsStore(state => state.initializeSettings);
+  const {showToast} = useToast();
 
-  return useQuery({
+  return useQuery<Profile | null, Error>({
     queryKey: ['profile', user?.id],
     queryFn: async (): Promise<Profile | null> => {
-      console.log('🔥 CALLING DATABASE - useProfile queryFn');
+      try {
+        // Explicitly type `data` to prevent TypeScript from inferring `never`.
+        const {data, error} = await supabase.from('profiles').select('*').eq('id', user!.id).single<Profile>();
 
-      const {data, error} = await supabase.from('profiles').select('*').eq('id', user!.id).single();
+        if (error?.code === 'PGRST116') return null; // No profile found
+        if (error) throw error;
 
-      if (error?.code === 'PGRST116') return null; // No profile found
-      if (error) throw error;
-
-      if (data) {
-        initializeSettings({
-          hapticsEnabled: data.haptic_feedback_enabled ?? true,
-          soundsEnabled: data.sounds_enabled ?? true,
+        if (data) {
+          initializeSettings({
+            hapticsEnabled: data.haptic_feedback_enabled ?? true,
+            soundsEnabled: data.sounds_enabled ?? true,
+          });
+        }
+        return data;
+      } catch (error) {
+        showToast('Could not load profile.', 'error');
+        captureSentryException(error, {
+          location: options?.sentry?.location || 'unknown_profile',
+          context: 'data_fetch',
+          component: options?.sentry?.component || 'useProfile',
+          level: 'warning',
         });
+        throw error;
       }
-      return data;
     },
     enabled: !!user?.id,
   });
@@ -42,7 +61,6 @@ export const useCreateProfile = () => {
 
   return useMutation({
     mutationFn: async () => {
-      console.log('🔥 CALLING DATABASE - useCreateProfile mutationFn');
       if (!user) throw new Error('User not authenticated');
 
       const {data, error} = await supabase
@@ -86,7 +104,6 @@ export const useUpdateProfile = () => {
 
   return useMutation({
     mutationFn: async (updates: ProfileUpdate) => {
-      console.log('🔥 CALLING DATABASE - useUpdateProfile mutationFn');
       const {data, error} = await supabase.from('profiles').update(updates).eq('id', user!.id).select().single();
       if (error) throw error;
       return data;
@@ -115,7 +132,6 @@ export const useUpdateProfile = () => {
     },
     onError: (error: Error) => {
       showToast('Failed to update profile', 'error', {text: error.message});
-      console.error('Error updating profile:', error);
     },
   });
 };
@@ -127,7 +143,6 @@ export const useDeleteUser = () => {
 
   return useMutation({
     mutationFn: async () => {
-      console.log('🔥 CALLING EDGE FUNCTION - delete-user');
       const {error} = await supabase.functions.invoke('delete-user');
       if (error) throw error;
     },
@@ -140,7 +155,6 @@ export const useDeleteUser = () => {
       showToast('Failed to delete account', 'error', {
         text: error.message,
       });
-      console.error('Error deleting user:', error);
     },
   });
 };

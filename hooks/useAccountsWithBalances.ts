@@ -1,19 +1,41 @@
-import { useQuery } from '@tanstack/react-query';
-import { useUser } from '@clerk/clerk-expo';
-import { useSupabase } from './useSupabase';
-import type { AccountWithBalance } from '@/lib/supabase';
+import {useQuery} from '@tanstack/react-query';
+import {useUser} from '@clerk/clerk-expo';
+import {useSupabase} from './useSupabase';
+import {useToast} from './providers/ToastProvider';
+import {captureSentryException} from '@/lib/sentry';
+import type {AccountWithBalance} from '@/lib/supabase';
 
-export const useAccountsWithBalances = () => {
-  const { user } = useUser();
+interface UseAccountsDataOptions {
+  sentry?: {
+    location: string;
+    component: string;
+  };
+}
+
+export const useAccountsWithBalances = (options?: UseAccountsDataOptions) => {
+  const {user} = useUser();
   const supabase = useSupabase();
-  
-  return useQuery<AccountWithBalance[]> ({
+  const {showToast} = useToast();
+
+  return useQuery<AccountWithBalance[], Error>({
     queryKey: ['accountsWithBalances', user?.id],
     queryFn: async () => {
-      console.log('🔥 CALLING DATABASE - get_accounts_with_balances function');
-      const { data, error } = await supabase.rpc('get_accounts_with_balances');
-      if (error) throw error;
-      return data;
+      try {
+        const {data, error} = await supabase.rpc('get_accounts_with_balances');
+        if (error) throw error;
+        return data;
+      } catch (error) {
+        // Centralized error handling for this query.
+        showToast('Could not load accounts.', 'error');
+        captureSentryException(error, {
+          location: options?.sentry?.location || 'unknown_accounts',
+          context: 'data_fetch',
+          component: options?.sentry?.component || 'useAccountsWithBalances',
+          level: 'warning',
+        });
+        // Re-throw the error so TanStack Query can mark the query as failed.
+        throw error;
+      }
     },
     enabled: !!user?.id,
   });
